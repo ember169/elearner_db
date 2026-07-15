@@ -9,11 +9,8 @@ import {
   Settings,
   Menu,
   X,
-  Moon,
-  Sun,
 } from "lucide-react";
-import { useTheme } from "next-themes";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -25,11 +22,7 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { theme, setTheme } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
 
   return (
     <>
@@ -90,22 +83,6 @@ export function Sidebar() {
             })}
           </div>
         </nav>
-
-        <div className="border-t border-border px-3 py-3">
-          {mounted && (
-            <button
-              className="flex w-full items-center gap-2.5 rounded-sm px-2.5 py-2 text-[13px] text-muted-foreground hover:text-foreground transition-colors"
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            >
-              {theme === "dark" ? (
-                <Sun className="h-3.5 w-3.5" />
-              ) : (
-                <Moon className="h-3.5 w-3.5" />
-              )}
-              {theme === "dark" ? "Light mode" : "Dark mode"}
-            </button>
-          )}
-        </div>
       </aside>
     </>
   );
