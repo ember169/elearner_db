@@ -255,12 +255,19 @@ export function analyzeFtProgress(snapshot: PlatformSnapshot) {
 
 function matchProjectSlug(rawSlug: string): string {
   const normalized = rawSlug.toLowerCase().replace(/[^a-z0-9]/g, "");
-  const match = FT_COMMON_CORE.find(
-    (p) =>
-      p.slug === rawSlug ||
-      p.slug.replace(/[^a-z0-9]/g, "") === normalized ||
-      p.name.toLowerCase().replace(/[^a-z0-9]/g, "") === normalized
-  );
+  const match = FT_COMMON_CORE.find((p) => {
+    const canonical = p.slug.replace(/[^a-z0-9]/g, "");
+    const name = p.name.toLowerCase().replace(/[^a-z0-9]/g, "");
+    return (
+      normalized === canonical ||
+      normalized === name ||
+      // 42's API prefixes common-core slugs, e.g. "42cursus-libft" — which
+      // normalizes to "42cursuslibft". Match on the canonical name as a suffix
+      // so prefixed and bare slugs both resolve to the same project.
+      normalized.endsWith(canonical) ||
+      normalized.endsWith(name)
+    );
+  });
   return match?.slug ?? rawSlug;
 }
 
@@ -320,6 +327,9 @@ export function generateRecommendations(
 
   // 1. In-progress 42 projects should be finished first
   for (const slug of ftProgress.inProgressProjects) {
+    // A project can be both validated and in-progress (e.g. a redo) — don't
+    // nag to "finish" something already passed.
+    if (ftProgress.completedProjects.includes(slug)) continue;
     const project = FT_COMMON_CORE.find((p) => p.slug === slug);
     if (project) {
       recs.push({

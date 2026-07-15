@@ -123,23 +123,29 @@ export async function syncFortyTwo(config: Config) {
     itemsSynced++;
   }
 
-  // Achievements
-  const achievements = await apiFetch(
-    token,
-    `/v2/users/${userId}/achievements`
-  );
-  db.delete(ftAchievements).run();
-  for (const a of achievements) {
-    db.insert(ftAchievements)
-      .values({
-        achievementId: a.id,
-        name: a.name,
-        description: a.description ?? null,
-        tier: a.tier ?? null,
-        kind: a.kind ?? null,
-      })
-      .run();
-    itemsSynced++;
+  // Achievements — non-essential. This endpoint 404s for some accounts, so a
+  // failure here must not abort the whole sync after profile/skills/projects
+  // (the data that actually matters) have already been written.
+  try {
+    const achievements = await apiFetch(
+      token,
+      `/v2/users/${userId}/achievements`
+    );
+    db.delete(ftAchievements).run();
+    for (const a of achievements) {
+      db.insert(ftAchievements)
+        .values({
+          achievementId: a.id,
+          name: a.name,
+          description: a.description ?? null,
+          tier: a.tier ?? null,
+          kind: a.kind ?? null,
+        })
+        .run();
+      itemsSynced++;
+    }
+  } catch {
+    // achievements unavailable for this account — skip, keep the rest of the sync
   }
 
   db.insert(activityFeed)
