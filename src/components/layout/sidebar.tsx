@@ -56,15 +56,15 @@ export function Sidebar() {
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className="flex h-12 items-center gap-2 border-b border-border px-5">
-          <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-[9px]">L</span>
+        <div className="flex h-14 items-center gap-2.5 border-b border-border px-5">
+          <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center">
+            <span className="text-primary-foreground font-bold text-[11px]">L</span>
           </div>
-          <span className="font-semibold text-[13px] tracking-tight">Learner DB</span>
+          <span className="font-bold text-[15px] tracking-tight">Learner DB</span>
         </div>
 
         <nav className="flex-1 px-3 py-4">
-          <p className="section-label px-2.5 mb-2">Navigate</p>
+          <p className="section-label px-2.5 mb-2.5">Navigate</p>
           <div className="space-y-0.5">
             {navItems.map((item) => {
               const isActive =
@@ -77,13 +77,13 @@ export function Sidebar() {
                   href={item.href}
                   onClick={() => setMobileOpen(false)}
                   className={cn(
-                    "flex items-center gap-2.5 rounded-sm px-2.5 py-1.5 text-[13px] font-medium transition-colors",
+                    "flex items-center gap-2.5 rounded-sm px-2.5 py-2 text-[14px] font-medium transition-colors",
                     isActive
                       ? "bg-primary/10 text-primary"
                       : "text-muted-foreground hover:bg-accent hover:text-foreground"
                   )}
                 >
-                  <item.icon className="h-3.5 w-3.5" />
+                  <item.icon className="h-4 w-4" />
                   {item.label}
                 </Link>
               );
@@ -94,7 +94,7 @@ export function Sidebar() {
         <div className="border-t border-border px-3 py-3">
           {mounted && (
             <button
-              className="flex w-full items-center gap-2.5 rounded-sm px-2.5 py-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors"
+              className="flex w-full items-center gap-2.5 rounded-sm px-2.5 py-2 text-[13px] text-muted-foreground hover:text-foreground transition-colors"
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             >
               {theme === "dark" ? (

@@ -19,6 +19,7 @@ import {
   Tooltip,
 } from "recharts";
 import type { FtProject } from "@/lib/guidance/ft-project-tree";
+import { PLATFORM_COLORS } from "@/lib/platform-colors";
 
 interface FtProfileData {
   login: string;
@@ -86,15 +87,6 @@ interface ProgressClientProps {
   skillProfile: Record<string, number>;
 }
 
-const platformColors: Record<string, string> = {
-  "42": "#00babc",
-  thm: "#ef4444",
-  htb: "#9fef00",
-  rootme: "#f59e0b",
-  maldev: "#a855f7",
-  system: "#6b7280",
-};
-
 export function ProgressClient({
   ft,
   thm,
@@ -115,8 +107,8 @@ export function ProgressClient({
     <div className="space-y-5">
       {/* Header */}
       <div>
-        <h1 className="text-xl font-semibold tracking-tight">Progress</h1>
-        <p className="text-[13px] text-muted-foreground mt-0.5">
+        <h1 className="page-title">Progress</h1>
+        <p className="page-subtitle mt-1">
           Your position across all platforms and how you got here
         </p>
       </div>
@@ -124,31 +116,31 @@ export function ProgressClient({
       {/* Platform cards */}
       <div className="grid gap-2.5 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
         <PlatformCard
-          color="#00babc"
+          color={PLATFORM_COLORS["42"]}
           name="42 Paris"
           value={ft ? (ft.level ?? 0).toFixed(1) : "—"}
           detail={ft ? `Level · ${ft.correctionPoints ?? 0} corr` : "Not connected"}
         />
         <PlatformCard
-          color="#ef4444"
+          color={PLATFORM_COLORS.thm}
           name="TryHackMe"
           value={thm ? `#${(thm.rank ?? "?").toLocaleString()}` : "—"}
           detail={thm ? `${thm.roomsCompleted ?? 0} rooms · ${thm.streak ?? 0}d streak` : "Not connected"}
         />
         <PlatformCard
-          color="#9fef00"
+          color={PLATFORM_COLORS.htb}
           name="HackTheBox"
           value={htb ? (htb.rank ?? "—") : "—"}
           detail={htb ? `${htb.points ?? 0} pts · ${(htb.systemOwns ?? 0) + (htb.userOwns ?? 0)} owns` : "Not connected"}
         />
         <PlatformCard
-          color="#a855f7"
+          color={PLATFORM_COLORS.maldev}
           name="Maldev"
           value={maldev ? `${(maldev.overallProgress ?? 0).toFixed(0)}%` : "—"}
           detail={maldev ? `${maldev.modulesCompleted ?? 0}/${maldev.totalModules ?? 0} modules` : "Not connected"}
         />
         <PlatformCard
-          color="#f59e0b"
+          color={PLATFORM_COLORS.rootme}
           name="Root-me"
           value={rootme ? (rootme.score ?? 0).toLocaleString() : "—"}
           detail={rootme ? `${rootme.challengesSolved ?? 0} solved · #${rootme.position ?? "?"}` : "Not connected"}
@@ -168,7 +160,7 @@ export function ProgressClient({
                 .sort(([a], [b]) => Number(a) - Number(b))
                 .map(([circle, { total, done }]) => (
                   <div key={circle} className="flex items-center gap-3">
-                    <span className="text-[11px] text-muted-foreground w-14 tabular-nums">
+                    <span className="text-[12px] text-muted-foreground w-16 tabular-nums">
                       Circle {circle}
                     </span>
                     <div className="flex-1 progress-track">
@@ -176,11 +168,11 @@ export function ProgressClient({
                         className="progress-fill"
                         style={{
                           width: `${total > 0 ? (done / total) * 100 : 0}%`,
-                          backgroundColor: "#00babc",
+                          backgroundColor: PLATFORM_COLORS["42"],
                         }}
                       />
                     </div>
-                    <span className="text-[11px] text-muted-foreground w-8 text-right tabular-nums">
+                    <span className="text-[12px] text-muted-foreground w-8 text-right tabular-nums">
                       {done}/{total}
                     </span>
                   </div>
@@ -189,10 +181,10 @@ export function ProgressClient({
             {ftProgress.availableProjects.length > 0 && (
               <>
                 <div className="border-t border-border my-3" />
-                <p className="section-label mb-1.5">Available now</p>
-                <div className="flex flex-wrap gap-1">
+                <p className="section-label mb-2">Available now</p>
+                <div className="flex flex-wrap gap-1.5">
                   {ftProgress.availableProjects.map((p) => (
-                    <Badge key={p.slug} variant="secondary" className="text-[10px]">
+                    <Badge key={p.slug} variant="secondary">
                       {p.name}
                     </Badge>
                   ))}
@@ -209,7 +201,7 @@ export function ProgressClient({
               <p className="section-label">Skill Profile</p>
             </div>
             {Object.keys(skillProfile).length === 0 ? (
-              <p className="text-[12px] text-muted-foreground text-center py-8">
+              <p className="text-[13px] text-muted-foreground text-center py-8">
                 Sync platforms to build your skill profile.
               </p>
             ) : (
@@ -219,7 +211,7 @@ export function ProgressClient({
                   .slice(0, 8)
                   .map(([skill, level]) => (
                     <div key={skill} className="flex items-center gap-3">
-                      <span className="text-[11px] text-muted-foreground w-20 capitalize truncate">
+                      <span className="text-[12px] text-muted-foreground w-20 capitalize truncate">
                         {skill.replace(/-/g, " ")}
                       </span>
                       <div className="flex-1 progress-track">
@@ -228,7 +220,7 @@ export function ProgressClient({
                           style={{ width: `${Math.min(100, (level / 20) * 100)}%` }}
                         />
                       </div>
-                      <span className="text-[11px] text-muted-foreground w-8 text-right tabular-nums">
+                      <span className="text-[12px] text-muted-foreground w-8 text-right tabular-nums">
                         {level.toFixed(1)}
                       </span>
                     </div>
@@ -271,9 +263,9 @@ export function ProgressClient({
                     fontSize: "12px",
                   }}
                 />
-                <Line type="monotone" dataKey="42 Level" stroke="#00babc" strokeWidth={1.5} dot={false} />
-                <Line type="monotone" dataKey="HTB Points" stroke="#9fef00" strokeWidth={1.5} dot={false} />
-                <Line type="monotone" dataKey="THM Rooms" stroke="#ef4444" strokeWidth={1.5} dot={false} />
+                <Line type="monotone" dataKey="42 Level" stroke="var(--platform-42)" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="HTB Points" stroke="var(--platform-htb)" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="THM Rooms" stroke="var(--platform-thm)" strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -288,7 +280,7 @@ export function ProgressClient({
             <p className="section-label">Recent activity</p>
           </div>
           {recentActivity.length === 0 ? (
-            <p className="text-[12px] text-muted-foreground text-center py-8">
+            <p className="text-[13px] text-muted-foreground text-center py-8">
               No activity yet. Sync your platforms to see updates here.
             </p>
           ) : (
@@ -296,17 +288,17 @@ export function ProgressClient({
               {recentActivity.map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-center gap-2.5 py-2 border-b border-border last:border-b-0"
+                  className="flex items-center gap-2.5 py-2.5 border-b border-border last:border-b-0"
                 >
                   <span
                     className="h-1.5 w-1.5 rounded-full shrink-0"
-                    style={{ backgroundColor: platformColors[item.platform] ?? "#6b7280" }}
+                    style={{ backgroundColor: PLATFORM_COLORS[item.platform] ?? "var(--muted-foreground)" }}
                   />
-                  <Badge variant="secondary" className="text-[9px] px-1.5 shrink-0 uppercase">
+                  <Badge variant="secondary" className="shrink-0 uppercase">
                     {item.platform}
                   </Badge>
-                  <span className="text-[13px] flex-1 truncate">{item.title}</span>
-                  <span className="text-[11px] text-muted-foreground shrink-0 tabular-nums">
+                  <span className="text-[14px] flex-1 truncate">{item.title}</span>
+                  <span className="text-[12px] text-muted-foreground shrink-0 tabular-nums">
                     {formatRelative(item.timestamp)}
                   </span>
                 </div>
@@ -321,12 +313,12 @@ export function ProgressClient({
 
 function PlatformCard({ color, name, value, detail }: { color: string; name: string; value: string; detail: string }) {
   return (
-    <Card className="overflow-hidden">
-      <div className="h-0.5" style={{ backgroundColor: color }} />
-      <CardContent className="pt-3 pb-3 px-3">
+    <Card className="overflow-hidden gap-0 py-0">
+      <div className="h-[3px]" style={{ backgroundColor: color }} />
+      <CardContent className="pt-3.5 pb-3.5 px-3.5">
         <p className="section-label">{name}</p>
-        <p className="text-lg font-semibold tracking-tight mt-1 tabular-nums">{value}</p>
-        <p className="text-[10px] text-muted-foreground mt-0.5">{detail}</p>
+        <p className="stat-value mt-1.5">{value}</p>
+        <p className="text-[11px] text-muted-foreground mt-1">{detail}</p>
       </CardContent>
     </Card>
   );

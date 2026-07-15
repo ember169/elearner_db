@@ -1,18 +1,14 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Roboto } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/layout/theme-provider";
 import { Sidebar } from "@/components/layout/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const roboto = Roboto({
+  variable: "--font-roboto",
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  weight: ["400", "500", "700", "900"],
 });
 
 export const metadata: Metadata = {
@@ -29,7 +25,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${roboto.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-background text-foreground">
         <ThemeProvider>
@@ -37,7 +33,7 @@ export default function RootLayout({
             <div className="grid-bg fixed inset-0 pointer-events-none" />
             <Sidebar />
             <main className="md:pl-56 min-h-screen relative">
-              <div className="px-5 py-6 md:px-8 md:py-8 max-w-5xl">{children}</div>
+              <div className="px-5 pt-16 pb-6 md:px-8 md:py-8 max-w-5xl">{children}</div>
             </main>
           </TooltipProvider>
         </ThemeProvider>

@@ -33,24 +33,7 @@ import {
 import type { GoalWithPacing } from "@/lib/guidance/engine";
 import { METRIC_SOURCES, GOAL_PRESETS } from "@/lib/goals/shared";
 import type { MetricSourceKey } from "@/lib/goals/shared";
-
-const platformColors: Record<string, string> = {
-  "42": "#00babc",
-  thm: "#ef4444",
-  htb: "#9fef00",
-  rootme: "#f59e0b",
-  maldev: "#a855f7",
-  general: "#6b7280",
-};
-
-const platformLabels: Record<string, string> = {
-  "42": "42",
-  thm: "THM",
-  htb: "HTB",
-  rootme: "RM",
-  maldev: "MAL",
-  general: "GEN",
-};
+import { PLATFORM_COLORS, PLATFORM_LABELS } from "@/lib/platform-colors";
 
 export function GoalsClient({ goals }: { goals: GoalWithPacing[] }) {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -123,8 +106,8 @@ export function GoalsClient({ goals }: { goals: GoalWithPacing[] }) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Goals</h1>
-          <p className="text-[13px] text-muted-foreground mt-0.5">
+          <h1 className="page-title">Goals</h1>
+          <p className="page-subtitle mt-1">
             Your destinations — where you&apos;re heading and whether you&apos;re on pace
           </p>
         </div>
@@ -147,12 +130,12 @@ export function GoalsClient({ goals }: { goals: GoalWithPacing[] }) {
             <div className="space-y-4 pt-1">
               <div>
                 <p className="section-label mb-2">Quick presets</p>
-                <div className="flex flex-wrap gap-1">
+                <div className="flex flex-wrap gap-1.5">
                   {GOAL_PRESETS.map((p) => (
                     <button
                       key={p.metricSource}
                       onClick={() => applyPreset(p)}
-                      className="text-[11px] px-2 py-1 rounded-sm border border-border bg-transparent hover:bg-accent transition-colors"
+                      className="text-[12px] px-2.5 py-1.5 rounded-sm border border-border bg-transparent hover:bg-accent transition-colors"
                     >
                       {p.title}
                     </button>
@@ -161,7 +144,7 @@ export function GoalsClient({ goals }: { goals: GoalWithPacing[] }) {
               </div>
               <Separator />
               <div className="space-y-1.5">
-                <Label className="text-[12px]">Title</Label>
+                <Label className="text-[13px]">Title</Label>
                 <Input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
@@ -170,7 +153,7 @@ export function GoalsClient({ goals }: { goals: GoalWithPacing[] }) {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label className="text-[12px]">Platform</Label>
+                  <Label className="text-[13px]">Platform</Label>
                   <Select
                     value={category}
                     onValueChange={(v) => {
@@ -204,7 +187,7 @@ export function GoalsClient({ goals }: { goals: GoalWithPacing[] }) {
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-[12px]">Auto-track metric</Label>
+                  <Label className="text-[13px]">Auto-track metric</Label>
                   <Select
                     value={metricSource}
                     onValueChange={(v) => v && setMetricSource(v)}
@@ -225,7 +208,7 @@ export function GoalsClient({ goals }: { goals: GoalWithPacing[] }) {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label className="text-[12px]">Target value</Label>
+                  <Label className="text-[13px]">Target value</Label>
                   <Input
                     type="number"
                     step="0.01"
@@ -235,7 +218,7 @@ export function GoalsClient({ goals }: { goals: GoalWithPacing[] }) {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-[12px]">Deadline</Label>
+                  <Label className="text-[13px]">Deadline</Label>
                   <Input
                     type="date"
                     value={deadline}
@@ -256,10 +239,10 @@ export function GoalsClient({ goals }: { goals: GoalWithPacing[] }) {
       {activeGoals.length === 0 && completedGoals.length === 0 ? (
         <Card>
           <CardContent className="py-16 text-center">
-            <p className="text-[13px] text-muted-foreground mb-1">
+            <p className="text-[14px] text-muted-foreground mb-1">
               No destinations set yet.
             </p>
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-[12px] text-muted-foreground">
               Create a goal to start tracking your pace toward it.
             </p>
           </CardContent>
@@ -285,14 +268,14 @@ export function GoalsClient({ goals }: { goals: GoalWithPacing[] }) {
             <Card key={goal.id} className="opacity-50">
               <CardContent className="py-2.5 px-4">
                 <div className="flex items-center gap-2">
-                  <CheckCircle className="h-3.5 w-3.5 text-green-500 shrink-0" />
-                  <span className="text-[13px] font-medium flex-1">{goal.title}</span>
+                  <CheckCircle className="h-3.5 w-3.5 text-success shrink-0" />
+                  <span className="text-[14px] font-medium flex-1">{goal.title}</span>
                   {goal.category && (
                     <span
-                      className="text-[9px] font-bold uppercase tracking-widest"
-                      style={{ color: platformColors[goal.category] ?? "#6b7280" }}
+                      className="text-[10px] font-bold uppercase tracking-widest"
+                      style={{ color: PLATFORM_COLORS[goal.category] ?? "var(--muted-foreground)" }}
                     >
-                      {platformLabels[goal.category] ?? goal.category}
+                      {PLATFORM_LABELS[goal.category] ?? goal.category}
                     </span>
                   )}
                   <button
@@ -321,33 +304,33 @@ function GoalCard({
   onDelete: (id: number) => void;
 }) {
   const progress = goal.pacing?.percentComplete ?? 0;
-  const color = platformColors[goal.category ?? "general"] ?? "#6b7280";
+  const color = PLATFORM_COLORS[goal.category ?? "general"] ?? "var(--muted-foreground)";
 
   return (
-    <Card className="overflow-hidden group">
-      <div className="h-0.5" style={{ backgroundColor: color }} />
-      <CardContent className="pt-3 pb-3 px-4 space-y-2.5">
+    <Card className="overflow-hidden group gap-0 py-0">
+      <div className="h-[3px]" style={{ backgroundColor: color }} />
+      <CardContent className="pt-3.5 pb-3.5 px-4 space-y-2.5">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-[13px] tracking-tight truncate">{goal.title}</h3>
+              <h3 className="font-semibold text-[14px] tracking-tight truncate">{goal.title}</h3>
               {goal.category && (
                 <span
-                  className="text-[9px] font-bold uppercase tracking-widest shrink-0"
+                  className="text-[10px] font-bold uppercase tracking-widest shrink-0"
                   style={{ color }}
                 >
-                  {platformLabels[goal.category] ?? goal.category}
+                  {PLATFORM_LABELS[goal.category] ?? goal.category}
                 </span>
               )}
             </div>
             {goal.deadline && (
-              <p className="text-[11px] text-muted-foreground mt-0.5">
+              <p className="text-[12px] text-muted-foreground mt-0.5">
                 by {goal.deadline}
               </p>
             )}
           </div>
           <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-            <button onClick={() => onComplete(goal.id)} className="p-1 hover:text-green-400 text-muted-foreground transition-colors">
+            <button onClick={() => onComplete(goal.id)} className="p-1 hover:text-success text-muted-foreground transition-colors">
               <CheckCircle className="h-3.5 w-3.5" />
             </button>
             <button onClick={() => onDelete(goal.id)} className="p-1 hover:text-destructive text-muted-foreground transition-colors">
@@ -358,7 +341,7 @@ function GoalCard({
 
         {goal.targetValue != null && (
           <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-[11px]">
+            <div className="flex items-center justify-between text-[12px]">
               <span className="text-muted-foreground tabular-nums">
                 {goal.currentValue ?? 0} / {goal.targetValue}
               </span>
@@ -376,7 +359,7 @@ function GoalCard({
         )}
 
         {goal.pacing && (
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted-foreground">
             <span className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
               {goal.pacing.daysRemaining}d left
@@ -393,20 +376,20 @@ function GoalCard({
         )}
 
         {goal.metricSource && (
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-[11px] text-muted-foreground">
             Auto-tracked:{" "}
             {METRIC_SOURCES[goal.metricSource as MetricSourceKey]?.label ?? goal.metricSource}
           </p>
         )}
 
         {goal.milestones.length > 0 && (
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1.5">
             {goal.milestones.map((m) => (
               <span
                 key={m.id}
-                className={`text-[10px] px-1.5 py-0.5 rounded-sm border ${
+                className={`text-[11px] px-1.5 py-0.5 rounded-sm border ${
                   m.reachedAt
-                    ? "border-green-500/30 text-green-500"
+                    ? "border-success/30 text-success"
                     : "border-border text-muted-foreground"
                 }`}
               >
@@ -422,21 +405,21 @@ function GoalCard({
 
 function PaceStatus({ pacing }: { pacing: NonNullable<GoalWithPacing["pacing"]> }) {
   if (pacing.percentComplete >= 100) {
-    return <Badge variant="secondary" className="bg-green-500/10 text-green-400 border-green-500/20">Complete</Badge>;
+    return <Badge variant="success">Complete</Badge>;
   }
   if (pacing.requiredPace === "Overdue") {
     return (
-      <Badge variant="secondary" className="bg-red-500/10 text-red-400 border-red-500/20">
+      <Badge variant="danger">
         <AlertTriangle className="h-2.5 w-2.5 mr-0.5" />
         Overdue
       </Badge>
     );
   }
   if (pacing.onTrack) {
-    return <Badge variant="secondary" className="bg-green-500/10 text-green-400 border-green-500/20">On track</Badge>;
+    return <Badge variant="success">On track</Badge>;
   }
   return (
-    <Badge variant="secondary" className="bg-amber-500/10 text-amber-400 border-amber-500/20">
+    <Badge variant="warning">
       <AlertTriangle className="h-2.5 w-2.5 mr-0.5" />
       Behind
     </Badge>

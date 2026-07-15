@@ -130,19 +130,19 @@ export function SettingsClient({
     }
   }
 
-  const statusColor: Record<string, string> = {
-    success: "bg-green-500/10 text-green-400",
-    error: "bg-red-500/10 text-red-400",
-    running: "bg-amber-500/10 text-amber-400",
-    skipped: "bg-muted text-muted-foreground",
+  const statusVariant: Record<string, "success" | "danger" | "warning" | "outline"> = {
+    success: "success",
+    error: "danger",
+    running: "warning",
+    skipped: "outline",
   };
 
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Settings</h1>
-          <p className="text-[13px] text-muted-foreground mt-0.5">
+          <h1 className="page-title">Settings</h1>
+          <p className="page-subtitle mt-1">
             Configure your platform connections and preferences
           </p>
         </div>
@@ -248,7 +248,7 @@ export function SettingsClient({
               <p className="section-label">Sync history</p>
             </div>
             {recentSyncs.length === 0 ? (
-              <p className="text-[13px] text-muted-foreground">
+              <p className="text-[14px] text-muted-foreground">
                 No syncs yet. Configure your platforms above and hit Sync.
               </p>
             ) : (
@@ -257,9 +257,9 @@ export function SettingsClient({
                   {recentSyncs.map((sync) => (
                     <div
                       key={sync.id}
-                      className="flex items-center gap-2.5 px-3 py-2 rounded-sm border border-border text-[12px]"
+                      className="flex items-center gap-2.5 px-3 py-2.5 rounded-sm border border-border text-[13px]"
                     >
-                      <Badge variant="secondary" className={statusColor[sync.status] ?? ""}>
+                      <Badge variant={statusVariant[sync.status] ?? "secondary"}>
                         {sync.status}
                       </Badge>
                       <span className="font-medium">{sync.platform}</span>
@@ -267,11 +267,11 @@ export function SettingsClient({
                         {sync.itemsSynced ?? 0} items
                       </span>
                       {sync.error && (
-                        <span className="text-destructive truncate max-w-[180px] text-[11px]">
+                        <span className="text-destructive truncate max-w-[180px] text-[12px]">
                           {sync.error}
                         </span>
                       )}
-                      <span className="ml-auto text-[11px] text-muted-foreground tabular-nums">
+                      <span className="ml-auto text-[12px] text-muted-foreground tabular-nums">
                         {new Date(sync.startedAt).toLocaleString()}
                       </span>
                     </div>
@@ -304,13 +304,13 @@ function PlatformSection({
       <CardContent className="pt-4 pb-4 px-4 space-y-3">
         <div className="flex items-center gap-2">
           <span className="text-muted-foreground">{icon}</span>
-          <span className="text-[13px] font-semibold tracking-tight">{name}</span>
-          <Badge variant="secondary" className={configured ? "bg-green-500/10 text-green-400" : ""}>
+          <span className="text-[15px] font-semibold tracking-tight">{name}</span>
+          <Badge variant={configured ? "success" : "outline"}>
             {configured ? "Configured" : "Not set"}
           </Badge>
         </div>
         {children}
-        <p className="text-[11px] text-muted-foreground">{hint}</p>
+        <p className="text-[12px] text-muted-foreground">{hint}</p>
       </CardContent>
     </Card>
   );
@@ -331,7 +331,7 @@ function Field({
 }) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-[12px]">{label}</Label>
+      <Label className="text-[13px]">{label}</Label>
       <Input
         type={type}
         value={value}

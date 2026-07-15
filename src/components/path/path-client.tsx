@@ -17,6 +17,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import type { GuidanceResult, Recommendation, GoalWithPacing } from "@/lib/guidance/engine";
+import { PLATFORM_COLORS } from "@/lib/platform-colors";
 
 interface PinnedTask {
   id: number;
@@ -40,18 +41,10 @@ interface PathClientProps {
   lastSync: string | null;
 }
 
-const priorityColors: Record<string, string> = {
-  high: "bg-red-500/10 text-red-400 border-red-500/20",
-  medium: "bg-amber-500/10 text-amber-400 border-amber-500/20",
-  low: "bg-blue-500/10 text-blue-400 border-blue-500/20",
-};
-
-const platformDots: Record<string, string> = {
-  "42": "#00babc",
-  thm: "#ef4444",
-  htb: "#9fef00",
-  rootme: "#f59e0b",
-  maldev: "#a855f7",
+const priorityVariant: Record<string, "danger" | "warning" | "info"> = {
+  high: "danger",
+  medium: "warning",
+  low: "info",
 };
 
 export function PathClient({ guidance, pinnedTasks: initialPinned, platforms, lastSync }: PathClientProps) {
@@ -136,22 +129,22 @@ export function PathClient({ guidance, pinnedTasks: initialPinned, platforms, la
     <div className="space-y-5">
       {/* Header */}
       <div>
-        <h1 className="text-xl font-semibold tracking-tight">Learning path</h1>
-        <p className="text-[13px] text-muted-foreground mt-0.5">
+        <h1 className="page-title">Learning path</h1>
+        <p className="page-subtitle mt-1">
           Your personalized guidance based on current progress and goals
         </p>
       </div>
 
       {/* Behind-on-goal alerts */}
       {behindGoals.map((g) => (
-        <div key={g.id} className="flex items-start gap-3 rounded-sm border border-red-500/20 bg-red-500/5 px-4 py-3">
-          <AlertTriangle className="h-3.5 w-3.5 text-red-400 mt-0.5 shrink-0" />
+        <div key={g.id} className="flex items-start gap-3 rounded-sm border border-danger/25 bg-danger/8 px-4 py-3">
+          <AlertTriangle className="h-4 w-4 text-danger mt-0.5 shrink-0" />
           <div>
-            <p className="text-[13px] font-medium text-red-400">
+            <p className="text-[14px] font-medium text-danger">
               Behind on &ldquo;{g.title}&rdquo;
             </p>
             {g.pacing && (
-              <p className="text-[11px] text-muted-foreground mt-0.5">
+              <p className="text-[12px] text-muted-foreground mt-0.5">
                 {g.pacing.percentComplete.toFixed(0)}% done, {g.pacing.daysRemaining}d left
                 {g.pacing.requiredPace !== "Complete!" &&
                   g.pacing.requiredPace !== "Overdue" &&
@@ -176,17 +169,17 @@ export function PathClient({ guidance, pinnedTasks: initialPinned, platforms, la
                 {pinned.map((task) => (
                   <div
                     key={`pin-${task.id}`}
-                    className="flex items-center gap-2.5 px-3 py-2 rounded-sm border border-border group"
+                    className="flex items-center gap-2.5 px-3 py-2.5 rounded-sm border border-border group"
                   >
-                    <Pin className="h-3 w-3 text-muted-foreground shrink-0" />
-                    <span className="text-[13px] font-medium flex-1 min-w-0 truncate">{task.title}</span>
-                    <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Pinned</span>
+                    <Pin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <span className="text-[14px] font-medium flex-1 min-w-0 truncate">{task.title}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Pinned</span>
                     <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => completePinnedTask(task.id)} className="p-1 hover:text-green-400 text-muted-foreground transition-colors">
-                        <Check className="h-3 w-3" />
+                      <button onClick={() => completePinnedTask(task.id)} className="p-1 hover:text-success text-muted-foreground transition-colors">
+                        <Check className="h-3.5 w-3.5" />
                       </button>
-                      <button onClick={() => deletePinnedTask(task.id)} className="p-1 hover:text-red-400 text-muted-foreground transition-colors">
-                        <X className="h-3 w-3" />
+                      <button onClick={() => deletePinnedTask(task.id)} className="p-1 hover:text-danger text-muted-foreground transition-colors">
+                        <X className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   </div>
@@ -194,7 +187,7 @@ export function PathClient({ guidance, pinnedTasks: initialPinned, platforms, la
 
                 {/* Recommendations */}
                 {recommendations.length === 0 && pinned.length === 0 ? (
-                  <p className="text-[13px] text-muted-foreground text-center py-10">
+                  <p className="text-[14px] text-muted-foreground text-center py-10">
                     Sync your platforms and set goals to get recommendations.
                   </p>
                 ) : (
@@ -211,7 +204,7 @@ export function PathClient({ guidance, pinnedTasks: initialPinned, platforms, la
                     value={newTask}
                     onChange={(e) => setNewTask(e.target.value)}
                     placeholder="Personal task..."
-                    className="h-7 text-[12px]"
+                    className="h-8 text-[13px]"
                     onKeyDown={(e) => e.key === "Enter" && addPinnedTask()}
                     autoFocus
                   />
@@ -223,9 +216,9 @@ export function PathClient({ guidance, pinnedTasks: initialPinned, platforms, la
               ) : (
                 <button
                   onClick={() => setShowAddTask(true)}
-                  className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground mt-3 transition-colors"
+                  className="flex items-center gap-1.5 text-[12px] text-muted-foreground hover:text-foreground mt-3 transition-colors"
                 >
-                  <Plus className="h-3 w-3" />
+                  <Plus className="h-3.5 w-3.5" />
                   Pin a personal task
                 </button>
               )}
@@ -254,19 +247,19 @@ export function PathClient({ guidance, pinnedTasks: initialPinned, platforms, la
 
               {llmAdvice ? (
                 <div
-                  className="text-[13px] text-muted-foreground leading-relaxed [&_strong]:text-foreground [&_h3]:text-foreground [&_h3]:font-semibold [&_h3]:text-[13px] [&_h3]:mt-3 [&_h3]:mb-1 [&_li]:ml-3 [&_li]:list-disc"
+                  className="text-[14px] text-muted-foreground leading-relaxed [&_strong]:text-foreground [&_h3]:text-foreground [&_h3]:font-semibold [&_h3]:text-[14px] [&_h3]:mt-3 [&_h3]:mb-1 [&_li]:ml-3 [&_li]:list-disc"
                   dangerouslySetInnerHTML={{ __html: renderMarkdown(llmAdvice) }}
                 />
               ) : llmError ? (
                 <div>
-                  <p className="text-[13px] text-destructive">{llmError}</p>
-                  <p className="text-[11px] text-muted-foreground mt-1">
+                  <p className="text-[14px] text-destructive">{llmError}</p>
+                  <p className="text-[12px] text-muted-foreground mt-1">
                     Configure your Anthropic API key in Settings to enable AI guidance.
                   </p>
                 </div>
               ) : (
                 <div className="text-center py-6">
-                  <p className="text-[13px] text-muted-foreground mb-3">
+                  <p className="text-[14px] text-muted-foreground mb-3">
                     Get personalized learning advice powered by Claude
                   </p>
                   <Button onClick={fetchLlmAdvice} disabled={loadingLlm} size="sm">
@@ -293,31 +286,31 @@ export function PathClient({ guidance, pinnedTasks: initialPinned, platforms, la
         <div className="space-y-5">
           <Card>
             <CardContent className="pt-4 pb-3 px-4">
-              <p className="section-label mb-2.5">Platforms</p>
-              <div className="space-y-2">
-                <StatusRow color="#00babc" label="42" value={platforms.ft ? `Lvl ${(platforms.ft.level ?? 0).toFixed(1)}` : "—"} />
-                <StatusRow color="#ef4444" label="THM" value={platforms.thm ? `#${(platforms.thm.rank ?? "?").toLocaleString()}` : "—"} />
-                <StatusRow color="#9fef00" label="HTB" value={platforms.htb ? (platforms.htb.rank ?? "—") : "—"} />
-                <StatusRow color="#f59e0b" label="Root-me" value={platforms.rootme ? `${(platforms.rootme.score ?? 0).toLocaleString()} pts` : "—"} />
-                <StatusRow color="#a855f7" label="Maldev" value={platforms.maldev ? `${(platforms.maldev.progress ?? 0).toFixed(0)}%` : "—"} />
+              <p className="section-label mb-3">Platforms</p>
+              <div className="space-y-2.5">
+                <StatusRow color={PLATFORM_COLORS["42"]} label="42" value={platforms.ft ? `Lvl ${(platforms.ft.level ?? 0).toFixed(1)}` : "—"} />
+                <StatusRow color={PLATFORM_COLORS.thm} label="THM" value={platforms.thm ? `#${(platforms.thm.rank ?? "?").toLocaleString()}` : "—"} />
+                <StatusRow color={PLATFORM_COLORS.htb} label="HTB" value={platforms.htb ? (platforms.htb.rank ?? "—") : "—"} />
+                <StatusRow color={PLATFORM_COLORS.rootme} label="Root-me" value={platforms.rootme ? `${(platforms.rootme.score ?? 0).toLocaleString()} pts` : "—"} />
+                <StatusRow color={PLATFORM_COLORS.maldev} label="Maldev" value={platforms.maldev ? `${(platforms.maldev.progress ?? 0).toFixed(0)}%` : "—"} />
               </div>
 
               {nextDeadline?.pacing && (
                 <>
-                  <div className="border-t border-border my-3" />
+                  <div className="border-t border-border my-3.5" />
                   <div>
                     <p className="section-label">Next deadline</p>
-                    <p className="text-[12px] font-medium mt-1 truncate">{nextDeadline.title}</p>
+                    <p className="text-[13px] font-medium mt-1.5 truncate">{nextDeadline.title}</p>
                     <div className="progress-track mt-2">
                       <div
                         className="progress-fill"
                         style={{
                           width: `${nextDeadline.pacing.percentComplete}%`,
-                          backgroundColor: nextDeadline.pacing.onTrack ? "#22c55e" : "#ef4444",
+                          backgroundColor: nextDeadline.pacing.onTrack ? "var(--status-success)" : "var(--status-danger)",
                         }}
                       />
                     </div>
-                    <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+                    <div className="flex justify-between text-[11px] text-muted-foreground mt-1.5">
                       <span>{nextDeadline.pacing.percentComplete.toFixed(0)}%</span>
                       <span>{nextDeadline.pacing.daysRemaining}d left</span>
                     </div>
@@ -325,9 +318,9 @@ export function PathClient({ guidance, pinnedTasks: initialPinned, platforms, la
                 </>
               )}
 
-              <div className="border-t border-border my-3" />
+              <div className="border-t border-border my-3.5" />
               <div className="flex items-center justify-between">
-                <span className="text-[10px] text-muted-foreground">
+                <span className="text-[11px] text-muted-foreground">
                   {lastSync ? `Synced ${formatRelative(lastSync)}` : "Never synced"}
                 </span>
                 <Button variant="outline" size="xs" onClick={handleSync} disabled={syncing}>
@@ -345,8 +338,8 @@ export function PathClient({ guidance, pinnedTasks: initialPinned, platforms, la
 
 function StatusRow({ color, label, value }: { color: string; label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between text-[12px]">
-      <span className="flex items-center gap-1.5 text-muted-foreground">
+    <div className="flex items-center justify-between text-[13px]">
+      <span className="flex items-center gap-2 text-muted-foreground">
         <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
         {label}
       </span>
@@ -360,18 +353,18 @@ function RecommendationRow({ rec }: { rec: Recommendation }) {
     <div className="flex items-start gap-2.5 px-3 py-2.5 rounded-sm border border-border hover:bg-accent/30 transition-colors group">
       <span
         className="mt-1.5 h-2 w-2 rounded-full shrink-0"
-        style={{ backgroundColor: platformDots[rec.platform] ?? "#888" }}
+        style={{ backgroundColor: PLATFORM_COLORS[rec.platform] ?? "var(--muted-foreground)" }}
       />
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-0.5">
-          <span className="text-[13px] font-medium">{rec.title}</span>
-          <Badge variant="outline" className={priorityColors[rec.priority]}>
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-[14px] font-medium">{rec.title}</span>
+          <Badge variant={priorityVariant[rec.priority]}>
             {rec.priority}
           </Badge>
         </div>
-        <p className="text-[11px] text-muted-foreground leading-relaxed">{rec.reason}</p>
+        <p className="text-[12px] text-muted-foreground leading-relaxed">{rec.reason}</p>
         {rec.estimatedHours && (
-          <div className="flex items-center gap-1 mt-1 text-[11px] text-muted-foreground">
+          <div className="flex items-center gap-1 mt-1 text-[12px] text-muted-foreground">
             <Clock className="h-3 w-3" />
             ~{rec.estimatedHours}h
             {rec.skills && rec.skills.length > 0 && (
