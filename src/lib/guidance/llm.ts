@@ -30,7 +30,7 @@ function buildPrompt(guidance: GuidanceResult): string {
   lines.push("## Other Platforms");
   if (snapshot.thm.profile) {
     lines.push(
-      `TryHackMe: ${snapshot.thm.roomsCompleted} rooms, rank #${snapshot.thm.profile.rank ?? "?"}, streak ${snapshot.thm.profile.streak ?? 0}d`
+      `TryHackMe: ${snapshot.thm.roomsCompleted} rooms, top ${snapshot.thm.profile.rank ?? "?"}% of users, streak ${snapshot.thm.profile.streak ?? 0}d`
     );
   }
   if (snapshot.htb.profile) {

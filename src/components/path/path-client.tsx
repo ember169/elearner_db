@@ -289,7 +289,7 @@ export function PathClient({ guidance, pinnedTasks: initialPinned, platforms, la
               <p className="section-label mb-3">Platforms</p>
               <div className="space-y-2.5">
                 <StatusRow color={PLATFORM_COLORS["42"]} label="42" value={platforms.ft ? `Lvl ${(platforms.ft.level ?? 0).toFixed(1)}` : "—"} />
-                <StatusRow color={PLATFORM_COLORS.thm} label="THM" value={platforms.thm ? `#${(platforms.thm.rank ?? "?").toLocaleString()}` : "—"} />
+                <StatusRow color={PLATFORM_COLORS.thm} label="THM" value={platforms.thm ? `Top ${platforms.thm.rank ?? "?"}%` : "—"} />
                 <StatusRow color={PLATFORM_COLORS.htb} label="HTB" value={platforms.htb ? (platforms.htb.rank ?? "—") : "—"} />
                 <StatusRow color={PLATFORM_COLORS.rootme} label="Root-me" value={platforms.rootme ? `${(platforms.rootme.score ?? 0).toLocaleString()} pts` : "—"} />
                 <StatusRow color={PLATFORM_COLORS.maldev} label="Maldev" value={platforms.maldev ? `${(platforms.maldev.progress ?? 0).toFixed(0)}%` : "—"} />

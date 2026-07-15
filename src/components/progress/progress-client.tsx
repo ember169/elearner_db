@@ -124,7 +124,7 @@ export function ProgressClient({
         <PlatformCard
           color={PLATFORM_COLORS.thm}
           name="TryHackMe"
-          value={thm ? `#${(thm.rank ?? "?").toLocaleString()}` : "—"}
+          value={thm ? `Top ${thm.rank ?? "?"}%` : "—"}
           detail={thm ? `${thm.roomsCompleted ?? 0} rooms · ${thm.streak ?? 0}d streak` : "Not connected"}
         />
         <PlatformCard

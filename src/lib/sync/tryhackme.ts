@@ -26,22 +26,29 @@ export async function syncTryHackMe(config: Config) {
     }
   );
 
-  let profileData: Record<string, unknown> = {};
-  if (profileRes.ok) {
-    const json = await profileRes.json();
-    profileData = json.data ?? json;
+  const contentType = profileRes.headers.get("content-type") ?? "";
+  if (!profileRes.ok || !contentType.includes("application/json")) {
+    throw new Error(
+      `TryHackMe blocked this request (HTTP ${profileRes.status}). TryHackMe now fronts this endpoint with a JS bot-check that a server-side sync cannot pass — this is not a rate limit or a config issue here, it needs a different fetch strategy.`
+    );
   }
+
+  const json = await profileRes.json();
+  if (json.status !== "success" || !json.data) {
+    throw new Error("TryHackMe returned an unexpected response shape — their API may have changed.");
+  }
+  const profileData = json.data as Record<string, unknown>;
 
   // Upsert profile
   db.delete(thmProfile).run();
   db.insert(thmProfile)
     .values({
       username,
-      rank: (profileData.rank as number) ?? null,
-      rankTitle: (profileData.rankTitle as string) ?? null,
-      points: (profileData.points as number) ?? 0,
-      roomsCompleted: (profileData.roomsCompleted as number) ?? 0,
-      badgesCount: (profileData.badgesCount as number) ?? 0,
+      rank: (profileData.topPercentage as number) ?? null,
+      rankTitle: (profileData.rank as string) ?? null,
+      points: (profileData.totalPoints as number) ?? 0,
+      roomsCompleted: (profileData.completedRoomsNumber as number) ?? 0,
+      badgesCount: (profileData.badgesNumber as number) ?? 0,
       streak: (profileData.streak as number) ?? 0,
       level: (profileData.level as number) ?? 0,
     })
@@ -113,7 +120,7 @@ export async function syncTryHackMe(config: Config) {
     .values({
       platform: "thm",
       eventType: "sync",
-      title: `TryHackMe profile synced (${profileData.roomsCompleted ?? 0} rooms)`,
+      title: `TryHackMe profile synced (${profileData.completedRoomsNumber ?? 0} rooms)`,
       details: JSON.stringify(profileData),
     })
     .run();
@@ -121,9 +128,9 @@ export async function syncTryHackMe(config: Config) {
   return {
     itemsSynced,
     snapshot: {
-      rank: profileData.rank,
-      points: profileData.points,
-      roomsCompleted: profileData.roomsCompleted,
+      rank: profileData.topPercentage,
+      points: profileData.totalPoints,
+      roomsCompleted: profileData.completedRoomsNumber,
       streak: profileData.streak,
     },
   };
