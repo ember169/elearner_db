@@ -3,6 +3,9 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ && rm -rf /var/lib/apt/lists/*
 COPY package.json package-lock.json ./
 RUN npm ci
+# Force better-sqlite3 to compile from source against THIS image's Node (ABI 115),
+# overriding any prebuilt/host-provided binary so the ABI always matches the runtime.
+RUN npm rebuild better-sqlite3 --build-from-source
 
 FROM node:20-slim AS builder
 WORKDIR /app
