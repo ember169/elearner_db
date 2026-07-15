@@ -22,6 +22,7 @@ import {
   PLATFORM_SKILL_MAPPING,
   type FtProject,
 } from "./ft-project-tree";
+import { THM_ROOM_CATEGORIES } from "./thm-room-categories";
 import { syncGoalValues } from "@/lib/goals/metrics";
 
 export type PlatformSnapshot = {
@@ -33,6 +34,7 @@ export type PlatformSnapshot = {
   thm: {
     profile: typeof thmProfile.$inferSelect | null;
     roomsCompleted: number;
+    rooms: (typeof thmRooms.$inferSelect)[];
   };
   htb: {
     profile: typeof htbProfile.$inferSelect | null;
@@ -99,10 +101,11 @@ export function gatherSnapshot(): PlatformSnapshot {
     skills: db.select().from(ftSkills).all(),
   };
 
+  const thmRoomRows = db.select().from(thmRooms).all();
   const thm = {
     profile: db.select().from(thmProfile).limit(1).all()[0] ?? null,
-    roomsCompleted:
-      db.select().from(thmRooms).all().length,
+    roomsCompleted: thmRoomRows.length,
+    rooms: thmRoomRows,
   };
 
   const htb = {
@@ -286,6 +289,16 @@ export function buildSkillProfile(snapshot: PlatformSnapshot): Record<string, nu
 
   if (snapshot.thm.roomsCompleted > 0) {
     profile["security"] = (profile["security"] ?? 0) + snapshot.thm.roomsCompleted * 0.2;
+  }
+
+  for (const room of snapshot.thm.rooms) {
+    const category = THM_ROOM_CATEGORIES[room.roomCode];
+    if (!category) continue;
+    const mapped = PLATFORM_SKILL_MAPPING[category];
+    if (!mapped) continue;
+    for (const skill of mapped) {
+      profile[skill] = (profile[skill] ?? 0) + 0.5;
+    }
   }
 
   if (snapshot.maldev.profile) {

@@ -68,15 +68,17 @@ export async function syncTryHackMe(config: Config) {
     );
     if (roomsRes.ok) {
       const roomsJson = await roomsRes.json();
-      const rooms = roomsJson.data ?? roomsJson ?? [];
+      const rooms = roomsJson.data?.docs ?? [];
       if (Array.isArray(rooms)) {
         db.delete(thmRooms).run();
         for (const room of rooms) {
           db.insert(thmRooms)
             .values({
               roomCode: room.code ?? room.roomCode ?? "unknown",
-              roomName: room.name ?? room.title ?? "Unknown",
+              roomName: room.title ?? room.name ?? "Unknown",
               completedAt: room.completedAt ?? room.completed_at ?? null,
+              difficulty: room.difficulty ?? null,
+              roomType: room.type ?? null,
             })
             .run();
           itemsSynced++;

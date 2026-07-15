@@ -126,6 +126,8 @@ export const thmRooms = sqliteTable("thm_rooms", {
   roomCode: text("room_code").notNull(),
   roomName: text("room_name").notNull(),
   completedAt: text("completed_at"),
+  difficulty: text("difficulty"),
+  roomType: text("room_type"),
 });
 
 export const thmBadges = sqliteTable("thm_badges", {
