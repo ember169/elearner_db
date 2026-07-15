@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,7 +9,6 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Settings,
   GraduationCap,
   Shield,
   Terminal,
@@ -20,6 +19,7 @@ import {
   Save,
   Download,
   History,
+  ArrowRight,
 } from "lucide-react";
 
 interface Config {
@@ -64,9 +64,7 @@ export function SettingsClient({
   const [exporting, setExporting] = useState(false);
 
   const [ftClientId, setFtClientId] = useState(config.ftClientId ?? "");
-  const [ftClientSecret, setFtClientSecret] = useState(
-    config.ftClientSecret ?? ""
-  );
+  const [ftClientSecret, setFtClientSecret] = useState(config.ftClientSecret ?? "");
   const [ftUserId, setFtUserId] = useState(config.ftUserId ?? "");
   const [thmUsername, setThmUsername] = useState(config.thmUsername ?? "");
   const [htbApiToken, setHtbApiToken] = useState(config.htbApiToken ?? "");
@@ -120,9 +118,7 @@ export function SettingsClient({
     try {
       const res = await fetch("/api/settings");
       const data = await res.json();
-      const blob = new Blob([JSON.stringify(data, null, 2)], {
-        type: "application/json",
-      });
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -135,328 +131,147 @@ export function SettingsClient({
   }
 
   const statusColor: Record<string, string> = {
-    success: "bg-green-500/10 text-green-500",
-    error: "bg-red-500/10 text-red-500",
-    running: "bg-yellow-500/10 text-yellow-500",
-    skipped: "bg-gray-500/10 text-gray-500",
+    success: "bg-green-500/10 text-green-400",
+    error: "bg-red-500/10 text-red-400",
+    running: "bg-amber-500/10 text-amber-400",
+    skipped: "bg-muted text-muted-foreground",
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Settings</h1>
-          <p className="text-sm text-muted-foreground">
+          <h1 className="text-xl font-semibold tracking-tight">Settings</h1>
+          <p className="text-[13px] text-muted-foreground mt-0.5">
             Configure your platform connections and preferences
           </p>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={exportData}
-            disabled={exporting}
-          >
-            <Download className="h-4 w-4 mr-2" />
+          <Button variant="outline" size="sm" onClick={exportData} disabled={exporting}>
+            <Download className="h-3.5 w-3.5 mr-1.5" />
             Export
           </Button>
-          <Button onClick={saveSettings} size="sm" disabled={saving}>
-            <Save className="h-4 w-4 mr-2" />
+          <Button size="sm" onClick={saveSettings} disabled={saving}>
+            <Save className="h-3.5 w-3.5 mr-1.5" />
             {saving ? "Saving..." : "Save"}
+            <ArrowRight className="h-3 w-3 ml-1" />
           </Button>
         </div>
       </div>
 
-      {/* 42 Config */}
-      <Card>
-        <CardHeader className="pb-4">
-          <CardTitle className="text-base flex items-center gap-2">
-            <GraduationCap className="h-5 w-5" />
-            42 Paris
-            <Badge
-              variant="secondary"
-              className={ftClientId ? "bg-green-500/10 text-green-500" : ""}
-            >
-              {ftClientId ? "Configured" : "Not set"}
-            </Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label>Client ID</Label>
-              <Input
-                value={ftClientId}
-                onChange={(e) => setFtClientId(e.target.value)}
-                placeholder="Your 42 API client ID"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Client Secret</Label>
-              <Input
-                type="password"
-                value={ftClientSecret}
-                onChange={(e) => setFtClientSecret(e.target.value)}
-                placeholder="Your 42 API client secret"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>User ID (login)</Label>
-              <Input
-                value={ftUserId}
-                onChange={(e) => setFtUserId(e.target.value)}
-                placeholder="Your 42 login"
-              />
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Get your API credentials at{" "}
-            <span className="font-mono">
-              profile.intra.42.fr/oauth/applications
-            </span>
-          </p>
-        </CardContent>
-      </Card>
+      {/* Platform sections */}
+      <PlatformSection
+        icon={<GraduationCap className="h-4 w-4" />}
+        name="42 Paris"
+        configured={!!ftClientId}
+        hint="Get your API credentials at profile.intra.42.fr/oauth/applications"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <Field label="Client ID" value={ftClientId} onChange={setFtClientId} placeholder="Your 42 API client ID" />
+          <Field label="Client Secret" value={ftClientSecret} onChange={setFtClientSecret} placeholder="Your 42 API client secret" type="password" />
+          <Field label="User ID (login)" value={ftUserId} onChange={setFtUserId} placeholder="Your 42 login" />
+        </div>
+      </PlatformSection>
 
-      {/* TryHackMe Config */}
-      <Card>
-        <CardHeader className="pb-4">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Shield className="h-5 w-5" />
-            TryHackMe
-            <Badge
-              variant="secondary"
-              className={thmUsername ? "bg-green-500/10 text-green-500" : ""}
-            >
-              {thmUsername ? "Configured" : "Not set"}
-            </Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Username</Label>
-            <Input
-              value={thmUsername}
-              onChange={(e) => setThmUsername(e.target.value)}
-              placeholder="Your TryHackMe username"
-            />
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Your public TryHackMe username (profile must be public)
-          </p>
-        </CardContent>
-      </Card>
+      <PlatformSection
+        icon={<Shield className="h-4 w-4" />}
+        name="TryHackMe"
+        configured={!!thmUsername}
+        hint="Your public TryHackMe username (profile must be public)"
+      >
+        <Field label="Username" value={thmUsername} onChange={setThmUsername} placeholder="Your TryHackMe username" />
+      </PlatformSection>
 
-      {/* HackTheBox Config */}
-      <Card>
-        <CardHeader className="pb-4">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Terminal className="h-5 w-5" />
-            HackTheBox
-            <Badge
-              variant="secondary"
-              className={htbApiToken ? "bg-green-500/10 text-green-500" : ""}
-            >
-              {htbApiToken ? "Configured" : "Not set"}
-            </Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>API Token</Label>
-              <Input
-                type="password"
-                value={htbApiToken}
-                onChange={(e) => setHtbApiToken(e.target.value)}
-                placeholder="Your HTB API token"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>User ID</Label>
-              <Input
-                value={htbUserId}
-                onChange={(e) => setHtbUserId(e.target.value)}
-                placeholder="Your HTB user ID"
-              />
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Get your API token from HTB Settings &gt; App Tokens
-          </p>
-        </CardContent>
-      </Card>
+      <PlatformSection
+        icon={<Terminal className="h-4 w-4" />}
+        name="HackTheBox"
+        configured={!!htbApiToken}
+        hint="Get your API token from HTB Settings > App Tokens"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <Field label="API Token" value={htbApiToken} onChange={setHtbApiToken} placeholder="Your HTB API token" type="password" />
+          <Field label="User ID" value={htbUserId} onChange={setHtbUserId} placeholder="Your HTB user ID" />
+        </div>
+      </PlatformSection>
 
-      {/* Root-me Config */}
-      <Card>
-        <CardHeader className="pb-4">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Flag className="h-5 w-5" />
-            Root-me
-            <Badge
-              variant="secondary"
-              className={rootmeUserId ? "bg-green-500/10 text-green-500" : ""}
-            >
-              {rootmeUserId ? "Configured" : "Not set"}
-            </Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label>User ID</Label>
-              <Input
-                value={rootmeUserId}
-                onChange={(e) => setRootmeUserId(e.target.value)}
-                placeholder="Your Root-me user ID"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>API Key</Label>
-              <Input
-                type="password"
-                value={rootmeApiKey}
-                onChange={(e) => setRootmeApiKey(e.target.value)}
-                placeholder="Your Root-me API key"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Session Cookie (alt)</Label>
-              <Input
-                type="password"
-                value={rootmeCookie}
-                onChange={(e) => setRootmeCookie(e.target.value)}
-                placeholder="spip_session value"
-              />
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Provide either an API key or your spip_session cookie for authentication
-          </p>
-        </CardContent>
-      </Card>
+      <PlatformSection
+        icon={<Flag className="h-4 w-4" />}
+        name="Root-me"
+        configured={!!rootmeUserId}
+        hint="Provide either an API key or your spip_session cookie for authentication"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <Field label="User ID" value={rootmeUserId} onChange={setRootmeUserId} placeholder="Your Root-me user ID" />
+          <Field label="API Key" value={rootmeApiKey} onChange={setRootmeApiKey} placeholder="Your Root-me API key" type="password" />
+          <Field label="Session Cookie (alt)" value={rootmeCookie} onChange={setRootmeCookie} placeholder="spip_session value" type="password" />
+        </div>
+      </PlatformSection>
 
-      {/* Maldev Config */}
-      <Card>
-        <CardHeader className="pb-4">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Bug className="h-5 w-5" />
-            Maldev Elearning
-            <Badge
-              variant="secondary"
-              className={maldevDbPath ? "bg-green-500/10 text-green-500" : ""}
-            >
-              {maldevDbPath ? "Configured" : "Not set"}
-            </Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Database Path</Label>
-            <Input
-              value={maldevDbPath}
-              onChange={(e) => setMaldevDbPath(e.target.value)}
-              placeholder="/path/to/maldev/elearning.db"
-            />
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Absolute path to your maldev elearning SQLite database
-          </p>
-        </CardContent>
-      </Card>
+      <PlatformSection
+        icon={<Bug className="h-4 w-4" />}
+        name="Maldev Elearning"
+        configured={!!maldevDbPath}
+        hint="Absolute path to your maldev elearning SQLite database"
+      >
+        <Field label="Database Path" value={maldevDbPath} onChange={setMaldevDbPath} placeholder="/path/to/maldev/elearning.db" />
+      </PlatformSection>
 
-      {/* LLM Config */}
-      <Card>
-        <CardHeader className="pb-4">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Brain className="h-5 w-5" />
-            AI Guidance
-            <Badge
-              variant="secondary"
-              className={llmApiKey ? "bg-green-500/10 text-green-500" : ""}
-            >
-              {llmApiKey ? "Configured" : "Not set"}
-            </Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Anthropic API Key</Label>
-              <Input
-                type="password"
-                value={llmApiKey}
-                onChange={(e) => setLlmApiKey(e.target.value)}
-                placeholder="sk-ant-..."
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Model</Label>
-              <Input
-                value={llmModel}
-                onChange={(e) => setLlmModel(e.target.value)}
-                placeholder="claude-sonnet-5"
-              />
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Powers the personalized learning path recommendations on the Path page
-          </p>
-        </CardContent>
-      </Card>
+      <PlatformSection
+        icon={<Brain className="h-4 w-4" />}
+        name="AI Guidance"
+        configured={!!llmApiKey}
+        hint="Powers the personalized learning path recommendations on the Path page"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <Field label="Anthropic API Key" value={llmApiKey} onChange={setLlmApiKey} placeholder="sk-ant-..." type="password" />
+          <Field label="Model" value={llmModel} onChange={setLlmModel} placeholder="claude-sonnet-5" />
+        </div>
+      </PlatformSection>
 
-      {/* Sync Controls */}
+      {/* Sync */}
       <Card>
-        <CardHeader className="pb-4">
-          <CardTitle className="text-base flex items-center gap-2">
-            <RefreshCw className="h-5 w-5" />
-            Sync
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Button onClick={triggerSync} disabled={syncing}>
-            <RefreshCw
-              className={`h-4 w-4 mr-2 ${syncing ? "animate-spin" : ""}`}
-            />
-            {syncing ? "Syncing all platforms..." : "Sync Now"}
+        <CardContent className="pt-4 pb-4 px-4 space-y-4">
+          <div className="flex items-center gap-2">
+            <RefreshCw className="h-4 w-4 text-muted-foreground" />
+            <p className="section-label">Sync</p>
+          </div>
+          <Button onClick={triggerSync} disabled={syncing} size="sm">
+            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${syncing ? "animate-spin" : ""}`} />
+            {syncing ? "Syncing all platforms..." : "Sync now"}
           </Button>
 
           <Separator />
 
-          {/* Sync History */}
           <div>
-            <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
-              <History className="h-4 w-4" />
-              Sync History
-            </h3>
+            <div className="flex items-center gap-2 mb-3">
+              <History className="h-3.5 w-3.5 text-muted-foreground" />
+              <p className="section-label">Sync history</p>
+            </div>
             {recentSyncs.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-[13px] text-muted-foreground">
                 No syncs yet. Configure your platforms above and hit Sync.
               </p>
             ) : (
-              <ScrollArea className="h-[250px]">
-                <div className="space-y-2">
+              <ScrollArea className="h-[200px]">
+                <div className="space-y-1.5">
                   {recentSyncs.map((sync) => (
                     <div
                       key={sync.id}
-                      className="flex items-center gap-3 p-2 rounded-lg border border-border text-sm"
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-sm border border-border text-[12px]"
                     >
-                      <Badge
-                        variant="secondary"
-                        className={statusColor[sync.status] ?? ""}
-                      >
+                      <Badge variant="secondary" className={statusColor[sync.status] ?? ""}>
                         {sync.status}
                       </Badge>
                       <span className="font-medium">{sync.platform}</span>
-                      <span className="text-muted-foreground">
+                      <span className="text-muted-foreground tabular-nums">
                         {sync.itemsSynced ?? 0} items
                       </span>
                       {sync.error && (
-                        <span className="text-xs text-destructive truncate max-w-[200px]">
+                        <span className="text-destructive truncate max-w-[180px] text-[11px]">
                           {sync.error}
                         </span>
                       )}
-                      <span className="ml-auto text-xs text-muted-foreground">
+                      <span className="ml-auto text-[11px] text-muted-foreground tabular-nums">
                         {new Date(sync.startedAt).toLocaleString()}
                       </span>
                     </div>
@@ -467,6 +282,62 @@ export function SettingsClient({
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function PlatformSection({
+  icon,
+  name,
+  configured,
+  hint,
+  children,
+}: {
+  icon: React.ReactNode;
+  name: string;
+  configured: boolean;
+  hint: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Card>
+      <CardContent className="pt-4 pb-4 px-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <span className="text-muted-foreground">{icon}</span>
+          <span className="text-[13px] font-semibold tracking-tight">{name}</span>
+          <Badge variant="secondary" className={configured ? "bg-green-500/10 text-green-400" : ""}>
+            {configured ? "Configured" : "Not set"}
+          </Badge>
+        </div>
+        {children}
+        <p className="text-[11px] text-muted-foreground">{hint}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function Field({
+  label,
+  value,
+  onChange,
+  placeholder,
+  type = "text",
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  type?: string;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-[12px]">{label}</Label>
+      <Input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+      />
     </div>
   );
 }

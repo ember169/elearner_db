@@ -34,9 +34,10 @@ export default function RootLayout({
       <body className="min-h-full bg-background text-foreground">
         <ThemeProvider>
           <TooltipProvider>
+            <div className="grid-bg fixed inset-0 pointer-events-none" />
             <Sidebar />
-            <main className="md:pl-64 min-h-screen">
-              <div className="p-6 md:p-8">{children}</div>
+            <main className="md:pl-56 min-h-screen relative">
+              <div className="px-5 py-6 md:px-8 md:py-8 max-w-5xl">{children}</div>
             </main>
           </TooltipProvider>
         </ThemeProvider>

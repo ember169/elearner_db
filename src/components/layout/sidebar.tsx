@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -35,19 +34,17 @@ export function Sidebar() {
   return (
     <>
       {/* Mobile toggle */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="fixed top-4 left-4 z-50 md:hidden"
+      <button
+        className="fixed top-4 left-4 z-50 md:hidden p-1.5 rounded-sm border border-border bg-background/80 backdrop-blur-sm"
         onClick={() => setMobileOpen(!mobileOpen)}
       >
-        {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-      </Button>
+        {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+      </button>
 
       {/* Overlay */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black/50 md:hidden"
+          className="fixed inset-0 z-30 bg-black/60 md:hidden"
           onClick={() => setMobileOpen(false)}
         />
       )}
@@ -55,57 +52,58 @@ export function Sidebar() {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-border bg-sidebar transition-transform duration-200 md:translate-x-0",
+          "fixed inset-y-0 left-0 z-40 flex w-56 flex-col border-r border-border bg-sidebar transition-transform duration-200 md:translate-x-0",
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className="flex h-14 items-center gap-2.5 border-b border-border px-6">
-          <div className="h-7 w-7 rounded-md bg-primary/15 flex items-center justify-center">
-            <span className="text-primary font-bold text-xs tracking-tight">L</span>
+        <div className="flex h-12 items-center gap-2 border-b border-border px-5">
+          <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
+            <span className="text-primary-foreground font-bold text-[9px]">L</span>
           </div>
-          <span className="font-semibold text-sm tracking-tight">Learner DB</span>
+          <span className="font-semibold text-[13px] tracking-tight">Learner DB</span>
         </div>
 
-        <nav className="flex-1 space-y-0.5 px-3 py-4">
-          {navItems.map((item) => {
-            const isActive =
-              item.href === "/"
-                ? pathname === "/"
-                : pathname.startsWith(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setMobileOpen(false)}
-                className={cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2 text-[13px] font-medium transition-colors",
-                  isActive
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                )}
-              >
-                <item.icon className="h-4 w-4" />
-                {item.label}
-              </Link>
-            );
-          })}
+        <nav className="flex-1 px-3 py-4">
+          <p className="section-label px-2.5 mb-2">Navigate</p>
+          <div className="space-y-0.5">
+            {navItems.map((item) => {
+              const isActive =
+                item.href === "/"
+                  ? pathname === "/"
+                  : pathname.startsWith(item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMobileOpen(false)}
+                  className={cn(
+                    "flex items-center gap-2.5 rounded-sm px-2.5 py-1.5 text-[13px] font-medium transition-colors",
+                    isActive
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                  )}
+                >
+                  <item.icon className="h-3.5 w-3.5" />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
         </nav>
 
         <div className="border-t border-border px-3 py-3">
           {mounted && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start gap-3 text-muted-foreground text-[13px] hover:text-foreground"
+            <button
+              className="flex w-full items-center gap-2.5 rounded-sm px-2.5 py-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors"
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             >
               {theme === "dark" ? (
-                <Sun className="h-4 w-4" />
+                <Sun className="h-3.5 w-3.5" />
               ) : (
-                <Moon className="h-4 w-4" />
+                <Moon className="h-3.5 w-3.5" />
               )}
-              {theme === "dark" ? "Light Mode" : "Dark Mode"}
-            </Button>
+              {theme === "dark" ? "Light mode" : "Dark mode"}
+            </button>
           )}
         </div>
       </aside>

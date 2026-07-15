@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
-  Compass,
   AlertTriangle,
   Clock,
   Sparkles,
@@ -15,6 +14,7 @@ import {
   X,
   Pin,
   Check,
+  ArrowRight,
 } from "lucide-react";
 import type { GuidanceResult, Recommendation, GoalWithPacing } from "@/lib/guidance/engine";
 
@@ -40,10 +40,10 @@ interface PathClientProps {
   lastSync: string | null;
 }
 
-const priorityStyles = {
-  high: "bg-red-500/10 text-red-500",
-  medium: "bg-yellow-500/10 text-yellow-500",
-  low: "bg-blue-500/10 text-blue-500",
+const priorityColors: Record<string, string> = {
+  high: "bg-red-500/10 text-red-400 border-red-500/20",
+  medium: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+  low: "bg-blue-500/10 text-blue-400 border-blue-500/20",
 };
 
 const platformDots: Record<string, string> = {
@@ -133,129 +133,97 @@ export function PathClient({ guidance, pinnedTasks: initialPinned, platforms, la
     .sort((a, b) => (a.pacing!.daysRemaining > b.pacing!.daysRemaining ? 1 : -1))[0];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Compass className="h-6 w-6" />
-          Learning path
-        </h1>
-        <p className="text-sm text-muted-foreground">
+        <h1 className="text-xl font-semibold tracking-tight">Learning path</h1>
+        <p className="text-[13px] text-muted-foreground mt-0.5">
           Your personalized guidance based on current progress and goals
         </p>
       </div>
 
-      {/* Behind-on-goal alert */}
+      {/* Behind-on-goal alerts */}
       {behindGoals.map((g) => (
-        <Card key={g.id} className="border-red-500/30 bg-red-500/5">
-          <CardContent className="py-3 px-4">
-            <div className="flex items-start gap-2.5">
-              <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
-              <div>
-                <p className="text-sm font-medium text-red-500">
-                  Behind on &ldquo;{g.title}&rdquo;
-                </p>
-                {g.pacing && (
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {g.pacing.percentComplete.toFixed(0)}% done, {g.pacing.daysRemaining}d left
-                    {g.pacing.requiredPace !== "Complete!" &&
-                      g.pacing.requiredPace !== "Overdue" &&
-                      ` — need ${g.pacing.requiredPace}`}
-                  </p>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div key={g.id} className="flex items-start gap-3 rounded-sm border border-red-500/20 bg-red-500/5 px-4 py-3">
+          <AlertTriangle className="h-3.5 w-3.5 text-red-400 mt-0.5 shrink-0" />
+          <div>
+            <p className="text-[13px] font-medium text-red-400">
+              Behind on &ldquo;{g.title}&rdquo;
+            </p>
+            {g.pacing && (
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                {g.pacing.percentComplete.toFixed(0)}% done, {g.pacing.daysRemaining}d left
+                {g.pacing.requiredPace !== "Complete!" &&
+                  g.pacing.requiredPace !== "Overdue" &&
+                  ` — need ${g.pacing.requiredPace}`}
+              </p>
+            )}
+          </div>
+        </div>
       ))}
 
-      {/* Main grid: Focus Queue + Status sidebar */}
-      <div className="grid gap-4 grid-cols-1 lg:grid-cols-[1fr_220px]">
-        {/* Left: Focus Queue */}
-        <div className="space-y-4">
+      {/* Main grid */}
+      <div className="grid gap-5 grid-cols-1 lg:grid-cols-[1fr_200px]">
+        {/* Left column */}
+        <div className="space-y-5">
+          {/* Focus Queue */}
           <Card>
             <CardContent className="pt-4 pb-3 px-4">
-              <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
-                Focus queue
-              </h2>
+              <p className="section-label mb-3">Focus queue</p>
 
-              {/* Pinned personal tasks */}
-              {pinned.map((task) => (
-                <div
-                  key={`pin-${task.id}`}
-                  className="flex items-start gap-3 p-3 rounded-lg border border-border mb-2 group"
-                >
-                  <Pin className="h-3.5 w-3.5 text-muted-foreground mt-1 shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">{task.title}</span>
-                      <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                        Pinned
-                      </Badge>
+              <div className="space-y-1.5">
+                {/* Pinned tasks */}
+                {pinned.map((task) => (
+                  <div
+                    key={`pin-${task.id}`}
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-sm border border-border group"
+                  >
+                    <Pin className="h-3 w-3 text-muted-foreground shrink-0" />
+                    <span className="text-[13px] font-medium flex-1 min-w-0 truncate">{task.title}</span>
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Pinned</span>
+                    <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => completePinnedTask(task.id)} className="p-1 hover:text-green-400 text-muted-foreground transition-colors">
+                        <Check className="h-3 w-3" />
+                      </button>
+                      <button onClick={() => deletePinnedTask(task.id)} className="p-1 hover:text-red-400 text-muted-foreground transition-colors">
+                        <X className="h-3 w-3" />
+                      </button>
                     </div>
                   </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      onClick={() => completePinnedTask(task.id)}
-                    >
-                      <Check className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      onClick={() => deletePinnedTask(task.id)}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                ))}
 
-              {/* Engine recommendations */}
-              {recommendations.length === 0 && pinned.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-8">
-                  Sync your platforms and set goals to get recommendations.
-                </p>
-              ) : (
-                recommendations.map((rec, i) => (
-                  <RecommendationRow key={i} rec={rec} />
-                ))
-              )}
+                {/* Recommendations */}
+                {recommendations.length === 0 && pinned.length === 0 ? (
+                  <p className="text-[13px] text-muted-foreground text-center py-10">
+                    Sync your platforms and set goals to get recommendations.
+                  </p>
+                ) : (
+                  recommendations.map((rec, i) => (
+                    <RecommendationRow key={i} rec={rec} />
+                  ))
+                )}
+              </div>
 
-              {/* Add pinned task */}
+              {/* Add task */}
               {showAddTask ? (
                 <div className="flex gap-2 mt-3">
                   <Input
                     value={newTask}
                     onChange={(e) => setNewTask(e.target.value)}
                     placeholder="Personal task..."
-                    className="h-8 text-sm"
+                    className="h-7 text-[12px]"
                     onKeyDown={(e) => e.key === "Enter" && addPinnedTask()}
                     autoFocus
                   />
-                  <Button size="sm" className="h-8" onClick={addPinnedTask}>
-                    Add
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-8"
-                    onClick={() => {
-                      setShowAddTask(false);
-                      setNewTask("");
-                    }}
-                  >
+                  <Button size="xs" onClick={addPinnedTask}>Add</Button>
+                  <Button size="xs" variant="ghost" onClick={() => { setShowAddTask(false); setNewTask(""); }}>
                     <X className="h-3 w-3" />
                   </Button>
                 </div>
               ) : (
                 <button
                   onClick={() => setShowAddTask(true)}
-                  className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground mt-3 transition-colors"
+                  className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground mt-3 transition-colors"
                 >
                   <Plus className="h-3 w-3" />
                   Pin a personal task
@@ -264,43 +232,41 @@ export function PathClient({ guidance, pinnedTasks: initialPinned, platforms, la
             </CardContent>
           </Card>
 
-          {/* AI Insight — always visible */}
-          <Card>
-            <CardContent className="pt-4 pb-3 px-4">
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-sm font-medium flex items-center gap-1.5">
-                  <Sparkles className="h-4 w-4" />
-                  AI insight
-                </h2>
+          {/* AI Insight */}
+          <Card className="gold-glow overflow-visible">
+            <CardContent className="pt-4 pb-4 px-4 relative z-10">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-3.5 w-3.5 text-primary" />
+                  <p className="section-label !text-primary">AI insight</p>
+                </div>
                 {(llmAdvice || llmError) && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 text-xs"
+                  <button
                     onClick={fetchLlmAdvice}
                     disabled={loadingLlm}
+                    className="text-[11px] text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
                   >
-                    <RefreshCw className={`h-3 w-3 mr-1 ${loadingLlm ? "animate-spin" : ""}`} />
+                    <RefreshCw className={`h-3 w-3 ${loadingLlm ? "animate-spin" : ""}`} />
                     Refresh
-                  </Button>
+                  </button>
                 )}
               </div>
 
               {llmAdvice ? (
                 <div
-                  className="text-sm text-muted-foreground prose prose-sm dark:prose-invert max-w-none [&_strong]:text-foreground"
+                  className="text-[13px] text-muted-foreground leading-relaxed [&_strong]:text-foreground [&_h3]:text-foreground [&_h3]:font-semibold [&_h3]:text-[13px] [&_h3]:mt-3 [&_h3]:mb-1 [&_li]:ml-3 [&_li]:list-disc"
                   dangerouslySetInnerHTML={{ __html: renderMarkdown(llmAdvice) }}
                 />
               ) : llmError ? (
                 <div>
-                  <p className="text-sm text-destructive">{llmError}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-[13px] text-destructive">{llmError}</p>
+                  <p className="text-[11px] text-muted-foreground mt-1">
                     Configure your Anthropic API key in Settings to enable AI guidance.
                   </p>
                 </div>
               ) : (
-                <div className="text-center py-4">
-                  <p className="text-sm text-muted-foreground mb-3">
+                <div className="text-center py-6">
+                  <p className="text-[13px] text-muted-foreground mb-3">
                     Get personalized learning advice powered by Claude
                   </p>
                   <Button onClick={fetchLlmAdvice} disabled={loadingLlm} size="sm">
@@ -313,6 +279,7 @@ export function PathClient({ guidance, pinnedTasks: initialPinned, platforms, la
                       <>
                         <Sparkles className="h-3 w-3 mr-1.5" />
                         Get AI advice
+                        <ArrowRight className="h-3 w-3 ml-1" />
                       </>
                     )}
                   </Button>
@@ -322,70 +289,31 @@ export function PathClient({ guidance, pinnedTasks: initialPinned, platforms, la
           </Card>
         </div>
 
-        {/* Right: Status sidebar */}
-        <div className="space-y-4">
+        {/* Right sidebar */}
+        <div className="space-y-5">
           <Card>
             <CardContent className="pt-4 pb-3 px-4">
-              <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-                Platforms
-              </h2>
-              <div className="space-y-1.5">
-                <StatusRow
-                  color="#00babc"
-                  label="42"
-                  value={platforms.ft ? `Lvl ${(platforms.ft.level ?? 0).toFixed(1)}` : "—"}
-                />
-                <StatusRow
-                  color="#ef4444"
-                  label="THM"
-                  value={
-                    platforms.thm
-                      ? `#${(platforms.thm.rank ?? "?").toLocaleString()}`
-                      : "—"
-                  }
-                />
-                <StatusRow
-                  color="#9fef00"
-                  label="HTB"
-                  value={platforms.htb ? (platforms.htb.rank ?? "—") : "—"}
-                />
-                <StatusRow
-                  color="#f59e0b"
-                  label="Root-me"
-                  value={
-                    platforms.rootme
-                      ? `${(platforms.rootme.score ?? 0).toLocaleString()} pts`
-                      : "—"
-                  }
-                />
-                <StatusRow
-                  color="#a855f7"
-                  label="Maldev"
-                  value={
-                    platforms.maldev
-                      ? `${(platforms.maldev.progress ?? 0).toFixed(0)}%`
-                      : "—"
-                  }
-                />
+              <p className="section-label mb-2.5">Platforms</p>
+              <div className="space-y-2">
+                <StatusRow color="#00babc" label="42" value={platforms.ft ? `Lvl ${(platforms.ft.level ?? 0).toFixed(1)}` : "—"} />
+                <StatusRow color="#ef4444" label="THM" value={platforms.thm ? `#${(platforms.thm.rank ?? "?").toLocaleString()}` : "—"} />
+                <StatusRow color="#9fef00" label="HTB" value={platforms.htb ? (platforms.htb.rank ?? "—") : "—"} />
+                <StatusRow color="#f59e0b" label="Root-me" value={platforms.rootme ? `${(platforms.rootme.score ?? 0).toLocaleString()} pts` : "—"} />
+                <StatusRow color="#a855f7" label="Maldev" value={platforms.maldev ? `${(platforms.maldev.progress ?? 0).toFixed(0)}%` : "—"} />
               </div>
 
-              {/* Next deadline */}
               {nextDeadline?.pacing && (
                 <>
                   <div className="border-t border-border my-3" />
                   <div>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
-                      Next deadline
-                    </p>
-                    <p className="text-xs font-medium mt-0.5 truncate">{nextDeadline.title}</p>
-                    <div className="h-1 w-full rounded-full bg-muted overflow-hidden mt-1.5">
+                    <p className="section-label">Next deadline</p>
+                    <p className="text-[12px] font-medium mt-1 truncate">{nextDeadline.title}</p>
+                    <div className="progress-track mt-2">
                       <div
-                        className="h-full rounded-full transition-all"
+                        className="progress-fill"
                         style={{
                           width: `${nextDeadline.pacing.percentComplete}%`,
-                          backgroundColor: nextDeadline.pacing.onTrack
-                            ? "#22c55e"
-                            : "#ef4444",
+                          backgroundColor: nextDeadline.pacing.onTrack ? "#22c55e" : "#ef4444",
                         }}
                       />
                     </div>
@@ -397,24 +325,13 @@ export function PathClient({ guidance, pinnedTasks: initialPinned, platforms, la
                 </>
               )}
 
-              {/* Sync */}
               <div className="border-t border-border my-3" />
               <div className="flex items-center justify-between">
                 <span className="text-[10px] text-muted-foreground">
-                  {lastSync
-                    ? `Synced ${formatRelative(lastSync)}`
-                    : "Never synced"}
+                  {lastSync ? `Synced ${formatRelative(lastSync)}` : "Never synced"}
                 </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-6 text-[10px] px-2"
-                  onClick={handleSync}
-                  disabled={syncing}
-                >
-                  <RefreshCw
-                    className={`h-3 w-3 mr-1 ${syncing ? "animate-spin" : ""}`}
-                  />
+                <Button variant="outline" size="xs" onClick={handleSync} disabled={syncing}>
+                  <RefreshCw className={`h-3 w-3 mr-1 ${syncing ? "animate-spin" : ""}`} />
                   Sync
                 </Button>
               </div>
@@ -426,56 +343,39 @@ export function PathClient({ guidance, pinnedTasks: initialPinned, platforms, la
   );
 }
 
-function StatusRow({
-  color,
-  label,
-  value,
-}: {
-  color: string;
-  label: string;
-  value: string;
-}) {
+function StatusRow({ color, label, value }: { color: string; label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between text-xs">
+    <div className="flex items-center justify-between text-[12px]">
       <span className="flex items-center gap-1.5 text-muted-foreground">
-        <span
-          className="h-1.5 w-1.5 rounded-full shrink-0"
-          style={{ backgroundColor: color }}
-        />
+        <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
         {label}
       </span>
-      <span className="font-medium">{value}</span>
+      <span className="font-medium tabular-nums">{value}</span>
     </div>
   );
 }
 
 function RecommendationRow({ rec }: { rec: Recommendation }) {
-  const styles = priorityStyles[rec.priority];
   return (
-    <div className="flex items-start gap-3 p-3 rounded-lg border border-border mb-2 hover:bg-accent/30 transition-colors">
+    <div className="flex items-start gap-2.5 px-3 py-2.5 rounded-sm border border-border hover:bg-accent/30 transition-colors group">
       <span
         className="mt-1.5 h-2 w-2 rounded-full shrink-0"
         style={{ backgroundColor: platformDots[rec.platform] ?? "#888" }}
       />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-0.5">
-          <span className="text-sm font-medium">{rec.title}</span>
-          <Badge
-            variant="outline"
-            className={`text-[10px] px-1.5 py-0 ${styles}`}
-          >
+          <span className="text-[13px] font-medium">{rec.title}</span>
+          <Badge variant="outline" className={priorityColors[rec.priority]}>
             {rec.priority}
           </Badge>
         </div>
-        <p className="text-xs text-muted-foreground">{rec.reason}</p>
+        <p className="text-[11px] text-muted-foreground leading-relaxed">{rec.reason}</p>
         {rec.estimatedHours && (
-          <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1 mt-1 text-[11px] text-muted-foreground">
             <Clock className="h-3 w-3" />
             ~{rec.estimatedHours}h
             {rec.skills && rec.skills.length > 0 && (
-              <span className="ml-1">
-                · {rec.skills.slice(0, 3).join(", ")}
-              </span>
+              <span className="ml-1">· {rec.skills.slice(0, 3).join(", ")}</span>
             )}
           </div>
         )}
@@ -491,11 +391,11 @@ function renderMarkdown(text: string): string {
     .replace(/>/g, "&gt;")
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
     .replace(/\*(.+?)\*/g, "<em>$1</em>")
-    .replace(/^### (.+)$/gm, '<h3 class="text-sm font-semibold mt-3 mb-1">$1</h3>')
-    .replace(/^## (.+)$/gm, '<h2 class="text-base font-semibold mt-4 mb-1">$1</h2>')
-    .replace(/^# (.+)$/gm, '<h1 class="text-lg font-bold mt-4 mb-2">$1</h1>')
-    .replace(/^- (.+)$/gm, '<li class="ml-4 list-disc">$1</li>')
-    .replace(/^(\d+)\. (.+)$/gm, '<li class="ml-4 list-decimal">$2</li>')
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^# (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^- (.+)$/gm, '<li>$1</li>')
+    .replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>')
     .replace(/\n{2,}/g, "<br/><br/>")
     .replace(/\n/g, "<br/>");
 }

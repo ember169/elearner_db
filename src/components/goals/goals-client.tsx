@@ -22,13 +22,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  Target,
   Plus,
   Trash2,
   CheckCircle,
   AlertTriangle,
   Zap,
   Clock,
+  ArrowRight,
 } from "lucide-react";
 import type { GoalWithPacing } from "@/lib/guidance/engine";
 import { METRIC_SOURCES, GOAL_PRESETS } from "@/lib/goals/shared";
@@ -48,8 +48,8 @@ const platformLabels: Record<string, string> = {
   thm: "THM",
   htb: "HTB",
   rootme: "RM",
-  maldev: "Mal",
-  general: "Gen",
+  maldev: "MAL",
+  general: "GEN",
 };
 
 export function GoalsClient({ goals }: { goals: GoalWithPacing[] }) {
@@ -123,13 +123,9 @@ export function GoalsClient({ goals }: { goals: GoalWithPacing[] }) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Target className="h-6 w-6" />
-            Goals
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Your destinations — where you&apos;re heading and whether you&apos;re on
-            pace
+          <h1 className="text-xl font-semibold tracking-tight">Goals</h1>
+          <p className="text-[13px] text-muted-foreground mt-0.5">
+            Your destinations — where you&apos;re heading and whether you&apos;re on pace
           </p>
         </div>
         <Dialog
@@ -140,25 +136,23 @@ export function GoalsClient({ goals }: { goals: GoalWithPacing[] }) {
           }}
         >
           <DialogTrigger render={<Button size="sm" />}>
-            <Plus className="h-4 w-4 mr-1.5" />
-            New Goal
+            <Plus className="h-3.5 w-3.5 mr-1" />
+            New goal
+            <ArrowRight className="h-3 w-3 ml-1" />
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>New Goal</DialogTitle>
+              <DialogTitle>New goal</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4 pt-2">
-              {/* Presets */}
+            <div className="space-y-4 pt-1">
               <div>
-                <Label className="text-xs text-muted-foreground">
-                  Quick presets
-                </Label>
-                <div className="flex flex-wrap gap-1.5 mt-1.5">
+                <p className="section-label mb-2">Quick presets</p>
+                <div className="flex flex-wrap gap-1">
                   {GOAL_PRESETS.map((p) => (
                     <button
                       key={p.metricSource}
                       onClick={() => applyPreset(p)}
-                      className="text-xs px-2.5 py-1 rounded-md border border-border bg-card hover:bg-accent transition-colors"
+                      className="text-[11px] px-2 py-1 rounded-sm border border-border bg-transparent hover:bg-accent transition-colors"
                     >
                       {p.title}
                     </button>
@@ -166,8 +160,8 @@ export function GoalsClient({ goals }: { goals: GoalWithPacing[] }) {
                 </div>
               </div>
               <Separator />
-              <div className="space-y-2">
-                <Label>Title</Label>
+              <div className="space-y-1.5">
+                <Label className="text-[12px]">Title</Label>
                 <Input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
@@ -175,8 +169,8 @@ export function GoalsClient({ goals }: { goals: GoalWithPacing[] }) {
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label>Platform</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-[12px]">Platform</Label>
                   <Select
                     value={category}
                     onValueChange={(v) => {
@@ -209,8 +203,8 @@ export function GoalsClient({ goals }: { goals: GoalWithPacing[] }) {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label>Auto-track metric</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-[12px]">Auto-track metric</Label>
                   <Select
                     value={metricSource}
                     onValueChange={(v) => v && setMetricSource(v)}
@@ -230,8 +224,8 @@ export function GoalsClient({ goals }: { goals: GoalWithPacing[] }) {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label>Target value</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-[12px]">Target value</Label>
                   <Input
                     type="number"
                     step="0.01"
@@ -240,8 +234,8 @@ export function GoalsClient({ goals }: { goals: GoalWithPacing[] }) {
                     placeholder="e.g., 50"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label>Deadline</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-[12px]">Deadline</Label>
                   <Input
                     type="date"
                     value={deadline}
@@ -250,7 +244,8 @@ export function GoalsClient({ goals }: { goals: GoalWithPacing[] }) {
                 </div>
               </div>
               <Button onClick={addGoal} className="w-full">
-                Create Goal
+                Create goal
+                <ArrowRight className="h-3 w-3 ml-1.5" />
               </Button>
             </div>
           </DialogContent>
@@ -260,18 +255,17 @@ export function GoalsClient({ goals }: { goals: GoalWithPacing[] }) {
       {/* Active goals */}
       {activeGoals.length === 0 && completedGoals.length === 0 ? (
         <Card>
-          <CardContent className="py-12 text-center">
-            <Target className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground mb-1">
+          <CardContent className="py-16 text-center">
+            <p className="text-[13px] text-muted-foreground mb-1">
               No destinations set yet.
             </p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[11px] text-muted-foreground">
               Create a goal to start tracking your pace toward it.
             </p>
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {activeGoals.map((goal) => (
             <GoalCard
               key={goal.id}
@@ -283,40 +277,30 @@ export function GoalsClient({ goals }: { goals: GoalWithPacing[] }) {
         </div>
       )}
 
-      {/* Completed goals */}
+      {/* Completed */}
       {completedGoals.length > 0 && (
-        <div className="space-y-3 pt-2">
-          <h2 className="text-sm font-medium text-muted-foreground">
-            Completed ({completedGoals.length})
-          </h2>
+        <div className="space-y-2 pt-2">
+          <p className="section-label">Completed · {completedGoals.length}</p>
           {completedGoals.map((goal) => (
-            <Card key={goal.id} className="opacity-60">
-              <CardContent className="py-3 px-4">
+            <Card key={goal.id} className="opacity-50">
+              <CardContent className="py-2.5 px-4">
                 <div className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
-                  <span className="text-sm font-medium flex-1">
-                    {goal.title}
-                  </span>
+                  <CheckCircle className="h-3.5 w-3.5 text-green-500 shrink-0" />
+                  <span className="text-[13px] font-medium flex-1">{goal.title}</span>
                   {goal.category && (
-                    <Badge
-                      variant="secondary"
-                      className="text-[10px] px-1.5 py-0"
-                      style={{
-                        borderColor:
-                          platformColors[goal.category] ?? "#6b7280",
-                      }}
+                    <span
+                      className="text-[9px] font-bold uppercase tracking-widest"
+                      style={{ color: platformColors[goal.category] ?? "#6b7280" }}
                     >
                       {platformLabels[goal.category] ?? goal.category}
-                    </Badge>
+                    </span>
                   )}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 shrink-0"
+                  <button
                     onClick={() => deleteGoal(goal.id)}
+                    className="p-1 text-muted-foreground hover:text-destructive transition-colors"
                   >
-                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                  </Button>
+                    <Trash2 className="h-3 w-3" />
+                  </button>
                 </div>
               </CardContent>
             </Card>
@@ -341,78 +325,58 @@ function GoalCard({
 
   return (
     <Card className="overflow-hidden group">
-      <div className="h-1" style={{ backgroundColor: color }} />
+      <div className="h-0.5" style={{ backgroundColor: color }} />
       <CardContent className="pt-3 pb-3 px-4 space-y-2.5">
-        {/* Top: title + platform badge */}
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-sm truncate">{goal.title}</h3>
+              <h3 className="font-semibold text-[13px] tracking-tight truncate">{goal.title}</h3>
               {goal.category && (
-                <Badge
-                  variant="secondary"
-                  className="text-[10px] px-1.5 py-0 shrink-0"
-                  style={{ borderColor: color }}
+                <span
+                  className="text-[9px] font-bold uppercase tracking-widest shrink-0"
+                  style={{ color }}
                 >
                   {platformLabels[goal.category] ?? goal.category}
-                </Badge>
+                </span>
               )}
             </div>
             {goal.deadline && (
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="text-[11px] text-muted-foreground mt-0.5">
                 by {goal.deadline}
               </p>
             )}
           </div>
           <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={() => onComplete(goal.id)}
-            >
-              <CheckCircle className="h-3.5 w-3.5 text-green-500" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={() => onDelete(goal.id)}
-            >
-              <Trash2 className="h-3.5 w-3.5 text-destructive" />
-            </Button>
+            <button onClick={() => onComplete(goal.id)} className="p-1 hover:text-green-400 text-muted-foreground transition-colors">
+              <CheckCircle className="h-3.5 w-3.5" />
+            </button>
+            <button onClick={() => onDelete(goal.id)} className="p-1 hover:text-destructive text-muted-foreground transition-colors">
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
           </div>
         </div>
 
-        {/* Progress bar */}
         {goal.targetValue != null && (
-          <div className="space-y-1">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="text-muted-foreground tabular-nums">
                 {goal.currentValue ?? 0} / {goal.targetValue}
               </span>
               <div className="flex items-center gap-2">
-                <span className="text-muted-foreground">
+                <span className="text-muted-foreground tabular-nums">
                   {progress.toFixed(0)}%
                 </span>
                 {goal.pacing && <PaceStatus pacing={goal.pacing} />}
               </div>
             </div>
-            <div className="h-2 rounded-full bg-muted overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all"
-                style={{
-                  width: `${progress}%`,
-                  backgroundColor: color,
-                }}
-              />
+            <div className="progress-track">
+              <div className="progress-fill" style={{ width: `${progress}%`, backgroundColor: color }} />
             </div>
           </div>
         )}
 
-        {/* Pacing details */}
         {goal.pacing && (
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
             <span className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
               {goal.pacing.daysRemaining}d left
@@ -428,22 +392,19 @@ function GoalCard({
           </div>
         )}
 
-        {/* Auto-tracked indicator */}
         {goal.metricSource && (
           <p className="text-[10px] text-muted-foreground">
             Auto-tracked:{" "}
-            {METRIC_SOURCES[goal.metricSource as MetricSourceKey]?.label ??
-              goal.metricSource}
+            {METRIC_SOURCES[goal.metricSource as MetricSourceKey]?.label ?? goal.metricSource}
           </p>
         )}
 
-        {/* Milestones */}
         {goal.milestones.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1">
             {goal.milestones.map((m) => (
               <span
                 key={m.id}
-                className={`text-[10px] px-1.5 py-0.5 rounded border ${
+                className={`text-[10px] px-1.5 py-0.5 rounded-sm border ${
                   m.reachedAt
                     ? "border-green-500/30 text-green-500"
                     : "border-border text-muted-foreground"
@@ -459,35 +420,23 @@ function GoalCard({
   );
 }
 
-function PaceStatus({
-  pacing,
-}: {
-  pacing: NonNullable<GoalWithPacing["pacing"]>;
-}) {
+function PaceStatus({ pacing }: { pacing: NonNullable<GoalWithPacing["pacing"]> }) {
   if (pacing.percentComplete >= 100) {
-    return (
-      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-green-500/10 text-green-500">
-        Complete
-      </Badge>
-    );
+    return <Badge variant="secondary" className="bg-green-500/10 text-green-400 border-green-500/20">Complete</Badge>;
   }
   if (pacing.requiredPace === "Overdue") {
     return (
-      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-red-500/10 text-red-500">
+      <Badge variant="secondary" className="bg-red-500/10 text-red-400 border-red-500/20">
         <AlertTriangle className="h-2.5 w-2.5 mr-0.5" />
         Overdue
       </Badge>
     );
   }
   if (pacing.onTrack) {
-    return (
-      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-green-500/10 text-green-500">
-        On track
-      </Badge>
-    );
+    return <Badge variant="secondary" className="bg-green-500/10 text-green-400 border-green-500/20">On track</Badge>;
   }
   return (
-    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-yellow-500/10 text-yellow-500">
+    <Badge variant="secondary" className="bg-amber-500/10 text-amber-400 border-amber-500/20">
       <AlertTriangle className="h-2.5 w-2.5 mr-0.5" />
       Behind
     </Badge>
