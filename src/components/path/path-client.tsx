@@ -307,7 +307,7 @@ export function PathClient({ guidance, pinnedTasks: initialPinned, platforms, la
                 <StatusRow color={PLATFORM_COLORS["42"]} label="42" value={platforms.ft ? `Lvl ${(platforms.ft.level ?? 0).toFixed(1)}` : "—"} />
                 <StatusRow color={PLATFORM_COLORS.thm} label="THM" value={platforms.thm ? `Top ${platforms.thm.rank ?? "?"}%` : "—"} />
                 <StatusRow color={PLATFORM_COLORS.htb} label="HTB" value={platforms.htb ? (platforms.htb.rank ?? "—") : "—"} />
-                <StatusRow color={PLATFORM_COLORS.rootme} label="Root-me" value={platforms.rootme ? `${(platforms.rootme.score ?? 0).toLocaleString()} pts` : "—"} />
+                <StatusRow color={PLATFORM_COLORS.rootme} label="Root-me" value={platforms.rootme ? `${(platforms.rootme.score ?? 0).toLocaleString("en-US")} pts` : "—"} />
                 <StatusRow color={PLATFORM_COLORS.maldev} label="Maldev" value={platforms.maldev ? `${(platforms.maldev.progress ?? 0).toFixed(0)}%` : "—"} />
               </div>
 
@@ -336,7 +336,7 @@ export function PathClient({ guidance, pinnedTasks: initialPinned, platforms, la
 
               <div className="border-t border-border my-3.5" />
               <div className="flex items-center justify-between">
-                <span className="text-[11px] text-muted-foreground">
+                <span className="text-[11px] text-muted-foreground" suppressHydrationWarning>
                   {lastSync ? `Synced ${formatRelative(lastSync)}` : "Never synced"}
                 </span>
                 <Button variant="outline" size="xs" onClick={handleSync} disabled={syncing}>

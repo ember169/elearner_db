@@ -142,7 +142,7 @@ export function ProgressClient({
         <PlatformCard
           color={PLATFORM_COLORS.rootme}
           name="Root-me"
-          value={rootme ? (rootme.score ?? 0).toLocaleString() : "—"}
+          value={rootme ? (rootme.score ?? 0).toLocaleString("en-US") : "—"}
           detail={rootme ? `${rootme.challengesSolved ?? 0} solved · #${rootme.position ?? "?"}` : "Not connected"}
         />
       </div>
@@ -298,7 +298,7 @@ export function ProgressClient({
                     {item.platform}
                   </Badge>
                   <span className="text-[14px] flex-1 truncate">{item.title}</span>
-                  <span className="text-[12px] text-muted-foreground shrink-0 tabular-nums">
+                  <span className="text-[12px] text-muted-foreground shrink-0 tabular-nums" suppressHydrationWarning>
                     {formatRelative(item.timestamp)}
                   </span>
                 </div>

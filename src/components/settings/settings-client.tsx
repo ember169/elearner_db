@@ -280,7 +280,10 @@ export function SettingsClient({
                         </span>
                       )}
                       <span className="ml-auto text-[12px] text-muted-foreground tabular-nums">
-                        {new Date(sync.startedAt).toLocaleString()}
+                        {new Date(sync.startedAt).toLocaleString("en-US", {
+                          dateStyle: "short",
+                          timeStyle: "medium",
+                        })}
                       </span>
                     </div>
                   ))}
