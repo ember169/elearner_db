@@ -1,18 +1,22 @@
 services:
   app:
     build: .
+    # host:container — the app always listens on 3000 inside the container
+    # (Dockerfile sets PORT=3000); change only the host side (left) if 3001 is taken.
     ports:
-      - "3000:3000"
+      - "3001:3000"
     volumes:
       - db-data:/app/data
     environment:
       - DATABASE_PATH=/app/data/learner.db
     restart: unless-stopped
+    # node is guaranteed present; wget/curl are not in the slim image.
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000"]
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 30s
       timeout: 5s
       retries: 3
+      start_period: 20s
 
 volumes:
   db-data:
