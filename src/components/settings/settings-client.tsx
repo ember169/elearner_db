@@ -21,6 +21,7 @@ import {
   History,
   ArrowRight,
 } from "lucide-react";
+import { assertOk } from "@/lib/utils";
 
 interface Config {
   id: number;
@@ -79,7 +80,7 @@ export function SettingsClient({
   async function saveSettings() {
     setSaving(true);
     try {
-      await fetch("/api/settings", {
+      const res = await fetch("/api/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -97,8 +98,10 @@ export function SettingsClient({
           llmModel: llmModel || null,
         }),
       });
+      await assertOk(res);
       window.location.reload();
-    } finally {
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Failed to save settings.");
       setSaving(false);
     }
   }
@@ -106,9 +109,11 @@ export function SettingsClient({
   async function triggerSync() {
     setSyncing(true);
     try {
-      await fetch("/api/sync", { method: "POST" });
+      const res = await fetch("/api/sync", { method: "POST" });
+      await assertOk(res);
       window.location.reload();
-    } finally {
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Sync failed.");
       setSyncing(false);
     }
   }
@@ -117,6 +122,7 @@ export function SettingsClient({
     setExporting(true);
     try {
       const res = await fetch("/api/settings");
+      await assertOk(res);
       const data = await res.json();
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
@@ -125,6 +131,8 @@ export function SettingsClient({
       a.download = `learner-db-export-${new Date().toISOString().split("T")[0]}.json`;
       a.click();
       URL.revokeObjectURL(url);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Export failed.");
     } finally {
       setExporting(false);
     }

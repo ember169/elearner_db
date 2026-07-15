@@ -34,6 +34,7 @@ import type { GoalWithPacing } from "@/lib/guidance/engine";
 import { METRIC_SOURCES, GOAL_PRESETS } from "@/lib/goals/shared";
 import type { MetricSourceKey } from "@/lib/goals/shared";
 import { PLATFORM_COLORS, PLATFORM_LABELS } from "@/lib/platform-colors";
+import { assertOk } from "@/lib/utils";
 
 export function GoalsClient({ goals }: { goals: GoalWithPacing[] }) {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -63,38 +64,53 @@ export function GoalsClient({ goals }: { goals: GoalWithPacing[] }) {
 
   async function addGoal() {
     if (!title.trim()) return;
-    await fetch("/api/goals", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title,
-        category,
-        targetValue: targetValue ? parseFloat(targetValue) : null,
-        deadline: deadline || null,
-        metricSource: metricSource && metricSource !== "manual" ? metricSource : null,
-      }),
-    });
-    resetForm();
-    setDialogOpen(false);
-    window.location.reload();
+    try {
+      const res = await fetch("/api/goals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          category,
+          targetValue: targetValue ? parseFloat(targetValue) : null,
+          deadline: deadline || null,
+          metricSource: metricSource && metricSource !== "manual" ? metricSource : null,
+        }),
+      });
+      await assertOk(res);
+      resetForm();
+      setDialogOpen(false);
+      window.location.reload();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Failed to create goal.");
+    }
   }
 
   async function deleteGoal(goalId: number) {
-    await fetch("/api/goals", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: goalId }),
-    });
-    window.location.reload();
+    try {
+      const res = await fetch("/api/goals", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: goalId }),
+      });
+      await assertOk(res);
+      window.location.reload();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Failed to delete goal.");
+    }
   }
 
   async function completeGoal(goalId: number) {
-    await fetch("/api/goals", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: goalId, status: "completed" }),
-    });
-    window.location.reload();
+    try {
+      const res = await fetch("/api/goals", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: goalId, status: "completed" }),
+      });
+      await assertOk(res);
+      window.location.reload();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Failed to update goal.");
+    }
   }
 
   const metricSourcesForCategory = Object.entries(METRIC_SOURCES).filter(

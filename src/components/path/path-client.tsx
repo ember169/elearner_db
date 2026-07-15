@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import type { GuidanceResult, Recommendation, GoalWithPacing } from "@/lib/guidance/engine";
 import { PLATFORM_COLORS } from "@/lib/platform-colors";
+import { assertOk } from "@/lib/utils";
 
 interface PinnedTask {
   id: number;
@@ -77,44 +78,59 @@ export function PathClient({ guidance, pinnedTasks: initialPinned, platforms, la
   async function handleSync() {
     setSyncing(true);
     try {
-      await fetch("/api/sync", { method: "POST" });
+      const res = await fetch("/api/sync", { method: "POST" });
+      await assertOk(res);
       window.location.reload();
-    } finally {
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Sync failed.");
       setSyncing(false);
     }
   }
 
   async function addPinnedTask() {
     if (!newTask.trim()) return;
-    const res = await fetch("/api/checklist", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: newTask.trim(), category: "general" }),
-    });
-    if (res.ok) {
+    try {
+      const res = await fetch("/api/checklist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: newTask.trim(), category: "general" }),
+      });
+      await assertOk(res);
       const task = await res.json();
       setPinned((prev) => [...prev, task]);
       setNewTask("");
       setShowAddTask(false);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Failed to add task.");
     }
   }
 
   async function completePinnedTask(id: number) {
-    await fetch("/api/checklist", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, isCompleted: true }),
-    });
-    setPinned((prev) => prev.filter((t) => t.id !== id));
+    try {
+      const res = await fetch("/api/checklist", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, isCompleted: true }),
+      });
+      await assertOk(res);
+      setPinned((prev) => prev.filter((t) => t.id !== id));
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Failed to complete task.");
+    }
   }
 
   async function deletePinnedTask(id: number) {
-    await fetch("/api/checklist", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id }),
-    });
-    setPinned((prev) => prev.filter((t) => t.id !== id));
+    try {
+      const res = await fetch("/api/checklist", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      await assertOk(res);
+      setPinned((prev) => prev.filter((t) => t.id !== id));
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Failed to delete task.");
+    }
   }
 
   const { recommendations, goals } = guidance;
