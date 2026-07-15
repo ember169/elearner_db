@@ -15,6 +15,20 @@
       "when": 1784126465578,
       "tag": "0001_thm_room_metadata",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1784138794446,
+      "tag": "0002_add_rootme_and_guidance_cache",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1784138844084,
+      "tag": "0003_drop_unused_resources_table",
+      "breakpoints": true
     }
   ]
 }

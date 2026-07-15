@@ -1,24 +1,27 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+Learner DB — a personal learning dashboard aggregating progress across 42 Paris, TryHackMe, HackTheBox, Root-me, and a maldev elearning platform.
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000). The SQLite database lives at `data/learner.db` by default (override with the `DATABASE_PATH` env var) — the directory is created and all migrations are applied automatically on startup, so a fresh clone works with no manual setup.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Configure platform credentials in Settings once it's running.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Docker
+
+```bash
+docker compose up -d
+```
+
+Data persists in the `db-data` volume, mounted at `/app/data`.
+
+### Schema changes
+
+After editing `src/lib/db/schema.ts`, run `npm run db:generate` to create a migration. It picks up automatically on the next server start — no manual `migrate` step needed.
 
 ## Learn More
 
