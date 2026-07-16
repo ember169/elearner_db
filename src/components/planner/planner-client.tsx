@@ -92,6 +92,7 @@ export function PlannerClient({
   const [sideProject, setSideProject] = useState(initialSideProject);
   const [syncing, setSyncing] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
+  const [regenStep, setRegenStep] = useState<string | null>(null);
   const [briefingCollapsed, setBriefingCollapsed] = useState(() => {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("planner-briefing-collapsed") === "true";
@@ -211,6 +212,7 @@ export function PlannerClient({
 
   async function handleRegenerate() {
     setRegenerating(true);
+    setRegenStep("Asking mentor LLM...");
     try {
       const mentorRes = await fetch("/api/mentor", { method: "POST" });
       const mentorData = await mentorRes.json();
@@ -222,6 +224,7 @@ export function PlannerClient({
         setSideProject(mentorData.plan.side_project);
       }
 
+      setRegenStep("Building week schedule...");
       const res = await fetch("/api/week", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -230,10 +233,14 @@ export function PlannerClient({
       const data = await res.json();
       setPlan(data);
       setItems(data.items);
+      setRegenStep("Done");
     } catch (e) {
       alert(e instanceof Error ? e.message : "Regeneration failed.");
     } finally {
-      setRegenerating(false);
+      setTimeout(() => {
+        setRegenerating(false);
+        setRegenStep(null);
+      }, 800);
     }
   }
 
@@ -313,6 +320,22 @@ export function PlannerClient({
           </Button>
         </div>
       </div>
+
+      {regenStep && (
+        <div className="flex items-center gap-3 px-4 py-2.5 rounded-sm border border-primary/30" style={{ background: "oklch(0.82 0.055 80 / 0.04)" }}>
+          <RefreshCw className="h-3.5 w-3.5 text-primary animate-spin shrink-0" />
+          <span className="text-[13px] text-primary font-medium">{regenStep}</span>
+          <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: "oklch(0.82 0.055 80 / 0.1)" }}>
+            <div
+              className="h-full rounded-full transition-all duration-700 ease-out"
+              style={{
+                background: "var(--primary)",
+                width: regenStep === "Asking mentor LLM..." ? "30%" : regenStep === "Building week schedule..." ? "75%" : "100%",
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* ── Mentor briefing (collapsible) ── */}
       {plan.mentorBriefing && (
