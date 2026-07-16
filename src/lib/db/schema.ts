@@ -289,9 +289,11 @@ export const guidanceCache = sqliteTable("guidance_cache", {
 
 export const weeklyPlans = sqliteTable("weekly_plans", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  weekStart: text("week_start").notNull(), // ISO Monday date
-  status: text("status").notNull().default("active"), // active | archived
+  weekStart: text("week_start").notNull(),
+  status: text("status").notNull().default("active"),
   notes: text("notes"),
+  mentorBriefing: text("mentor_briefing"),
+  collapsedBriefing: text("collapsed_briefing"),
   createdAt: text("created_at")
     .notNull()
     .default(sql`(datetime('now'))`),
@@ -303,16 +305,21 @@ export const planItems = sqliteTable("plan_items", {
     .notNull()
     .references(() => weeklyPlans.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
-  type: text("type").notNull(), // 42, thm, htb, rootme, maldev, side-project, skill
+  type: text("type").notNull(),
   why: text("why"),
+  description: text("description"),
   estimatedHours: real("estimated_hours").default(2),
-  priority: text("priority").notNull().default("medium"), // high, medium, low
-  dayIndex: integer("day_index"), // 0-6 (Mon-Sun), null = unscheduled
-  status: text("status").notNull().default("pending"), // pending, active, done, blocked, stuck, deferred
+  priority: text("priority").notNull().default("medium"),
+  dayIndex: integer("day_index"),
+  status: text("status").notNull().default("pending"),
   ref: text("ref"),
   link: text("link"),
   sortOrder: integer("sort_order").default(0),
-  deferredTo: text("deferred_to"), // ISO date — item reappears in that week
+  deferredTo: text("deferred_to"),
+  sourceWeek: text("source_week"),
+  attemptCount: integer("attempt_count").default(0),
+  blockedReason: text("blocked_reason"),
+  blockedSince: text("blocked_since"),
   completedAt: text("completed_at"),
   createdAt: text("created_at")
     .notNull()

@@ -6,9 +6,10 @@ import {
   rerollWeekPlan,
 } from "@/lib/week/store";
 
-export async function GET() {
-  const weekStart = getWeekStart();
-  const plan = getOrCreateWeekPlan(weekStart);
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const week = searchParams.get("week") ?? getWeekStart();
+  const plan = getOrCreateWeekPlan(week);
   return NextResponse.json(plan);
 }
 
@@ -20,6 +21,10 @@ export async function PATCH(request: Request) {
     status?: string;
     sortOrder?: number;
     deferredTo?: string | null;
+    attemptCount?: number;
+    blockedReason?: string | null;
+    blockedSince?: string | null;
+    description?: string | null;
   };
   if (!id) {
     return NextResponse.json({ error: "id required" }, { status: 400 });
@@ -31,8 +36,8 @@ export async function PATCH(request: Request) {
 export async function POST(request: Request) {
   const body = await request.json();
   if (body.action === "reroll") {
-    const weekStart = getWeekStart();
-    const plan = rerollWeekPlan(weekStart);
+    const week = body.week ?? getWeekStart();
+    const plan = rerollWeekPlan(week);
     return NextResponse.json(plan);
   }
   return NextResponse.json({ error: "unknown action" }, { status: 400 });

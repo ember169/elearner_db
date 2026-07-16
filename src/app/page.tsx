@@ -8,18 +8,24 @@ import {
   syncLog,
   tasks,
   dailySnapshots,
+  settings,
 } from "@/lib/db/schema";
 import { desc, eq, and, lte } from "drizzle-orm";
 import { loadCurrentPlan } from "@/lib/mentor/store";
 import { runGuidanceEngine } from "@/lib/guidance/engine";
 import { computeCompetencySignals } from "@/lib/mentor/competency-signals";
 import { COMPETENCIES } from "@/lib/mentor/competency-map";
-import { PathClient } from "@/components/path/path-client";
+import { getWeekStart, getOrCreateWeekPlan } from "@/lib/week/store";
+import { PlannerClient } from "@/components/planner/planner-client";
 
 export const dynamic = "force-dynamic";
 
 export default function HomePage() {
+  const weekStart = getWeekStart();
+  const plan = getOrCreateWeekPlan(weekStart);
   const mentorResult = loadCurrentPlan();
+  const cfg = db.select().from(settings).limit(1).all()[0] ?? null;
+  const objective = cfg?.objective ?? "Red team / malware dev";
 
   const pinnedTasks = db
     .select()
@@ -42,10 +48,7 @@ export default function HomePage() {
       .all()[0] ?? null;
 
   const guidance = runGuidanceEngine();
-  const signals = computeCompetencySignals(
-    guidance.snapshot,
-    guidance.ftProgress
-  );
+  const signals = computeCompetencySignals(guidance.snapshot, guidance.ftProgress);
 
   const competencies = COMPETENCIES.map((c) => ({
     id: c.id,
@@ -54,6 +57,17 @@ export default function HomePage() {
     level: signals[c.id]?.autoLevel ?? 0,
     evidence: signals[c.id]?.evidence ?? "",
   }));
+
+  const activeGoals = guidance.goals
+    .filter((g) => g.status === "active")
+    .map((g) => ({
+      id: g.id,
+      title: g.title,
+      category: g.category,
+      currentValue: g.currentValue,
+      targetValue: g.targetValue,
+      pacing: g.pacing,
+    }));
 
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -78,9 +92,10 @@ export default function HomePage() {
   const maldevOld = getOldSnapshot("maldev");
 
   return (
-    <PathClient
-      mentor={mentorResult}
-      pinnedTasks={pinnedTasks}
+    <PlannerClient
+      initialPlan={plan}
+      initialWeek={weekStart}
+      objective={objective}
       platforms={{
         ft: ft ? { level: ft.level, coalition: ft.coalition, delta: ftOld ? ((ft.level ?? 0) - (Number(ftOld.level) || 0)) : null } : null,
         thm: thm
@@ -98,6 +113,11 @@ export default function HomePage() {
       }}
       lastSync={lastSync ? lastSync.startedAt : null}
       competencies={competencies}
+      goals={activeGoals}
+      pinnedTasks={pinnedTasks}
+      sideProject={mentorResult.plan.side_project ?? null}
+      hasKey={mentorResult.hasKey}
+      stale={mentorResult.stale}
     />
   );
 }

@@ -1,0 +1,460 @@
+"use client";
+
+import { useState, useId } from "react";
+import {
+  DndContext,
+  DragOverlay,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragStartEvent,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { useDroppable } from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
+import {
+  Check,
+  ArrowRight,
+  Pause,
+  AlertTriangle,
+  Circle,
+  CornerDownRight,
+  Clock,
+} from "lucide-react";
+import { PLATFORM_COLORS, PLATFORM_LABELS } from "@/lib/platform-colors";
+import type { PlanItemData } from "./types";
+
+const DAY_NAMES = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
+
+type StatusMeta = { icon: typeof Check; color: string; borderColor: string; bg: string };
+
+const STATUS_STYLES: Record<string, StatusMeta> = {
+  done: {
+    icon: Check,
+    color: "oklch(0.72 0.14 152)",
+    borderColor: "oklch(0.72 0.14 152 / 0.2)",
+    bg: "oklch(0.72 0.14 152 / 0.04)",
+  },
+  active: {
+    icon: ArrowRight,
+    color: "oklch(0.82 0.055 80)",
+    borderColor: "oklch(0.82 0.055 80 / 0.3)",
+    bg: "oklch(0.82 0.055 80 / 0.06)",
+  },
+  pending: {
+    icon: Circle,
+    color: "var(--muted-foreground)",
+    borderColor: "oklch(0.25 0.007 70)",
+    bg: "oklch(0.19 0.006 75 / 0.4)",
+  },
+  blocked: {
+    icon: Pause,
+    color: "oklch(0.78 0.14 60)",
+    borderColor: "oklch(0.78 0.14 60 / 0.3)",
+    bg: "oklch(0.78 0.14 60 / 0.03)",
+  },
+  stuck: {
+    icon: AlertTriangle,
+    color: "oklch(0.70 0.18 25)",
+    borderColor: "oklch(0.70 0.18 25 / 0.3)",
+    bg: "oklch(0.70 0.18 25 / 0.03)",
+  },
+};
+
+function getStatusStyle(status: string, sourceWeek?: string | null): StatusMeta & { dashed?: boolean } {
+  if (sourceWeek) {
+    return {
+      icon: CornerDownRight,
+      color: "oklch(0.78 0.14 60)",
+      borderColor: "oklch(0.78 0.14 60 / 0.3)",
+      bg: "oklch(0.78 0.14 60 / 0.03)",
+      dashed: true,
+    };
+  }
+  return STATUS_STYLES[status] ?? STATUS_STYLES.pending;
+}
+
+export function KanbanBoard({
+  items,
+  weekStart,
+  todayIdx,
+  readOnly,
+  onItemsChange,
+  onStatusToggle,
+  onMenuAction,
+}: {
+  items: PlanItemData[];
+  weekStart: string;
+  todayIdx: number;
+  readOnly?: boolean;
+  onItemsChange: (items: PlanItemData[]) => void;
+  onStatusToggle: (id: number) => void;
+  onMenuAction: (id: number, action: string) => void;
+}) {
+  const dndId = useId();
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
+  const visibleItems = items.filter((i) => i.status !== "deferred");
+  const backlog = visibleItems.filter((i) => i.dayIndex === null);
+  const dayItems: Record<number, PlanItemData[]> = {};
+  for (let d = 0; d < 7; d++) dayItems[d] = [];
+  for (const item of visibleItems) {
+    if (item.dayIndex !== null && item.dayIndex >= 0 && item.dayIndex <= 6) {
+      dayItems[item.dayIndex].push(item);
+    }
+  }
+  for (const arr of Object.values(dayItems)) {
+    arr.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  }
+
+  const start = new Date(weekStart + "T00:00:00");
+
+  function handleDragStart(event: DragStartEvent) {
+    setActiveId(event.active.id as string);
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    setActiveId(null);
+    const { active, over } = event;
+    if (!over) return;
+
+    const itemId = parseInt((active.id as string).replace("item-", ""));
+    const overId = over.id as string;
+
+    let newDayIndex: number | null = null;
+    if (overId === "backlog") {
+      newDayIndex = null;
+    } else if (overId.startsWith("day-")) {
+      newDayIndex = parseInt(overId.replace("day-", ""));
+    } else if (overId.startsWith("item-")) {
+      const overItemId = parseInt(overId.replace("item-", ""));
+      const overItem = items.find((i) => i.id === overItemId);
+      newDayIndex = overItem?.dayIndex ?? null;
+    }
+
+    const updated = items.map((item) =>
+      item.id === itemId ? { ...item, dayIndex: newDayIndex } : item
+    );
+    onItemsChange(updated);
+    fetch("/api/week", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: itemId, dayIndex: newDayIndex }),
+    });
+  }
+
+  const activeItem = activeId ? items.find((i) => `item-${i.id}` === activeId) : null;
+
+  const content = (
+    <div
+      className="grid gap-[6px] min-h-[420px]"
+      style={{ gridTemplateColumns: "140px repeat(7, 1fr)" }}
+    >
+      {/* Backlog column */}
+      <KanbanColumn
+        columnId="backlog"
+        label="BACKLOG"
+        items={backlog}
+        isToday={false}
+        isPast={false}
+        readOnly={readOnly}
+        onStatusToggle={onStatusToggle}
+        onMenuAction={onMenuAction}
+      />
+
+      {/* Day columns */}
+      {DAY_NAMES.map((name, dayIdx) => {
+        const dayDate = new Date(start);
+        dayDate.setDate(start.getDate() + dayIdx);
+        const isPast = dayIdx < todayIdx;
+        const isToday = dayIdx === todayIdx;
+        const dayLabel = `${name} ${dayDate.getDate()}`;
+        const star = isToday ? " ★" : "";
+
+        return (
+          <KanbanColumn
+            key={dayIdx}
+            columnId={`day-${dayIdx}`}
+            label={`${dayLabel}${star}`}
+            items={dayItems[dayIdx]}
+            isToday={isToday}
+            isPast={isPast}
+            readOnly={readOnly}
+            onStatusToggle={onStatusToggle}
+            onMenuAction={onMenuAction}
+          />
+        );
+      })}
+    </div>
+  );
+
+  if (readOnly) return content;
+
+  return (
+    <DndContext
+      id={dndId}
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      {content}
+      <DragOverlay>
+        {activeItem && <TaskCard item={activeItem} overlay onStatusToggle={() => {}} onMenuAction={() => {}} />}
+      </DragOverlay>
+    </DndContext>
+  );
+}
+
+function KanbanColumn({
+  columnId,
+  label,
+  items,
+  isToday,
+  isPast,
+  readOnly,
+  onStatusToggle,
+  onMenuAction,
+}: {
+  columnId: string;
+  label: string;
+  items: PlanItemData[];
+  isToday: boolean;
+  isPast: boolean;
+  readOnly?: boolean;
+  onStatusToggle: (id: number) => void;
+  onMenuAction: (id: number, action: string) => void;
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: columnId });
+  const hours = items.reduce((s, i) => s + (i.estimatedHours ?? 2), 0);
+
+  const borderColor = isPast
+    ? "oklch(0.72 0.14 152 / 0.5)"
+    : isToday
+      ? "oklch(0.82 0.055 80)"
+      : "oklch(0.25 0.007 70)";
+
+  return (
+    <div
+      ref={readOnly ? undefined : setNodeRef}
+      className="flex flex-col rounded-sm"
+      style={{
+        background: isOver
+          ? "oklch(0.82 0.055 80 / 0.06)"
+          : isToday
+            ? "oklch(0.82 0.055 80 / 0.03)"
+            : undefined,
+        margin: isToday ? "-4px" : undefined,
+        padding: isToday ? "4px" : undefined,
+        borderRadius: isToday ? "3px" : undefined,
+      }}
+    >
+      {/* Column header */}
+      <div
+        className="text-center pb-1.5 mb-1.5"
+        style={{
+          borderBottom: `${isToday ? "2px" : "1px"} solid ${borderColor}`,
+        }}
+      >
+        <span
+          className="text-[10px] font-semibold uppercase tracking-wider"
+          style={{ color: isToday ? "oklch(0.82 0.055 80)" : isPast ? "oklch(0.72 0.14 152 / 0.7)" : "var(--muted-foreground)" }}
+        >
+          {label}
+        </span>
+        {items.length > 0 && (
+          <span
+            className="block text-[9px] tabular-nums mt-0.5"
+            style={{ color: hours > 7 ? "var(--status-warning)" : "var(--muted-foreground)" }}
+          >
+            {hours.toFixed(0)}h
+          </span>
+        )}
+      </div>
+
+      {/* Cards */}
+      <div className="flex-1 flex flex-col gap-[4px] min-h-[40px]">
+        <SortableContext
+          items={items.map((i) => `item-${i.id}`)}
+          strategy={verticalListSortingStrategy}
+        >
+          {items.map((item) => (
+            <SortableCard
+              key={item.id}
+              item={item}
+              readOnly={readOnly}
+              onStatusToggle={onStatusToggle}
+              onMenuAction={onMenuAction}
+            />
+          ))}
+        </SortableContext>
+      </div>
+    </div>
+  );
+}
+
+function SortableCard({
+  item,
+  readOnly,
+  onStatusToggle,
+  onMenuAction,
+}: {
+  item: PlanItemData;
+  readOnly?: boolean;
+  onStatusToggle: (id: number) => void;
+  onMenuAction: (id: number, action: string) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: `item-${item.id}`, disabled: readOnly || item.status === "done" });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...(readOnly || item.status === "done" ? {} : { ...attributes, ...listeners })}>
+      <TaskCard item={item} onStatusToggle={onStatusToggle} onMenuAction={onMenuAction} />
+    </div>
+  );
+}
+
+export function TaskCard({
+  item,
+  overlay,
+  onStatusToggle,
+  onMenuAction,
+}: {
+  item: PlanItemData;
+  overlay?: boolean;
+  onStatusToggle: (id: number) => void;
+  onMenuAction: (id: number, action: string) => void;
+}) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const style = getStatusStyle(item.status, item.sourceWeek);
+  const StatusIcon = style.icon;
+  const platformColor = PLATFORM_COLORS[item.type] ?? "var(--muted-foreground)";
+  const platformLabel = PLATFORM_LABELS[item.type] ?? item.type.toUpperCase().slice(0, 3);
+  const isDone = item.status === "done";
+
+  return (
+    <div
+      className="px-[10px] py-[8px] rounded-sm relative group"
+      style={{
+        border: `1px ${style.dashed ? "dashed" : "solid"} ${style.borderColor}`,
+        background: style.bg,
+        cursor: isDone || overlay ? "default" : "grab",
+        opacity: isDone ? 0.7 : 1,
+      }}
+    >
+      {/* Top row: status + platform badge */}
+      <div className="flex items-center gap-1.5 mb-1">
+        <button
+          onClick={(e) => { e.stopPropagation(); onStatusToggle(item.id); }}
+          className="shrink-0"
+          title={`Status: ${item.status}`}
+        >
+          <StatusIcon className="h-3 w-3" style={{ color: style.color }} />
+        </button>
+        <span
+          className="text-[9px] font-bold uppercase px-1 py-[1px] rounded-sm"
+          style={{
+            color: platformColor,
+            background: `color-mix(in oklch, ${platformColor} 15%, transparent)`,
+          }}
+        >
+          {platformLabel}
+        </span>
+
+        {/* Context menu trigger */}
+        <button
+          onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen); }}
+          className="ml-auto text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+        >
+          ···
+        </button>
+      </div>
+
+      {/* Title */}
+      {item.link ? (
+        <a
+          href={item.link}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[11px] font-medium leading-[1.3] text-primary hover:underline block"
+          onClick={(e) => e.stopPropagation()}
+          style={{ textDecoration: isDone ? "line-through" : undefined }}
+        >
+          {item.title}
+        </a>
+      ) : (
+        <p
+          className="text-[11px] font-medium leading-[1.3]"
+          style={{ textDecoration: isDone ? "line-through" : undefined }}
+        >
+          {item.title}
+        </p>
+      )}
+
+      {/* Time + context */}
+      <div className="flex items-center gap-1 mt-1">
+        <Clock className="h-[10px] w-[10px] text-muted-foreground" />
+        <span className="text-[10px] text-muted-foreground tabular-nums">
+          {(item.estimatedHours ?? 2) < 1
+            ? `${((item.estimatedHours ?? 2) * 60).toFixed(0)}min`
+            : `${(item.estimatedHours ?? 2).toFixed(0)}h`}
+        </span>
+        {item.status === "blocked" && item.blockedReason && (
+          <span className="text-[9px] ml-1" style={{ color: "oklch(0.78 0.14 60)" }}>
+            {item.blockedReason}
+          </span>
+        )}
+        {item.status === "stuck" && (item.attemptCount ?? 0) > 0 && (
+          <span className="text-[9px] ml-1" style={{ color: "oklch(0.70 0.18 25)" }}>
+            {item.attemptCount} attempts
+          </span>
+        )}
+        {item.sourceWeek && (
+          <span className="text-[9px] ml-1" style={{ color: "oklch(0.78 0.14 60)" }}>
+            ↪ wk{new Date(item.sourceWeek + "T00:00:00").getDate()}
+          </span>
+        )}
+      </div>
+
+      {/* Context menu */}
+      {menuOpen && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
+          <div
+            className="absolute right-0 top-full z-50 mt-1 rounded-sm border border-border py-1 min-w-[120px]"
+            style={{ background: "oklch(0.15 0.005 75)" }}
+          >
+            {(["blocked", "stuck", "deferred", "pending"] as const).map((s) => (
+              <button
+                key={s}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onMenuAction(item.id, s);
+                  setMenuOpen(false);
+                }}
+                className="w-full text-left px-3 py-1.5 text-[11px] hover:bg-white/5"
+              >
+                Mark {s}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}

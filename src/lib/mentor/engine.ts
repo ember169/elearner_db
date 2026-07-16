@@ -76,6 +76,16 @@ export type MentorCompetency = {
   nextStep: string;
 };
 
+export type SideProject = {
+  title: string;
+  description: string;
+  skills?: string[];
+  prerequisites?: { label: string; status: string }[];
+  steps?: { title: string; description: string; estimatedHours: number }[];
+  bonus_extensions?: string[];
+  capstone_connection?: string;
+};
+
 export type MentorPlan = {
   version: number;
   generatedAt: string;
@@ -83,7 +93,7 @@ export type MentorPlan = {
   headline: string;
   focus: MentorFocus[];
   competencies: MentorCompetency[];
-  /** true when produced without the LLM (no API key) */
+  side_project?: SideProject;
   fallback?: boolean;
 };
 

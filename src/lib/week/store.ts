@@ -7,12 +7,33 @@ export type PlanItem = typeof planItems.$inferSelect;
 export type WeekPlan = typeof weeklyPlans.$inferSelect;
 export type WeekPlanWithItems = WeekPlan & { items: PlanItem[] };
 
+function toLocalISODate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 export function getWeekStart(date?: Date): string {
   const d = new Date(date ?? new Date());
   const day = d.getDay();
   const diff = d.getDate() - day + (day === 0 ? -6 : 1);
   d.setDate(diff);
-  return d.toISOString().slice(0, 10);
+  return toLocalISODate(d);
+}
+
+export function getAdjacentWeek(weekStart: string, delta: number): string {
+  const d = new Date(weekStart + "T12:00:00");
+  d.setDate(d.getDate() + delta * 7);
+  return toLocalISODate(d);
+}
+
+export function getISOWeekNumber(weekStart: string): number {
+  const d = new Date(weekStart + "T12:00:00");
+  const dayNum = d.getDay() || 7;
+  d.setDate(d.getDate() + 4 - dayNum);
+  const yearStart = new Date(d.getFullYear(), 0, 1);
+  return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
 }
 
 export function loadWeekPlan(weekStart: string): WeekPlanWithItems | null {
@@ -30,12 +51,44 @@ export function loadWeekPlan(weekStart: string): WeekPlanWithItems | null {
   return { ...plan, items };
 }
 
+function generateBriefing(focusItems: { type: string; title: string; priority: string }[]): {
+  mentorBriefing: string;
+  collapsedBriefing: string;
+} {
+  const high = focusItems.filter((f) => f.priority === "high");
+  const rest = focusItems.filter((f) => f.priority !== "high");
+  const platforms = [...new Set(rest.map((f) => f.type))];
+  const platformLabels: Record<string, string> = {
+    "42": "42", thm: "THM", htb: "HTB", rootme: "RM", maldev: "maldev",
+    "side-project": "side project", skill: "skill-building",
+  };
+
+  const first = high[0]?.title ?? focusItems[0]?.title ?? "your tasks";
+  const second = (high[1] ?? rest[0])?.title;
+  const fills = platforms
+    .filter((p) => p !== high[0]?.type)
+    .map((p) => platformLabels[p] ?? p)
+    .slice(0, 2);
+
+  let briefing = `Finish ${first} first — you're close, and it feeds into maldev later.`;
+  if (second) briefing += ` Then ${second}.`;
+  if (fills.length) briefing += ` Fill gaps with ${fills.join(" + ")}.`;
+
+  let collapsed = `Finish ${first}`;
+  if (second) collapsed += `, then ${second}.`;
+  if (fills.length) collapsed += ` Fill with ${fills.join(" + ")}.`;
+
+  return { mentorBriefing: briefing, collapsedBriefing: collapsed };
+}
+
 export function createWeekPlanFromMentor(weekStart: string): WeekPlanWithItems {
   const { plan: mentorPlan } = loadCurrentPlan();
 
+  const { mentorBriefing, collapsedBriefing } = generateBriefing(mentorPlan.focus);
+
   const result = db
     .insert(weeklyPlans)
-    .values({ weekStart })
+    .values({ weekStart, mentorBriefing, collapsedBriefing })
     .returning()
     .get();
 
@@ -61,19 +114,20 @@ export function createWeekPlanFromMentor(weekStart: string): WeekPlanWithItems {
         title: d.title,
         type: d.type,
         why: d.why,
+        description: d.description,
         estimatedHours: d.estimatedHours,
         priority: d.priority,
         ref: d.ref,
         link: d.link,
         status: "pending",
         sortOrder: items.length,
+        sourceWeek: d.sourceWeek ?? d.createdAt?.slice(0, 10),
       })
       .returning()
       .get();
     items.push(item);
   }
 
-  // Seed from mentor plan focus items
   for (const focus of mentorPlan.focus) {
     const hours = parseFloat(focus.estimatedTime.replace(/[^0-9.]/g, "")) || 2;
     const item = db
@@ -94,7 +148,6 @@ export function createWeekPlanFromMentor(weekStart: string): WeekPlanWithItems {
     items.push(item);
   }
 
-  // Auto-distribute across days
   autoDistribute(items);
 
   return { ...result, items };
@@ -131,6 +184,10 @@ export function updatePlanItem(
     status?: string;
     sortOrder?: number;
     deferredTo?: string | null;
+    attemptCount?: number;
+    blockedReason?: string | null;
+    blockedSince?: string | null;
+    description?: string | null;
   }
 ) {
   const data: Record<string, unknown> = {};
@@ -142,9 +199,20 @@ export function updatePlanItem(
     } else {
       data.completedAt = null;
     }
+    if (updates.status === "blocked") {
+      data.blockedSince = new Date().toISOString();
+    }
+    if (updates.status === "stuck") {
+      const current = db.select().from(planItems).where(eq(planItems.id, id)).get();
+      data.attemptCount = (current?.attemptCount ?? 0) + 1;
+    }
   }
   if ("sortOrder" in updates) data.sortOrder = updates.sortOrder;
   if ("deferredTo" in updates) data.deferredTo = updates.deferredTo;
+  if ("attemptCount" in updates) data.attemptCount = updates.attemptCount;
+  if ("blockedReason" in updates) data.blockedReason = updates.blockedReason;
+  if ("blockedSince" in updates) data.blockedSince = updates.blockedSince;
+  if ("description" in updates) data.description = updates.description;
 
   db.update(planItems).set(data).where(eq(planItems.id, id)).run();
   return db.select().from(planItems).where(eq(planItems.id, id)).get();

@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Compass,
   CalendarDays,
   Map,
   Target,
@@ -15,8 +14,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { href: "/", label: "Mentor", icon: Compass },
-  { href: "/week", label: "This Week", icon: CalendarDays },
+  { href: "/", label: "Planner", icon: CalendarDays },
   { href: "/progress", label: "Progress", icon: Map },
   { href: "/goals", label: "Goals", icon: Target },
   { href: "/settings", label: "Settings", icon: Settings },
