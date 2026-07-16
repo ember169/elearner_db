@@ -344,7 +344,6 @@ export const FT_COMMON_CORE: FtProject[] = [
     description:
       "Set up a multi-container Docker infrastructure with NGINX, WordPress, and MariaDB.",
     estimatedHours: 80,
-    group: "circle6",
   },
   {
     slug: "ft_transcendence",
@@ -364,7 +363,6 @@ export const FT_COMMON_CORE: FtProject[] = [
     description:
       "Build a full-stack web application with a Pong game, chat, user management, and matchmaking.",
     estimatedHours: 200,
-    group: "circle6",
   },
 ];
 
@@ -481,10 +479,23 @@ export function getProjectBySlug(slug: string): FtProject | undefined {
   );
 }
 
+// Groups model "choose one from this pool" — once any member of a group is
+// completed, the whole pool counts as satisfied and its siblings drop out.
+function satisfiedGroups(completed: Set<string>): Set<string> {
+  const groups = new Set<string>();
+  for (const p of FT_COMMON_CORE) {
+    if (p.group && completed.has(p.slug)) groups.add(p.group);
+  }
+  return groups;
+}
+
 export function getAvailableProjects(completedSlugs: string[]): FtProject[] {
   const completed = new Set(completedSlugs.map((s) => s.toLowerCase()));
+  const doneGroups = satisfiedGroups(completed);
   return FT_COMMON_CORE.filter((p) => {
     if (completed.has(p.slug)) return false;
+    // A sibling of an already-chosen pool project is no longer a real option.
+    if (p.group && doneGroups.has(p.group)) return false;
     return p.prerequisites.every((prereq) => completed.has(prereq));
   });
 }
@@ -492,10 +503,26 @@ export function getAvailableProjects(completedSlugs: string[]): FtProject[] {
 export function getCircleProgress(completedSlugs: string[]) {
   const completed = new Set(completedSlugs.map((s) => s.toLowerCase()));
   const circles: Record<number, { total: number; done: number }> = {};
+  // Count each choice-pool as a single unit (one project out of the pool is
+  // all a student does), and every ungrouped project individually.
+  const seenGroups: Record<number, Set<string>> = {};
   for (const p of FT_COMMON_CORE) {
-    if (!circles[p.circle]) circles[p.circle] = { total: 0, done: 0 };
-    circles[p.circle].total++;
-    if (completed.has(p.slug)) circles[p.circle].done++;
+    if (!circles[p.circle]) {
+      circles[p.circle] = { total: 0, done: 0 };
+      seenGroups[p.circle] = new Set();
+    }
+    if (p.group) {
+      if (seenGroups[p.circle].has(p.group)) continue; // pool already counted
+      seenGroups[p.circle].add(p.group);
+      circles[p.circle].total++;
+      const anyDone = FT_COMMON_CORE.some(
+        (q) => q.group === p.group && completed.has(q.slug)
+      );
+      if (anyDone) circles[p.circle].done++;
+    } else {
+      circles[p.circle].total++;
+      if (completed.has(p.slug)) circles[p.circle].done++;
+    }
   }
   return circles;
 }

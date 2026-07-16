@@ -24,6 +24,11 @@ export async function PATCH(req: NextRequest) {
   if (body.status !== undefined) updates.status = body.status;
   if (body.currentValue !== undefined) updates.currentValue = body.currentValue;
   if (body.title !== undefined) updates.title = body.title;
+  if (body.description !== undefined) updates.description = body.description;
+  if (body.category !== undefined) updates.category = body.category;
+  if (body.targetValue !== undefined) updates.targetValue = body.targetValue;
+  if (body.deadline !== undefined) updates.deadline = body.deadline;
+  if (body.metricSource !== undefined) updates.metricSource = body.metricSource;
 
   db.update(goals).set(updates).where(eq(goals.id, body.id)).run();
   return NextResponse.json({ ok: true });

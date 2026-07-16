@@ -29,6 +29,7 @@ import {
   Zap,
   Clock,
   ArrowRight,
+  Pencil,
 } from "lucide-react";
 import type { GoalWithPacing } from "@/lib/guidance/engine";
 import { METRIC_SOURCES, GOAL_PRESETS } from "@/lib/goals/shared";
@@ -38,6 +39,7 @@ import { assertOk } from "@/lib/utils";
 
 export function GoalsClient({ goals }: { goals: GoalWithPacing[] }) {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("general");
   const [targetValue, setTargetValue] = useState("");
@@ -55,6 +57,7 @@ export function GoalsClient({ goals }: { goals: GoalWithPacing[] }) {
   }
 
   function resetForm() {
+    setEditingId(null);
     setTitle("");
     setCategory("general");
     setTargetValue("");
@@ -62,26 +65,44 @@ export function GoalsClient({ goals }: { goals: GoalWithPacing[] }) {
     setMetricSource("");
   }
 
-  async function addGoal() {
+  function openEdit(goal: GoalWithPacing) {
+    setEditingId(goal.id);
+    setTitle(goal.title);
+    setCategory(goal.category ?? "general");
+    setTargetValue(goal.targetValue != null ? String(goal.targetValue) : "");
+    setDeadline(goal.deadline ?? "");
+    setMetricSource(goal.metricSource ?? "");
+    setDialogOpen(true);
+  }
+
+  async function submitGoal() {
     if (!title.trim()) return;
+    const payload = {
+      title,
+      category,
+      targetValue: targetValue ? parseFloat(targetValue) : null,
+      deadline: deadline || null,
+      metricSource:
+        metricSource && metricSource !== "manual" ? metricSource : null,
+    };
     try {
       const res = await fetch("/api/goals", {
-        method: "POST",
+        method: editingId ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title,
-          category,
-          targetValue: targetValue ? parseFloat(targetValue) : null,
-          deadline: deadline || null,
-          metricSource: metricSource && metricSource !== "manual" ? metricSource : null,
-        }),
+        body: JSON.stringify(
+          editingId ? { id: editingId, ...payload } : payload
+        ),
       });
       await assertOk(res);
       resetForm();
       setDialogOpen(false);
       window.location.reload();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Failed to create goal.");
+      alert(
+        e instanceof Error
+          ? e.message
+          : `Failed to ${editingId ? "update" : "create"} goal.`
+      );
     }
   }
 
@@ -134,31 +155,35 @@ export function GoalsClient({ goals }: { goals: GoalWithPacing[] }) {
             if (!open) resetForm();
           }}
         >
-          <DialogTrigger render={<Button size="sm" />}>
+          <DialogTrigger render={<Button size="sm" onClick={resetForm} />}>
             <Plus className="h-3.5 w-3.5 mr-1" />
             New goal
             <ArrowRight className="h-3 w-3 ml-1" />
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>New goal</DialogTitle>
+              <DialogTitle>{editingId ? "Edit goal" : "New goal"}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-1">
-              <div>
-                <p className="section-label mb-2">Quick presets</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {GOAL_PRESETS.map((p) => (
-                    <button
-                      key={p.metricSource}
-                      onClick={() => applyPreset(p)}
-                      className="text-[12px] px-2.5 py-1.5 rounded-sm border border-border bg-transparent hover:bg-accent transition-colors"
-                    >
-                      {p.title}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <Separator />
+              {!editingId && (
+                <>
+                  <div>
+                    <p className="section-label mb-2">Quick presets</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {GOAL_PRESETS.map((p) => (
+                        <button
+                          key={p.metricSource}
+                          onClick={() => applyPreset(p)}
+                          className="text-[12px] px-2.5 py-1.5 rounded-sm border border-border bg-transparent hover:bg-accent transition-colors"
+                        >
+                          {p.title}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <Separator />
+                </>
+              )}
               <div className="space-y-1.5">
                 <Label className="text-[13px]">Title</Label>
                 <Input
@@ -242,8 +267,8 @@ export function GoalsClient({ goals }: { goals: GoalWithPacing[] }) {
                   />
                 </div>
               </div>
-              <Button onClick={addGoal} className="w-full">
-                Create goal
+              <Button onClick={submitGoal} className="w-full">
+                {editingId ? "Save changes" : "Create goal"}
                 <ArrowRight className="h-3 w-3 ml-1.5" />
               </Button>
             </div>
@@ -271,6 +296,7 @@ export function GoalsClient({ goals }: { goals: GoalWithPacing[] }) {
               goal={goal}
               onComplete={completeGoal}
               onDelete={deleteGoal}
+              onEdit={openEdit}
             />
           ))}
         </div>
@@ -314,10 +340,12 @@ function GoalCard({
   goal,
   onComplete,
   onDelete,
+  onEdit,
 }: {
   goal: GoalWithPacing;
   onComplete: (id: number) => void;
   onDelete: (id: number) => void;
+  onEdit: (goal: GoalWithPacing) => void;
 }) {
   const progress = goal.pacing?.percentComplete ?? 0;
   const color = PLATFORM_COLORS[goal.category ?? "general"] ?? "var(--muted-foreground)";
@@ -346,10 +374,13 @@ function GoalCard({
             )}
           </div>
           <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-            <button onClick={() => onComplete(goal.id)} className="p-1 hover:text-success text-muted-foreground transition-colors">
+            <button onClick={() => onEdit(goal)} className="p-1 hover:text-primary text-muted-foreground transition-colors" title="Edit goal">
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+            <button onClick={() => onComplete(goal.id)} className="p-1 hover:text-success text-muted-foreground transition-colors" title="Mark complete">
               <CheckCircle className="h-3.5 w-3.5" />
             </button>
-            <button onClick={() => onDelete(goal.id)} className="p-1 hover:text-destructive text-muted-foreground transition-colors">
+            <button onClick={() => onDelete(goal.id)} className="p-1 hover:text-destructive text-muted-foreground transition-colors" title="Delete goal">
               <Trash2 className="h-3.5 w-3.5" />
             </button>
           </div>
