@@ -82,13 +82,14 @@ export function PlannerClient({
   competencies,
   goals,
   pinnedTasks: initialPinned,
-  sideProject,
+  sideProject: initialSideProject,
   hasKey,
   stale,
 }: PlannerClientProps) {
   const [currentWeek, setCurrentWeek] = useState(initialWeek);
   const [plan, setPlan] = useState(initialPlan);
   const [items, setItems] = useState<PlanItemData[]>(initialPlan.items);
+  const [sideProject, setSideProject] = useState(initialSideProject);
   const [syncing, setSyncing] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [briefingCollapsed, setBriefingCollapsed] = useState(() => {
@@ -211,6 +212,16 @@ export function PlannerClient({
   async function handleRegenerate() {
     setRegenerating(true);
     try {
+      const mentorRes = await fetch("/api/mentor", { method: "POST" });
+      const mentorData = await mentorRes.json();
+      if (mentorData.error) {
+        alert(mentorData.error);
+        return;
+      }
+      if (mentorData.plan?.side_project) {
+        setSideProject(mentorData.plan.side_project);
+      }
+
       const res = await fetch("/api/week", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -219,6 +230,8 @@ export function PlannerClient({
       const data = await res.json();
       setPlan(data);
       setItems(data.items);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Regeneration failed.");
     } finally {
       setRegenerating(false);
     }
@@ -430,11 +443,9 @@ export function PlannerClient({
       </div>
 
       {/* ── Side project + Competency (desktop only, side by side) ── */}
-      <div className="hidden md:grid grid-cols-2 gap-3">
-        {sideProject ? (
+      <div className={`hidden md:grid gap-3 ${sideProject ? "grid-cols-2" : "grid-cols-1"}`}>
+        {sideProject && (
           <SideProjectBrief project={sideProject} weekLabel={`· WK${weekNum}`} />
-        ) : (
-          <div />
         )}
         <CompetencySpotlight competencies={competencies} />
       </div>

@@ -250,8 +250,31 @@ function toolSchema() {
             required: ["id", "level", "evidence", "nextStep"],
           },
         },
+        side_project: {
+          type: "object",
+          description: "A small hands-on project that leverages this week's learning. Always include one.",
+          properties: {
+            title: { type: "string" },
+            description: { type: "string", description: "2-3 sentence description of the project." },
+            skills: { type: "array", items: { type: "string" }, description: "Skills practiced." },
+            steps: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  title: { type: "string" },
+                  description: { type: "string" },
+                  estimatedHours: { type: "number" },
+                },
+                required: ["title", "description", "estimatedHours"],
+              },
+            },
+            capstone_connection: { type: "string", description: "How this feeds into the student's long-term objective." },
+          },
+          required: ["title", "description", "skills", "steps"],
+        },
       },
-      required: ["headline", "focus", "competencies"],
+      required: ["headline", "focus", "competencies", "side_project"],
     },
   };
 }
@@ -275,7 +298,7 @@ function validateRef(f: MentorFocus): MentorFocus {
 }
 
 function finalizePlan(
-  raw: { headline: string; focus: MentorFocus[]; competencies: MentorCompetency[] },
+  raw: { headline: string; focus: MentorFocus[]; competencies: MentorCompetency[]; side_project?: SideProject },
   objective: string,
   fallback = false
 ): MentorPlan {
@@ -305,6 +328,7 @@ function finalizePlan(
     headline: raw.headline,
     focus: capped,
     competencies: raw.competencies,
+    ...(raw.side_project ? { side_project: raw.side_project } : {}),
     ...(fallback ? { fallback: true } : {}),
   };
 }
@@ -324,7 +348,7 @@ async function generateViaAnthropic(
   prompt: string,
   apiKey: string,
   model: string
-): Promise<{ headline: string; focus: MentorFocus[]; competencies: MentorCompetency[] }> {
+): Promise<{ headline: string; focus: MentorFocus[]; competencies: MentorCompetency[]; side_project?: SideProject }> {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -373,7 +397,7 @@ async function generateViaOpenAI(
   model: string,
   baseUrl: string,
   apiKey?: string | null
-): Promise<{ headline: string; focus: MentorFocus[]; competencies: MentorCompetency[] }> {
+): Promise<{ headline: string; focus: MentorFocus[]; competencies: MentorCompetency[]; side_project?: SideProject }> {
   const url = `${baseUrl.replace(/\/+$/, "")}/v1/chat/completions`;
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
@@ -414,7 +438,7 @@ export async function generateMentorPlan(
   config: LLMConfig
 ): Promise<MentorPlan> {
   const prompt = buildPrompt(ctx);
-  let input: { headline?: string; focus?: MentorFocus[]; competencies?: MentorCompetency[] };
+  let input: { headline?: string; focus?: MentorFocus[]; competencies?: MentorCompetency[]; side_project?: SideProject };
 
   if (config.provider === "local" && config.baseUrl) {
     input = await generateViaOpenAI(prompt, config.model, config.baseUrl, config.apiKey);
@@ -429,6 +453,7 @@ export async function generateMentorPlan(
       headline: input.headline ?? "This week's focus",
       focus: Array.isArray(input.focus) ? input.focus : [],
       competencies: Array.isArray(input.competencies) ? input.competencies : [],
+      side_project: input.side_project,
     },
     ctx.objective
   );
@@ -476,11 +501,26 @@ export function buildFallbackPlan(ctx: MentorContext): MentorPlan {
     };
   });
 
+  const sideProjectFocus = focus.find((f) => f.type === "side-project");
+  const side_project: SideProject | undefined = sideProjectFocus
+    ? {
+        title: sideProjectFocus.title,
+        description: sideProjectFocus.why,
+        skills: ["scripting", ctx.objective.split(",")[0]?.trim().split("/")[0]?.trim() ?? "security"].filter(Boolean),
+        steps: [
+          { title: "Set up project scaffold", description: "Create the project structure and dependencies.", estimatedHours: 1 },
+          { title: "Implement core logic", description: sideProjectFocus.why, estimatedHours: 2 },
+          { title: "Test and document", description: "Verify it works and write a short README.", estimatedHours: 1 },
+        ],
+      }
+    : undefined;
+
   return finalizePlan(
     {
       headline: "Rule-based plan (add an Anthropic API key in Settings for full mentor guidance)",
       focus,
       competencies,
+      side_project,
     },
     ctx.objective,
     true
