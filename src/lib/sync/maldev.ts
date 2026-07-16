@@ -6,6 +6,8 @@ import {
   activityFeed,
 } from "@/lib/db/schema";
 import Database from "better-sqlite3";
+import fs from "fs";
+import path from "path";
 
 type Config = {
   maldevDbPath: string | null;
@@ -14,6 +16,32 @@ type Config = {
 export async function syncMaldev(config: Config) {
   const dbPath = config.maldevDbPath;
   if (!dbPath) throw new Error("Maldev DB path not configured");
+
+  // Diagnose path problems ourselves instead of surfacing better-sqlite3's
+  // bare errors — in Docker the configured path must be the CONTAINER-side
+  // path of a mounted volume, which is easy to get wrong.
+  const dir = path.dirname(dbPath);
+  if (!fs.existsSync(dir)) {
+    throw new Error(
+      `Maldev: directory "${dir}" does not exist inside the container. Settings must point at the container path of the mounted volume (e.g. /maldev/elearning.db), not the host path.`
+    );
+  }
+  if (!fs.existsSync(dbPath)) {
+    let listing = "";
+    try {
+      listing = fs.readdirSync(dir).slice(0, 20).join(", ") || "(empty)";
+    } catch {
+      listing = "(unreadable)";
+    }
+    throw new Error(
+      `Maldev: no file at "${dbPath}". Contents of ${dir}: ${listing}`
+    );
+  }
+  if (fs.statSync(dbPath).isDirectory()) {
+    throw new Error(
+      `Maldev: "${dbPath}" is a directory, not a file. This usually means an earlier Docker bind mount ran while the host file was missing (Docker creates an empty directory in that case) — remove the stray directory on the host and check the host path in docker-compose.yml points at the real .db file.`
+    );
+  }
 
   let itemsSynced = 0;
   const maldevDb = new Database(dbPath, { readonly: true });
