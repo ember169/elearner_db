@@ -7,7 +7,12 @@ services:
       - "3001:3000"
     volumes:
       - db-data:/app/data
-      - /home/mskn/maldev/elearning.db:/maldev/elearning.db:ro
+      # Mount the directory, not the bare .db file: SQLite WAL mode keeps
+      # -wal/-shm sidecar files next to the db, and a single-file bind mount
+      # goes stale if the source file is ever replaced.
+      # In Settings, the Maldev database path must be the CONTAINER path:
+      # /maldev/elearning.db
+      - /home/mskn/maldev:/maldev:ro
     environment:
       - DATABASE_PATH=/app/data/learner.db
     restart: unless-stopped

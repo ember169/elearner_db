@@ -21,8 +21,22 @@ async function htbFetch(token: string, path: string) {
 
 export async function syncHackTheBox(config: Config) {
   const token = config.htbApiToken!;
-  const userId = config.htbUserId!;
+  let userId = config.htbUserId!;
   let itemsSynced = 0;
+
+  // The labs API wants the legacy numeric user id, but HTB's account portal
+  // now surfaces a UUID — so if the configured id isn't numeric, resolve the
+  // token owner's numeric id from /user/info instead of failing with a 400.
+  if (!/^\d+$/.test(userId)) {
+    const info = await htbFetch(token, `/user/info`);
+    const resolvedId = info?.info?.id ?? info?.id;
+    if (!resolvedId) {
+      throw new Error(
+        "HTB: could not resolve your numeric user id from the API token — enter it manually (the number in your HTB profile URL)."
+      );
+    }
+    userId = String(resolvedId);
+  }
 
   // Profile
   const profileData = await htbFetch(
