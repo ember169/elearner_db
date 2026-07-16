@@ -371,12 +371,15 @@ function openAIToolSchema() {
 async function generateViaOpenAI(
   prompt: string,
   model: string,
-  baseUrl: string
+  baseUrl: string,
+  apiKey?: string | null
 ): Promise<{ headline: string; focus: MentorFocus[]; competencies: MentorCompetency[] }> {
   const url = `${baseUrl.replace(/\/+$/, "")}/v1/chat/completions`;
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
   const res = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify({
       model,
       max_tokens: 4096,
@@ -414,7 +417,7 @@ export async function generateMentorPlan(
   let input: { headline?: string; focus?: MentorFocus[]; competencies?: MentorCompetency[] };
 
   if (config.provider === "local" && config.baseUrl) {
-    input = await generateViaOpenAI(prompt, config.model, config.baseUrl);
+    input = await generateViaOpenAI(prompt, config.model, config.baseUrl, config.apiKey);
   } else if (config.apiKey) {
     input = await generateViaAnthropic(prompt, config.apiKey, config.model);
   } else {

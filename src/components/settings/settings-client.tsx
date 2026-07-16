@@ -250,9 +250,10 @@ export function SettingsClient({
               <Field label="Model" value={llmModel} onChange={setLlmModel} placeholder="claude-sonnet-5" />
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <Field label="Base URL" value={llmBaseUrl} onChange={setLlmBaseUrl} placeholder="http://fedora-server:8000" />
-              <Field label="Model" value={llmModel} onChange={setLlmModel} placeholder="model-name" />
+              <Field label="Model" value={llmModel} onChange={setLlmModel} placeholder="gemma-4-E2B-it-GGUF" />
+              <Field label="API Key (if required)" value={llmApiKey} onChange={setLlmApiKey} placeholder="Bearer token" type="password" />
             </div>
           )}
         </div>
