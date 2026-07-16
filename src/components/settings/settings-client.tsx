@@ -77,10 +77,17 @@ export function SettingsClient({
     setTesting(platform);
     setTestResult((prev) => ({ ...prev, [platform]: undefined! }));
     try {
+      const payload: Record<string, string> = { platform };
+      if (platform === "llm") {
+        payload.provider = llmProvider;
+        if (llmBaseUrl) payload.baseUrl = llmBaseUrl;
+        if (llmApiKey) payload.apiKey = llmApiKey;
+        if (llmModel) payload.model = llmModel;
+      }
       const res = await fetch("/api/sync/test", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ platform }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       setTestResult((prev) => ({
@@ -211,6 +218,9 @@ export function SettingsClient({
         name="AI Mentor"
         configured={llmProvider === "local" ? !!llmBaseUrl : !!llmApiKey}
         hint="Powers the personalized mentor plan on the home page. The objective drives all recommendations."
+        onTest={() => testConnection("llm")}
+        testingNow={testing === "llm"}
+        testResult={testResult["llm"]}
       >
         <div className="space-y-3">
           <div className="space-y-1.5">
@@ -451,7 +461,7 @@ function PlatformSection({
         {children}
         <div className="flex items-center gap-3">
           <p className="text-[12px] text-muted-foreground flex-1">{hint}</p>
-          {onTest && configured && (
+          {onTest && (
             <Button variant="ghost" size="xs" onClick={onTest} disabled={testingNow}>
               <RefreshCw className={`h-3 w-3 mr-1 ${testingNow ? "animate-spin" : ""}`} />
               {testingNow ? "Testing..." : "Test connection"}
