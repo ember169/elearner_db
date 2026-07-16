@@ -285,6 +285,55 @@ export const guidanceCache = sqliteTable("guidance_cache", {
     .default(sql`(datetime('now'))`),
 });
 
+// --- Weekly Planner ---
+
+export const weeklyPlans = sqliteTable("weekly_plans", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  weekStart: text("week_start").notNull(), // ISO Monday date
+  status: text("status").notNull().default("active"), // active | archived
+  notes: text("notes"),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+export const planItems = sqliteTable("plan_items", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  weeklyPlanId: integer("weekly_plan_id")
+    .notNull()
+    .references(() => weeklyPlans.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  type: text("type").notNull(), // 42, thm, htb, rootme, maldev, side-project, skill
+  why: text("why"),
+  estimatedHours: real("estimated_hours").default(2),
+  priority: text("priority").notNull().default("medium"), // high, medium, low
+  dayIndex: integer("day_index"), // 0-6 (Mon-Sun), null = unscheduled
+  status: text("status").notNull().default("pending"), // pending, active, done, blocked, stuck, deferred
+  ref: text("ref"),
+  link: text("link"),
+  sortOrder: integer("sort_order").default(0),
+  deferredTo: text("deferred_to"), // ISO date — item reappears in that week
+  completedAt: text("completed_at"),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+export const catalogEntries = sqliteTable("catalog_entries", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  platform: text("platform").notNull(), // thm, htb, rootme
+  code: text("code").notNull(),
+  name: text("name").notNull(),
+  category: text("category"),
+  difficulty: text("difficulty"),
+  path: text("path"),
+  link: text("link"),
+  source: text("source").notNull().default("sync"), // sync, llm, manual
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
 // Structured mentor plans (append-only; newest row is the current plan)
 export const mentorPlan = sqliteTable("mentor_plan", {
   id: integer("id").primaryKey({ autoIncrement: true }),

@@ -22,7 +22,8 @@ import {
   PLATFORM_SKILL_MAPPING,
   type FtProject,
 } from "./ft-project-tree";
-import { THM_ROOM_CATEGORIES } from "./thm-room-categories";
+import { THM_ROOM_CATEGORIES, THM_ROOM_CATALOG } from "./thm-room-categories";
+import { HTB_ACADEMY_MODULES } from "@/lib/mentor/htb-academy-catalog";
 import { syncGoalValues } from "@/lib/goals/metrics";
 
 export type PlatformSnapshot = {
@@ -78,6 +79,8 @@ export type Recommendation = {
   reason: string;
   estimatedHours?: number;
   skills?: string[];
+  ref?: string;
+  link?: string;
 };
 
 export type GuidanceResult = {
@@ -339,6 +342,7 @@ export function generateRecommendations(
         reason: "Currently in progress — completing this unblocks the next circle.",
         estimatedHours: project.estimatedHours,
         skills: project.skills,
+        ref: project.slug,
       });
     }
   }
@@ -358,6 +362,7 @@ export function generateRecommendations(
         : `Next available project in Circle ${project.circle}.`,
       estimatedHours: project.estimatedHours,
       skills: project.skills,
+      ref: project.slug,
     });
   }
 
@@ -373,26 +378,40 @@ export function generateRecommendations(
           platform: "rootme",
           title: `Focus on Root-me: ${weakCategories[0]}`,
           reason: `${goal.pacing.requiredPace} needed for "${goal.title}". ${weakCategories[0]} has few solves — good for quick points.`,
+          estimatedHours: 3,
+          ref: weakCategories[0],
         });
       }
     }
 
     if (goal.category === "thm" && goal.pacing.daysRemaining < 90) {
-      recs.push({
-        priority: goal.pacing.onTrack ? "medium" : "high",
-        platform: "thm",
-        title: "Complete TryHackMe rooms",
-        reason: `${goal.pacing.requiredPace} needed for "${goal.title}".`,
-      });
+      const thmPicks = pickThmRooms(snapshot, skillProfile, 2);
+      for (const room of thmPicks) {
+        recs.push({
+          priority: goal.pacing.onTrack ? "medium" : "high",
+          platform: "thm",
+          title: `THM: ${room.name}`,
+          reason: `${goal.pacing.requiredPace} needed for "${goal.title}".`,
+          estimatedHours: room.difficulty === "hard" ? 4 : room.difficulty === "medium" ? 3 : 2,
+          ref: room.code,
+          link: `https://tryhackme.com/room/${room.code}`,
+        });
+      }
     }
 
     if (goal.category === "htb" && goal.pacing.daysRemaining < 90) {
-      recs.push({
-        priority: goal.pacing.onTrack ? "medium" : "high",
-        platform: "htb",
-        title: "Solve HackTheBox machines",
-        reason: `${goal.pacing.requiredPace} needed for "${goal.title}".`,
-      });
+      const htbPicks = pickHtbModules(skillProfile, 2);
+      for (const mod of htbPicks) {
+        recs.push({
+          priority: goal.pacing.onTrack ? "medium" : "high",
+          platform: "htb",
+          title: `HTB: ${mod.name}`,
+          reason: `${goal.pacing.requiredPace} needed for "${goal.title}".`,
+          estimatedHours: mod.tier === "Hard" ? 6 : mod.tier === "Medium" ? 4 : 3,
+          ref: mod.id,
+          link: `https://academy.hackthebox.com/module/details/${mod.id}`,
+        });
+      }
     }
 
     if (goal.category === "maldev") {
@@ -411,13 +430,30 @@ export function generateRecommendations(
       const level = skillProfile[skill] ?? 0;
       if (level < 1 && isSecurityRelated(skill)) {
         const platformSuggestion = suggestPlatformForSkill(skill);
-        if (platformSuggestion) {
+        if (platformSuggestion === "thm") {
+          const room = pickThmRoomForSkill(snapshot, skill);
+          if (room) {
+            recs.push({
+              priority: "low",
+              platform: "thm",
+              title: `THM: ${room.name}`,
+              reason: `Build ${skill} skills for upcoming "${project.name}".`,
+              estimatedHours: room.difficulty === "hard" ? 4 : room.difficulty === "medium" ? 3 : 2,
+              skills: [skill],
+              ref: room.code,
+              link: `https://tryhackme.com/room/${room.code}`,
+            });
+          }
+        } else if (platformSuggestion === "rootme") {
+          const cat = skillToRootmeCategory(skill);
           recs.push({
             priority: "low",
-            platform: platformSuggestion,
-            title: `Build ${skill} skills`,
-            reason: `Helpful for upcoming 42 project "${project.name}". Try challenges in this category.`,
+            platform: "rootme",
+            title: `Root-me: ${cat} challenges`,
+            reason: `Build ${skill} skills for upcoming "${project.name}".`,
+            estimatedHours: 3,
             skills: [skill],
+            ref: cat,
           });
         }
       }
@@ -431,6 +467,93 @@ export function generateRecommendations(
     seen.add(r.title);
     return true;
   });
+}
+
+const SKILL_TO_THM_CATEGORY: Record<string, string> = {
+  security: "misc",
+  networking: "misc",
+  cryptography: "crypto",
+  "reverse-engineering": "reverse",
+  "web-security": "web",
+  forensics: "forensics",
+};
+
+const SKILL_TO_HTB_AREA: Record<string, string> = {
+  security: "Networking",
+  networking: "Networking",
+  cryptography: "Crypto",
+  "reverse-engineering": "Reverse engineering & binary",
+  "web-security": "Web",
+  forensics: "Forensics & incident response",
+};
+
+const SKILL_TO_ROOTME_CATEGORY: Record<string, string> = {
+  cryptography: "Cryptanalyse",
+  "reverse-engineering": "Cracking",
+  "web-security": "Web - Serveur",
+  forensics: "Forensique",
+  security: "App - Système",
+  networking: "Réseau",
+};
+
+function pickThmRooms(
+  snapshot: PlatformSnapshot,
+  skillProfile: Record<string, number>,
+  count: number
+): typeof THM_ROOM_CATALOG {
+  const completedCodes = new Set(snapshot.thm.rooms.map((r) => r.roomCode));
+  const available = THM_ROOM_CATALOG.filter((r) => !completedCodes.has(r.code));
+
+  const weakSkills = Object.entries(skillProfile)
+    .filter(([, v]) => v < 2)
+    .map(([k]) => SKILL_TO_THM_CATEGORY[k])
+    .filter(Boolean);
+
+  const diffWeight = { info: 0, easy: 1, medium: 2, hard: 3 };
+  return available
+    .sort((a, b) => {
+      const aMatch = weakSkills.includes(a.category) ? 0 : 1;
+      const bMatch = weakSkills.includes(b.category) ? 0 : 1;
+      if (aMatch !== bMatch) return aMatch - bMatch;
+      return diffWeight[a.difficulty] - diffWeight[b.difficulty];
+    })
+    .slice(0, count);
+}
+
+function pickHtbModules(
+  skillProfile: Record<string, number>,
+  count: number
+): typeof HTB_ACADEMY_MODULES {
+  const weakAreas = Object.entries(skillProfile)
+    .filter(([, v]) => v < 2)
+    .map(([k]) => SKILL_TO_HTB_AREA[k])
+    .filter(Boolean);
+
+  const tierWeight = { Fundamental: 0, Easy: 1, Medium: 2, Hard: 3 };
+  return [...HTB_ACADEMY_MODULES]
+    .sort((a, b) => {
+      const aMatch = weakAreas.includes(a.area) ? 0 : 1;
+      const bMatch = weakAreas.includes(b.area) ? 0 : 1;
+      if (aMatch !== bMatch) return aMatch - bMatch;
+      return tierWeight[a.tier] - tierWeight[b.tier];
+    })
+    .slice(0, count);
+}
+
+function pickThmRoomForSkill(
+  snapshot: PlatformSnapshot,
+  skill: string
+): (typeof THM_ROOM_CATALOG)[number] | undefined {
+  const completedCodes = new Set(snapshot.thm.rooms.map((r) => r.roomCode));
+  const category = SKILL_TO_THM_CATEGORY[skill];
+  if (!category) return undefined;
+  return THM_ROOM_CATALOG.find(
+    (r) => r.category === category && !completedCodes.has(r.code)
+  );
+}
+
+function skillToRootmeCategory(skill: string): string {
+  return SKILL_TO_ROOTME_CATEGORY[skill] ?? "App - Système";
 }
 
 function findWeakRootmeCategories(categoryCounts: Record<string, number>): string[] {

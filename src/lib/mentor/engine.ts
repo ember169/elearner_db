@@ -15,6 +15,40 @@ export const DEFAULT_OBJECTIVE =
   "Red team / malware development, with solid generalist foundations (networking, web, Linux).";
 
 export const PLAN_VERSION = 1;
+export const WEEKLY_HOURS_BUDGET = 35;
+
+function clamp(v: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, v));
+}
+
+function weeklyAllocation(totalHours: number | undefined, priority: string, type: string): number {
+  if (!totalHours || totalHours <= 5) return totalHours ?? 2;
+  if (type === "42") {
+    if (priority === "high") return clamp(totalHours * 0.15, 3, 20);
+    return clamp(totalHours * 0.1, 2, 10);
+  }
+  if (["thm", "htb", "rootme"].includes(type)) return clamp(totalHours, 2, 4);
+  if (priority === "low") return clamp(totalHours, 1, 3);
+  return clamp(totalHours, 2, 5);
+}
+
+function parseHoursFromString(est: string): number {
+  const match = est.match(/(\d+(?:\.\d+)?)\s*h/i);
+  if (match) return parseFloat(match[1]);
+  if (/evening/i.test(est)) return 3 * (parseInt(est) || 1);
+  if (/session/i.test(est)) return 2 * (parseInt(est) || 1);
+  return 2;
+}
+
+function resolveLink(type: string, ref?: string): string | undefined {
+  if (!ref) return undefined;
+  switch (type) {
+    case "thm": return `https://tryhackme.com/room/${ref}`;
+    case "htb": return `https://academy.hackthebox.com/module/details/${ref}`;
+    case "rootme": return `https://www.root-me.org/en/Challenges/${encodeURIComponent(ref)}/`;
+    default: return undefined;
+  }
+}
 
 export type MentorFocusType =
   | "42"
@@ -235,12 +269,31 @@ function finalizePlan(
   objective: string,
   fallback = false
 ): MentorPlan {
+  const validated = raw.focus.map(validateRef);
+
+  // Auto-populate links from ref + type
+  const withLinks = validated.map((f) => {
+    if (f.link || !f.ref) return f;
+    const link = resolveLink(f.type, f.ref);
+    return link ? { ...f, link } : f;
+  });
+
+  // Cap total hours to weekly budget
+  const capped: MentorFocus[] = [];
+  let total = 0;
+  for (const f of withLinks) {
+    const h = parseHoursFromString(f.estimatedTime);
+    if (total + h > WEEKLY_HOURS_BUDGET && capped.length > 0) break;
+    capped.push(f);
+    total += h;
+  }
+
   return {
     version: PLAN_VERSION,
     generatedAt: new Date().toISOString(),
     objectiveEcho: objective,
     headline: raw.headline,
-    focus: raw.focus.map(validateRef),
+    focus: capped,
     competencies: raw.competencies,
     ...(fallback ? { fallback: true } : {}),
   };
@@ -313,13 +366,23 @@ const PLATFORM_TO_TYPE: Record<string, MentorFocusType> = {
 };
 
 export function buildFallbackPlan(ctx: MentorContext): MentorPlan {
-  const focus: MentorFocus[] = ctx.guidance.recommendations.map((r) => ({
-    type: PLATFORM_TO_TYPE[r.platform] ?? "skill",
-    title: r.title,
-    why: r.reason,
-    estimatedTime: r.estimatedHours ? `~${r.estimatedHours}h` : "—",
-    priority: r.priority,
-  }));
+  const priorityOrder = { high: 0, medium: 1, low: 2 } as const;
+  const sorted = [...ctx.guidance.recommendations].sort(
+    (a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]
+  );
+
+  const focus: MentorFocus[] = sorted.map((r) => {
+    const type = PLATFORM_TO_TYPE[r.platform] ?? "skill";
+    const weekly = weeklyAllocation(r.estimatedHours, r.priority, type);
+    return {
+      type,
+      title: r.title,
+      why: r.reason,
+      estimatedTime: `~${weekly}h`,
+      priority: r.priority,
+      ref: r.ref,
+    };
+  });
 
   const competencies: MentorCompetency[] = COMPETENCIES.map((c) => {
     const s = ctx.signals[c.id];

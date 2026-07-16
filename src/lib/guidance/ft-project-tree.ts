@@ -468,6 +468,8 @@ export const PLATFORM_SKILL_MAPPING: Record<string, string[]> = {
   "misc": ["security"],
   "osint": ["security"],
   "steganography": ["forensics"],
+  "networking": ["networking", "security"],
+  "malware": ["reverse-engineering", "security"],
 };
 
 export function getProjectBySlug(slug: string): FtProject | undefined {
