@@ -17,9 +17,6 @@ export async function syncMaldev(config: Config) {
   const dbPath = config.maldevDbPath;
   if (!dbPath) throw new Error("Maldev DB path not configured");
 
-  // Diagnose path problems ourselves instead of surfacing better-sqlite3's
-  // bare errors — in Docker the configured path must be the CONTAINER-side
-  // path of a mounted volume, which is easy to get wrong.
   const dir = path.dirname(dbPath);
   if (!fs.existsSync(dir)) {
     throw new Error(
@@ -43,126 +40,163 @@ export async function syncMaldev(config: Config) {
     );
   }
 
-  let itemsSynced = 0;
   const maldevDb = new Database(dbPath, { readonly: true });
 
   try {
-    // Read tables — adapt column names to what actually exists
-    const tables = maldevDb
-      .prepare(
-        "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
-      )
-      .all() as { name: string }[];
-    const tableNames = tables.map((t) => t.name);
+    const rows = maldevDb
+      .prepare("SELECT item_id, completed_at FROM progress")
+      .all() as { item_id: string; completed_at: string }[];
 
-    let modules: { id: string; name: string; exercises_total?: number }[] = [];
-    let exercises: {
-      id: string;
-      module_id: string;
-      name: string;
-      completed?: boolean | number;
-      completed_at?: string;
-    }[] = [];
+    const moduleReads = new Map<number, string>();
+    const objectivesByModule = new Map<number, Map<number, string>>();
 
-    // Try common table structures
-    if (tableNames.includes("modules") || tableNames.includes("chapters")) {
-      const modulesTable = tableNames.includes("modules")
-        ? "modules"
-        : "chapters";
-      modules = maldevDb
-        .prepare(`SELECT * FROM ${modulesTable}`)
-        .all() as typeof modules;
+    for (const row of rows) {
+      const modMatch = row.item_id.match(/^module-(\d+)$/);
+      if (modMatch) {
+        moduleReads.set(parseInt(modMatch[1]), row.completed_at);
+        continue;
+      }
+      const objMatch = row.item_id.match(/^objective-(\d+)-(\d+)$/);
+      if (objMatch) {
+        const modNum = parseInt(objMatch[1]);
+        const objNum = parseInt(objMatch[2]);
+        if (!objectivesByModule.has(modNum))
+          objectivesByModule.set(modNum, new Map());
+        objectivesByModule.get(modNum)!.set(objNum, row.completed_at);
+      }
     }
 
-    if (tableNames.includes("exercises") || tableNames.includes("lessons")) {
-      const exercisesTable = tableNames.includes("exercises")
-        ? "exercises"
-        : "lessons";
-      exercises = maldevDb
-        .prepare(`SELECT * FROM ${exercisesTable}`)
-        .all() as typeof exercises;
+    const maldevDir = path.dirname(dbPath);
+    let totalModules = 0;
+    const exercisesPerModule: Record<number, number> = {};
+
+    // Discover total modules from Modules.htm (the Flask app parses it the same way)
+    const modulesHtmlPath = path.join(
+      maldevDir,
+      "resources",
+      "Maldev Modules",
+      "Modules.htm"
+    );
+    if (fs.existsSync(modulesHtmlPath)) {
+      const html = fs.readFileSync(modulesHtmlPath, "utf-8");
+      totalModules = (html.match(/module-container/g) || []).length;
     }
 
-    // Calculate progress
-    const totalExercises = exercises.length;
-    const completedExercises = exercises.filter(
-      (e) => e.completed === true || e.completed === 1
-    ).length;
+    // Fallback: highest module number seen in progress data
+    if (totalModules === 0) {
+      const allNums = [...moduleReads.keys(), ...objectivesByModule.keys()];
+      totalModules = allNums.length > 0 ? Math.max(...allNums) : 0;
+    }
+
+    // Discover exercises per module from exercises.py
+    const exercisesPath = path.join(maldevDir, "exercises.py");
+    if (fs.existsSync(exercisesPath)) {
+      const content = fs.readFileSync(exercisesPath, "utf-8");
+      const lines = content.split("\n");
+      let currentModule: number | null = null;
+      let currentCount = 0;
+
+      for (const line of lines) {
+        const keyMatch = line.match(/^\s+(\d+):\s*\[/);
+        if (keyMatch) {
+          if (currentModule !== null) {
+            exercisesPerModule[currentModule] = currentCount;
+          }
+          currentModule = parseInt(keyMatch[1]);
+          currentCount = 0;
+          continue;
+        }
+        if (currentModule !== null && line.includes('"type"')) {
+          currentCount++;
+        }
+      }
+      if (currentModule !== null) {
+        exercisesPerModule[currentModule] = currentCount;
+      }
+    }
+
+    const totalExercises = Object.values(exercisesPerModule).reduce(
+      (a, b) => a + b,
+      0
+    );
+    const totalItems = totalModules + totalExercises;
+    const completedObjectiveCount = [...objectivesByModule.values()].reduce(
+      (a, m) => a + m.size,
+      0
+    );
+    const completedItems = moduleReads.size + completedObjectiveCount;
     const overallProgress =
-      totalExercises > 0 ? (completedExercises / totalExercises) * 100 : 0;
+      totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
 
-    // Upsert profile
+    let modulesCompleted = 0;
+    for (let i = 1; i <= totalModules; i++) {
+      const isRead = moduleReads.has(i);
+      const numExercises = exercisesPerModule[i] ?? 0;
+      const doneExercises = objectivesByModule.get(i)?.size ?? 0;
+      if (isRead && doneExercises >= numExercises) {
+        modulesCompleted++;
+      }
+    }
+
+    let itemsSynced = 0;
+
     db.delete(maldevProfile).run();
     db.insert(maldevProfile)
-      .values({
-        overallProgress,
-        modulesCompleted: modules.filter((m) => {
-          const modExercises = exercises.filter(
-            (e) => String(e.module_id) === String(m.id)
-          );
-          return (
-            modExercises.length > 0 &&
-            modExercises.every(
-              (e) => e.completed === true || e.completed === 1
-            )
-          );
-        }).length,
-        totalModules: modules.length,
-      })
+      .values({ overallProgress, modulesCompleted, totalModules })
       .run();
     itemsSynced++;
 
-    // Upsert modules
     db.delete(maldevModules).run();
-    for (const mod of modules) {
-      const modExercises = exercises.filter(
-        (e) => String(e.module_id) === String(mod.id)
-      );
-      const modCompleted = modExercises.filter(
-        (e) => e.completed === true || e.completed === 1
-      ).length;
+    const touchedModules = new Set([
+      ...moduleReads.keys(),
+      ...objectivesByModule.keys(),
+    ]);
+    for (const modNum of touchedModules) {
+      const isRead = moduleReads.has(modNum);
+      const numExercises = exercisesPerModule[modNum] ?? 0;
+      const doneExercises = objectivesByModule.get(modNum)?.size ?? 0;
+      const parts = 1 + numExercises;
+      const doneParts = (isRead ? 1 : 0) + doneExercises;
+      const progress = parts > 0 ? (doneParts / parts) * 100 : 0;
+
       db.insert(maldevModules)
         .values({
-          moduleId: String(mod.id),
-          name: mod.name ?? `Module ${mod.id}`,
-          progress:
-            modExercises.length > 0
-              ? (modCompleted / modExercises.length) * 100
-              : 0,
-          exercisesCompleted: modCompleted,
-          totalExercises: modExercises.length,
+          moduleId: String(modNum),
+          name: `Module ${modNum}`,
+          progress,
+          exercisesCompleted: doneExercises,
+          totalExercises: numExercises,
         })
         .run();
       itemsSynced++;
     }
 
-    // Upsert exercises
     db.delete(maldevExercises).run();
-    for (const ex of exercises) {
-      db.insert(maldevExercises)
-        .values({
-          exerciseId: String(ex.id),
-          moduleId: String(ex.module_id),
-          name: ex.name ?? `Exercise ${ex.id}`,
-          status:
-            ex.completed === true || ex.completed === 1
-              ? "completed"
-              : "pending",
-          completedAt: ex.completed_at ?? null,
-        })
-        .run();
-      itemsSynced++;
+    for (const [modNum, objs] of objectivesByModule) {
+      for (const [objNum, completedAt] of objs) {
+        db.insert(maldevExercises)
+          .values({
+            exerciseId: `objective-${modNum}-${objNum}`,
+            moduleId: String(modNum),
+            name: `Objective ${objNum + 1}`,
+            status: "completed",
+            completedAt,
+          })
+          .run();
+        itemsSynced++;
+      }
     }
 
     db.insert(activityFeed)
       .values({
         platform: "maldev",
         eventType: "sync",
-        title: `Maldev synced (${overallProgress.toFixed(0)}% complete)`,
+        title: `Maldev synced (${overallProgress.toFixed(0)}% complete, ${modulesCompleted}/${totalModules} modules)`,
         details: JSON.stringify({
-          modules: modules.length,
-          exercises: totalExercises,
-          completed: completedExercises,
+          totalModules,
+          modulesCompleted,
+          completedItems,
+          totalItems,
         }),
       })
       .run();
@@ -171,10 +205,10 @@ export async function syncMaldev(config: Config) {
       itemsSynced,
       snapshot: {
         overallProgress,
-        modulesCompleted: modules.length,
-        totalModules: modules.length,
+        modulesCompleted,
+        totalModules,
         totalExercises,
-        completedExercises,
+        completedExercises: completedObjectiveCount,
       },
     };
   } finally {
