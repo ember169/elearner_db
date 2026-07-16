@@ -13,16 +13,20 @@ import {
 
 export type MentorConfig = {
   objective: string;
+  provider: string;
   apiKey: string | null;
   model: string;
+  baseUrl: string | null;
 };
 
 export function readMentorConfig(): MentorConfig {
   const cfg = db.select().from(settings).where(eq(settings.id, 1)).get();
   return {
     objective: cfg?.objective?.trim() || DEFAULT_OBJECTIVE,
+    provider: cfg?.llmProvider ?? "anthropic",
     apiKey: cfg?.llmApiKey ?? null,
     model: cfg?.llmModel ?? "claude-sonnet-5",
+    baseUrl: cfg?.llmBaseUrl ?? null,
   };
 }
 
@@ -73,13 +77,13 @@ export type MentorPlanResult = {
 // Cheap, never calls the LLM. Returns the stored plan (+ staleness) or a
 // freshly-built rule-based fallback so the UI always has something to render.
 export function loadCurrentPlan(): MentorPlanResult {
-  const { objective, apiKey } = readMentorConfig();
-  const hasKey = !!apiKey;
+  const config = readMentorConfig();
+  const hasKey = config.provider === "local" ? !!config.baseUrl : !!config.apiKey;
   const stored = newestStored();
   if (stored) {
-    return { plan: stored.plan, stale: isStale(stored, objective), hasKey };
+    return { plan: stored.plan, stale: isStale(stored, config.objective), hasKey };
   }
-  const ctx = buildMentorContext(objective);
+  const ctx = buildMentorContext(config.objective);
   return { plan: buildFallbackPlan(ctx), stale: hasKey, hasKey };
 }
 

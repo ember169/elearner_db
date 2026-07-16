@@ -17,22 +17,22 @@ export async function GET() {
 }
 
 export async function POST() {
-  const { objective, apiKey, model } = readMentorConfig();
-  const hasKey = !!apiKey;
-  const ctx = buildMentorContext(objective);
+  const config = readMentorConfig();
+  const canGenerate = config.provider === "local" ? !!config.baseUrl : !!config.apiKey;
+  const ctx = buildMentorContext(config.objective);
 
-  if (!hasKey) {
+  if (!canGenerate) {
     return NextResponse.json({
       plan: buildFallbackPlan(ctx),
       stale: false,
-      hasKey,
+      hasKey: canGenerate,
     });
   }
 
   try {
-    const plan = await generateMentorPlan(ctx, apiKey, model);
-    savePlan(plan, objective);
-    return NextResponse.json({ plan, stale: false, hasKey });
+    const plan = await generateMentorPlan(ctx, config);
+    savePlan(plan, config.objective);
+    return NextResponse.json({ plan, stale: false, hasKey: canGenerate });
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Mentor generation failed." },

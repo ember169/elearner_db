@@ -313,11 +313,18 @@ function finalizePlan(
 // LLM path
 // ---------------------------------------------------------------------------
 
-export async function generateMentorPlan(
-  ctx: MentorContext,
+type LLMConfig = {
+  provider: string;
+  apiKey: string | null;
+  model: string;
+  baseUrl: string | null;
+};
+
+async function generateViaAnthropic(
+  prompt: string,
   apiKey: string,
   model: string
-): Promise<MentorPlan> {
+): Promise<{ headline: string; focus: MentorFocus[]; competencies: MentorCompetency[] }> {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -330,7 +337,7 @@ export async function generateMentorPlan(
       max_tokens: 4096,
       tools: [toolSchema()],
       tool_choice: { type: "tool", name: "emit_mentor_plan" },
-      messages: [{ role: "user", content: buildPrompt(ctx) }],
+      messages: [{ role: "user", content: prompt }],
     }),
   });
 
@@ -346,12 +353,74 @@ export async function generateMentorPlan(
   if (!block?.input) {
     throw new Error("Mentor: model did not return a tool_use plan.");
   }
+  return block.input;
+}
 
-  const input = block.input as {
-    headline?: string;
-    focus?: MentorFocus[];
-    competencies?: MentorCompetency[];
+function openAIToolSchema() {
+  const schema = toolSchema();
+  return {
+    type: "function" as const,
+    function: {
+      name: schema.name,
+      description: schema.description,
+      parameters: schema.input_schema,
+    },
   };
+}
+
+async function generateViaOpenAI(
+  prompt: string,
+  model: string,
+  baseUrl: string
+): Promise<{ headline: string; focus: MentorFocus[]; competencies: MentorCompetency[] }> {
+  const url = `${baseUrl.replace(/\/+$/, "")}/v1/chat/completions`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model,
+      max_tokens: 4096,
+      tools: [openAIToolSchema()],
+      tool_choice: { type: "function", function: { name: "emit_mentor_plan" } },
+      messages: [{ role: "user", content: prompt }],
+    }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Local LLM error ${res.status}: ${text.slice(0, 400)}`);
+  }
+
+  const data = await res.json();
+  const msg = data.choices?.[0]?.message;
+
+  if (msg?.tool_calls?.[0]?.function?.arguments) {
+    return JSON.parse(msg.tool_calls[0].function.arguments);
+  }
+
+  if (msg?.content) {
+    const jsonMatch = msg.content.match(/\{[\s\S]*\}/);
+    if (jsonMatch) return JSON.parse(jsonMatch[0]);
+  }
+
+  throw new Error("Local LLM did not return a structured plan.");
+}
+
+export async function generateMentorPlan(
+  ctx: MentorContext,
+  config: LLMConfig
+): Promise<MentorPlan> {
+  const prompt = buildPrompt(ctx);
+  let input: { headline?: string; focus?: MentorFocus[]; competencies?: MentorCompetency[] };
+
+  if (config.provider === "local" && config.baseUrl) {
+    input = await generateViaOpenAI(prompt, config.model, config.baseUrl);
+  } else if (config.apiKey) {
+    input = await generateViaAnthropic(prompt, config.apiKey, config.model);
+  } else {
+    throw new Error("No LLM configured.");
+  }
+
   return finalizePlan(
     {
       headline: input.headline ?? "This week's focus",

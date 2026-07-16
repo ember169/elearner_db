@@ -50,6 +50,13 @@
       "when": 1784466000000,
       "tag": "0006_planner_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1784552000000,
+      "tag": "0007_llm_provider",
+      "breakpoints": true
     }
   ]
 }

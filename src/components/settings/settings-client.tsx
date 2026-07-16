@@ -37,8 +37,10 @@ interface Config {
   rootmeCookie: string | null;
   rootmeUserId: string | null;
   maldevDbPath: string | null;
+  llmProvider: string | null;
   llmApiKey: string | null;
   llmModel: string | null;
+  llmBaseUrl: string | null;
   objective: string | null;
   theme: string | null;
   syncIntervalMinutes: number | null;
@@ -105,8 +107,10 @@ export function SettingsClient({
   const [rootmeApiKey, setRootmeApiKey] = useState(config.rootmeApiKey ?? "");
   const [rootmeCookie, setRootmeCookie] = useState(config.rootmeCookie ?? "");
   const [rootmeUserId, setRootmeUserId] = useState(config.rootmeUserId ?? "");
+  const [llmProvider, setLlmProvider] = useState(config.llmProvider ?? "anthropic");
   const [llmApiKey, setLlmApiKey] = useState(config.llmApiKey ?? "");
   const [llmModel, setLlmModel] = useState(config.llmModel ?? "claude-sonnet-5");
+  const [llmBaseUrl, setLlmBaseUrl] = useState(config.llmBaseUrl ?? "");
   const [objective, setObjective] = useState(config.objective ?? "");
 
   async function saveSettings() {
@@ -126,8 +130,10 @@ export function SettingsClient({
           rootmeCookie: rootmeCookie || null,
           rootmeUserId: rootmeUserId || null,
           maldevDbPath: maldevDbPath || null,
+          llmProvider: llmProvider || "anthropic",
           llmApiKey: llmApiKey || null,
           llmModel: llmModel || null,
+          llmBaseUrl: llmBaseUrl || null,
           objective: objective || null,
         }),
       });
@@ -203,7 +209,7 @@ export function SettingsClient({
       <PlatformSection
         icon={<Brain className="h-4 w-4" />}
         name="AI Mentor"
-        configured={!!llmApiKey}
+        configured={llmProvider === "local" ? !!llmBaseUrl : !!llmApiKey}
         hint="Powers the personalized mentor plan on the home page. The objective drives all recommendations."
       >
         <div className="space-y-3">
@@ -220,10 +226,35 @@ export function SettingsClient({
               Describe your long-term goal. The mentor will tailor every recommendation to this.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <Field label="Anthropic API Key" value={llmApiKey} onChange={setLlmApiKey} placeholder="sk-ant-..." type="password" />
-            <Field label="Model" value={llmModel} onChange={setLlmModel} placeholder="claude-sonnet-5" />
+          <div className="space-y-1.5">
+            <Label className="text-[13px]">Provider</Label>
+            <div className="flex gap-1">
+              {(["anthropic", "local"] as const).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setLlmProvider(p)}
+                  className={`px-3 py-1.5 text-[13px] rounded-sm border transition-colors ${
+                    llmProvider === p
+                      ? "border-primary bg-primary/10 text-primary font-medium"
+                      : "border-border text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {p === "anthropic" ? "Anthropic" : "Local LLM"}
+                </button>
+              ))}
+            </div>
           </div>
+          {llmProvider === "anthropic" ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <Field label="API Key" value={llmApiKey} onChange={setLlmApiKey} placeholder="sk-ant-..." type="password" />
+              <Field label="Model" value={llmModel} onChange={setLlmModel} placeholder="claude-sonnet-5" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <Field label="Base URL" value={llmBaseUrl} onChange={setLlmBaseUrl} placeholder="http://fedora-server:8000" />
+              <Field label="Model" value={llmModel} onChange={setLlmModel} placeholder="model-name" />
+            </div>
+          )}
         </div>
       </PlatformSection>
 

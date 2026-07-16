@@ -23,8 +23,10 @@ export const settings = sqliteTable("settings", {
   // Maldev
   maldevDbPath: text("maldev_db_path"),
   // LLM
+  llmProvider: text("llm_provider").default("anthropic"),
   llmApiKey: text("llm_api_key"),
   llmModel: text("llm_model").default("claude-sonnet-5"),
+  llmBaseUrl: text("llm_base_url"),
   // Mentor: free-text long-term objective the guidance optimizes toward
   objective: text("objective"),
   // App
