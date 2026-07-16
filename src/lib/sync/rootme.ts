@@ -55,10 +55,23 @@ export async function syncRootMe(config: Config) {
   // Accept a username in the "user id" field: resolve it to the numeric
   // author id the /auteurs/{id} endpoint actually requires.
   if (!/^\d+$/.test(userId)) {
-    const search = await rootmeFetch(
-      config,
-      `/auteurs?nom=${encodeURIComponent(userId)}`
-    );
+    let search: unknown;
+    try {
+      search = await rootmeFetch(
+        config,
+        `/auteurs?nom=${encodeURIComponent(userId)}`
+      );
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      // The SPIP-based API answers 404 for an empty result set, not an
+      // invalid route — translate that into something actionable.
+      if (msg.includes(": 404")) {
+        throw new Error(
+          `Root-me: no author matches "${userId}". The search needs your exact Root-me display name — or skip it entirely by putting your numeric author id in the User ID field (it's the id_auteur number in your profile URLs on root-me.org).`
+        );
+      }
+      throw e;
+    }
     const resolved = findAuteurId(search, userId);
     if (!resolved) {
       throw new Error(

@@ -12,7 +12,9 @@ services:
       # goes stale if the source file is ever replaced.
       # In Settings, the Maldev database path must be the CONTAINER path:
       # /maldev/elearning.db
-      - /home/mskn/maldev:/maldev:ro
+      # :z relabels for SELinux (Fedora blocks container reads of bind
+      # mounts without it — shows up as EACCES despite correct file modes).
+      - /home/mskn/maldev:/maldev:ro,z
     environment:
       - DATABASE_PATH=/app/data/learner.db
     restart: unless-stopped

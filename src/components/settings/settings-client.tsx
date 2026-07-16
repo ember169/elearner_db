@@ -63,6 +63,7 @@ export function SettingsClient({
   const [saving, setSaving] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [expandedSyncId, setExpandedSyncId] = useState<number | null>(null);
 
   const [ftClientId, setFtClientId] = useState(config.ftClientId ?? "");
   const [ftClientSecret, setFtClientSecret] = useState(config.ftClientSecret ?? "");
@@ -265,26 +266,41 @@ export function SettingsClient({
                   {recentSyncs.map((sync) => (
                     <div
                       key={sync.id}
-                      className="flex items-center gap-2.5 px-3 py-2.5 rounded-sm border border-border text-[13px]"
+                      className="px-3 py-2.5 rounded-sm border border-border text-[13px]"
                     >
-                      <Badge variant={statusVariant[sync.status] ?? "secondary"}>
-                        {sync.status}
-                      </Badge>
-                      <span className="font-medium">{sync.platform}</span>
-                      <span className="text-muted-foreground tabular-nums">
-                        {sync.itemsSynced ?? 0} items
-                      </span>
-                      {sync.error && (
-                        <span className="text-destructive truncate max-w-[180px] text-[12px]">
-                          {sync.error}
+                      <div className="flex items-center gap-2.5">
+                        <Badge variant={statusVariant[sync.status] ?? "secondary"}>
+                          {sync.status}
+                        </Badge>
+                        <span className="font-medium">{sync.platform}</span>
+                        <span className="text-muted-foreground tabular-nums">
+                          {sync.itemsSynced ?? 0} items
                         </span>
+                        {sync.error && (
+                          <button
+                            onClick={() =>
+                              setExpandedSyncId(
+                                expandedSyncId === sync.id ? null : sync.id
+                              )
+                            }
+                            title={expandedSyncId === sync.id ? "Collapse" : "Show full error"}
+                            className="text-destructive truncate max-w-[180px] text-[12px] text-left cursor-pointer hover:underline"
+                          >
+                            {sync.error}
+                          </button>
+                        )}
+                        <span className="ml-auto text-[12px] text-muted-foreground tabular-nums shrink-0">
+                          {new Date(sync.startedAt).toLocaleString("en-US", {
+                            dateStyle: "short",
+                            timeStyle: "medium",
+                          })}
+                        </span>
+                      </div>
+                      {sync.error && expandedSyncId === sync.id && (
+                        <p className="mt-1.5 text-[12px] text-destructive leading-relaxed whitespace-pre-wrap break-words select-text">
+                          {sync.error}
+                        </p>
                       )}
-                      <span className="ml-auto text-[12px] text-muted-foreground tabular-nums">
-                        {new Date(sync.startedAt).toLocaleString("en-US", {
-                          dateStyle: "short",
-                          timeStyle: "medium",
-                        })}
-                      </span>
                     </div>
                   ))}
                 </div>
