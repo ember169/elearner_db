@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { settings, syncLog } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { SettingsClient } from "@/components/settings/settings-client";
 
 export const dynamic = "force-dynamic";
@@ -19,5 +19,23 @@ export default function SettingsPage() {
     .limit(20)
     .all();
 
-  return <SettingsClient config={config} recentSyncs={recentSyncs} />;
+  const platformSyncs: Record<string, string | null> = {};
+  for (const p of ["42", "thm", "htb", "rootme", "maldev"]) {
+    const row = db
+      .select()
+      .from(syncLog)
+      .where(and(eq(syncLog.platform, p), eq(syncLog.status, "success")))
+      .orderBy(desc(syncLog.startedAt))
+      .limit(1)
+      .all()[0];
+    platformSyncs[p] = row?.startedAt ?? null;
+  }
+
+  return (
+    <SettingsClient
+      config={config}
+      recentSyncs={recentSyncs}
+      platformSyncs={platformSyncs}
+    />
+  );
 }

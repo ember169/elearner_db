@@ -57,14 +57,43 @@ interface SyncLogEntry {
 export function SettingsClient({
   config,
   recentSyncs,
+  platformSyncs = {},
 }: {
   config: Config;
   recentSyncs: SyncLogEntry[];
+  platformSyncs?: Record<string, string | null>;
 }) {
   const [saving, setSaving] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [expandedSyncId, setExpandedSyncId] = useState<number | null>(null);
+
+  const [testing, setTesting] = useState<string | null>(null);
+  const [testResult, setTestResult] = useState<Record<string, { ok: boolean; msg: string }>>({});
+
+  async function testConnection(platform: string) {
+    setTesting(platform);
+    setTestResult((prev) => ({ ...prev, [platform]: undefined! }));
+    try {
+      const res = await fetch("/api/sync/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ platform }),
+      });
+      const data = await res.json();
+      setTestResult((prev) => ({
+        ...prev,
+        [platform]: { ok: res.ok, msg: data.message ?? (res.ok ? "Connected" : data.error ?? "Failed") },
+      }));
+    } catch {
+      setTestResult((prev) => ({
+        ...prev,
+        [platform]: { ok: false, msg: "Network error" },
+      }));
+    } finally {
+      setTesting(null);
+    }
+  }
 
   const [ftClientId, setFtClientId] = useState(config.ftClientId ?? "");
   const [ftClientSecret, setFtClientSecret] = useState(config.ftClientSecret ?? "");
@@ -171,63 +200,6 @@ export function SettingsClient({
         </div>
       </div>
 
-      {/* Platform sections */}
-      <PlatformSection
-        icon={<GraduationCap className="h-4 w-4" />}
-        name="42 Paris"
-        configured={!!ftClientId}
-        hint="Get your API credentials at profile.intra.42.fr/oauth/applications"
-      >
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <Field label="Client ID" value={ftClientId} onChange={setFtClientId} placeholder="Your 42 API client ID" />
-          <Field label="Client Secret" value={ftClientSecret} onChange={setFtClientSecret} placeholder="Your 42 API client secret" type="password" />
-          <Field label="User ID (login)" value={ftUserId} onChange={setFtUserId} placeholder="Your 42 login" />
-        </div>
-      </PlatformSection>
-
-      <PlatformSection
-        icon={<Shield className="h-4 w-4" />}
-        name="TryHackMe"
-        configured={!!thmUsername}
-        hint="Your public TryHackMe username (profile must be public)"
-      >
-        <Field label="Username" value={thmUsername} onChange={setThmUsername} placeholder="Your TryHackMe username" />
-      </PlatformSection>
-
-      <PlatformSection
-        icon={<Terminal className="h-4 w-4" />}
-        name="HackTheBox"
-        configured={!!htbApiToken}
-        hint="Get your API token from HTB Settings > App Tokens"
-      >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <Field label="API Token" value={htbApiToken} onChange={setHtbApiToken} placeholder="Your HTB API token" type="password" />
-          <Field label="User ID" value={htbUserId} onChange={setHtbUserId} placeholder="Your HTB user ID" />
-        </div>
-      </PlatformSection>
-
-      <PlatformSection
-        icon={<Flag className="h-4 w-4" />}
-        name="Root-me"
-        configured={!!rootmeUserId}
-        hint="Provide either an API key or your spip_session cookie for authentication"
-      >
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <Field label="User ID" value={rootmeUserId} onChange={setRootmeUserId} placeholder="Your Root-me user ID" />
-          <Field label="API Key" value={rootmeApiKey} onChange={setRootmeApiKey} placeholder="Your Root-me API key" type="password" />
-          <Field label="Session Cookie (alt)" value={rootmeCookie} onChange={setRootmeCookie} placeholder="spip_session value" type="password" />
-        </div>
-      </PlatformSection>
-
-      <PlatformSection
-        icon={<Bug className="h-4 w-4" />}
-        name="Maldev Elearning"
-        configured={!!maldevDbPath}
-        hint="Absolute path to your maldev elearning SQLite database"
-      >
-        <Field label="Database Path" value={maldevDbPath} onChange={setMaldevDbPath} placeholder="/path/to/maldev/elearning.db" />
-      </PlatformSection>
-
       <PlatformSection
         icon={<Brain className="h-4 w-4" />}
         name="AI Mentor"
@@ -253,6 +225,83 @@ export function SettingsClient({
             <Field label="Model" value={llmModel} onChange={setLlmModel} placeholder="claude-sonnet-5" />
           </div>
         </div>
+      </PlatformSection>
+
+      {/* Platform sections */}
+      <PlatformSection
+        icon={<GraduationCap className="h-4 w-4" />}
+        name="42 Paris"
+        configured={!!ftClientId}
+        hint="Get your API credentials at profile.intra.42.fr/oauth/applications"
+        lastSync={platformSyncs["42"]}
+        onTest={() => testConnection("42")}
+        testingNow={testing === "42"}
+        testResult={testResult["42"]}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <Field label="Client ID" value={ftClientId} onChange={setFtClientId} placeholder="Your 42 API client ID" />
+          <Field label="Client Secret" value={ftClientSecret} onChange={setFtClientSecret} placeholder="Your 42 API client secret" type="password" />
+          <Field label="User ID (login)" value={ftUserId} onChange={setFtUserId} placeholder="Your 42 login" />
+        </div>
+      </PlatformSection>
+
+      <PlatformSection
+        icon={<Shield className="h-4 w-4" />}
+        name="TryHackMe"
+        configured={!!thmUsername}
+        hint="Your public TryHackMe username (profile must be public)"
+        lastSync={platformSyncs["thm"]}
+        onTest={() => testConnection("thm")}
+        testingNow={testing === "thm"}
+        testResult={testResult["thm"]}
+      >
+        <Field label="Username" value={thmUsername} onChange={setThmUsername} placeholder="Your TryHackMe username" />
+      </PlatformSection>
+
+      <PlatformSection
+        icon={<Terminal className="h-4 w-4" />}
+        name="HackTheBox"
+        configured={!!htbApiToken}
+        hint="Get your API token from HTB Settings > App Tokens"
+        lastSync={platformSyncs["htb"]}
+        onTest={() => testConnection("htb")}
+        testingNow={testing === "htb"}
+        testResult={testResult["htb"]}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <Field label="API Token" value={htbApiToken} onChange={setHtbApiToken} placeholder="Your HTB API token" type="password" />
+          <Field label="User ID" value={htbUserId} onChange={setHtbUserId} placeholder="Your HTB user ID" />
+        </div>
+      </PlatformSection>
+
+      <PlatformSection
+        icon={<Flag className="h-4 w-4" />}
+        name="Root-me"
+        configured={!!rootmeUserId}
+        hint="Provide either an API key or your spip_session cookie for authentication"
+        lastSync={platformSyncs["rootme"]}
+        onTest={() => testConnection("rootme")}
+        testingNow={testing === "rootme"}
+        testResult={testResult["rootme"]}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <Field label="User ID" value={rootmeUserId} onChange={setRootmeUserId} placeholder="Your Root-me user ID" />
+          <Field label="API Key" value={rootmeApiKey} onChange={setRootmeApiKey} placeholder="Your Root-me API key" type="password" />
+          <Field label="Session Cookie (alt)" value={rootmeCookie} onChange={setRootmeCookie} placeholder="spip_session value" type="password" />
+        </div>
+      </PlatformSection>
+
+      <PlatformSection
+        icon={<Bug className="h-4 w-4" />}
+        name="Maldev Elearning"
+        configured={!!maldevDbPath}
+        hint="Absolute path to your maldev elearning SQLite database"
+        lastSync={platformSyncs["maldev"]}
+        onTest={() => testConnection("maldev")}
+        testingNow={testing === "maldev"}
+        testResult={testResult["maldev"]}
+      >
+        <Field label="Database Path" value={maldevDbPath} onChange={setMaldevDbPath} placeholder="/path/to/maldev/elearning.db" />
       </PlatformSection>
 
       {/* Sync */}
@@ -337,12 +386,20 @@ function PlatformSection({
   configured,
   hint,
   children,
+  lastSync,
+  onTest,
+  testingNow,
+  testResult: tr,
 }: {
   icon: React.ReactNode;
   name: string;
   configured: boolean;
   hint: string;
   children: React.ReactNode;
+  lastSync?: string | null;
+  onTest?: () => void;
+  testingNow?: boolean;
+  testResult?: { ok: boolean; msg: string };
 }) {
   return (
     <Card>
@@ -353,12 +410,41 @@ function PlatformSection({
           <Badge variant={configured ? "success" : "outline"}>
             {configured ? "Configured" : "Not set"}
           </Badge>
+          {lastSync && (
+            <span className="text-[11px] text-muted-foreground ml-auto tabular-nums">
+              Last sync: {formatRelative(lastSync)}
+            </span>
+          )}
         </div>
         {children}
-        <p className="text-[12px] text-muted-foreground">{hint}</p>
+        <div className="flex items-center gap-3">
+          <p className="text-[12px] text-muted-foreground flex-1">{hint}</p>
+          {onTest && configured && (
+            <Button variant="ghost" size="xs" onClick={onTest} disabled={testingNow}>
+              <RefreshCw className={`h-3 w-3 mr-1 ${testingNow ? "animate-spin" : ""}`} />
+              {testingNow ? "Testing..." : "Test connection"}
+            </Button>
+          )}
+        </div>
+        {tr && (
+          <p className={`text-[12px] ${tr.ok ? "text-success" : "text-destructive"}`}>
+            {tr.msg}
+          </p>
+        )}
       </CardContent>
     </Card>
   );
+}
+
+function formatRelative(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
 }
 
 function Field({

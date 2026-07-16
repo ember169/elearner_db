@@ -10,7 +10,8 @@ export async function POST(req: NextRequest) {
       title: body.title,
       description: body.description || null,
       category: body.category || "general",
-      targetValue: body.targetValue || null,
+      targetValue: body.targetValue ?? null,
+      currentValue: body.currentValue ?? 0,
       deadline: body.deadline || null,
       metricSource: body.metricSource || null,
     })

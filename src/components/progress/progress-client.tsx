@@ -1,23 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   GitBranch,
   Radar,
-  Calendar,
-  TrendingUp,
   Activity,
 } from "lucide-react";
-import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-} from "recharts";
 import type { FtProject } from "@/lib/guidance/ft-project-tree";
 import { PLATFORM_COLORS } from "@/lib/platform-colors";
 
@@ -93,7 +83,10 @@ interface ProgressClientProps {
     availableProjects: FtProject[];
   };
   competencies: CompetencyEntry[];
+  lastSync: string | null;
 }
+
+type Period = "week" | "month" | "all";
 
 const LEVEL_LABELS = ["None", "Basics", "Familiar", "Proficient", "Strong", "Expert"];
 
@@ -105,61 +98,263 @@ export function ProgressClient({
   rootme,
   skills: _skills,
   activity,
-  snapshots,
+  snapshots: _snapshots,
   ftProgress,
   competencies,
+  lastSync,
 }: ProgressClientProps) {
-  const heatmapData = buildHeatmapData(activity);
-  const progressData = buildProgressData(snapshots);
-  const recentActivity = activity.slice(0, 10);
+  const [period, setPeriod] = useState<Period>("all");
+  const recentActivity = activity.filter((a) => a.eventType !== "sync");
+  const milestones = recentActivity.slice(0, 15);
 
   const grouped = groupByArea(competencies);
 
+  const nextProjects = ftProgress.availableProjects.slice(0, 3);
+  const nextLabel = nextProjects.map((p) => p.name).join(", ");
+
   return (
-    <div className="space-y-5">
-      {/* Header */}
-      <div>
-        <h1 className="page-title">Progress</h1>
-        <p className="page-subtitle mt-1">
-          Your position across all platforms and how you got here
-        </p>
+    <div className="space-y-6 max-w-[896px]">
+      {/* Header + period toggle */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="page-title">Progress</h1>
+          <p className="page-subtitle mt-1">
+            {lastSync ? `Last synced ${formatRelative(lastSync)}` : "Your position across all platforms and how you got here"}
+          </p>
+        </div>
+        <div className="flex rounded-sm border border-border overflow-hidden shrink-0 mt-1">
+          {(["week", "month", "all"] as const).map((p) => (
+            <button
+              key={p}
+              onClick={() => setPeriod(p)}
+              className="px-3 py-1.5 text-[12px] font-medium transition-colors"
+              style={{
+                background: period === p ? "oklch(0.82 0.055 80 / 0.1)" : "transparent",
+                color: period === p ? "var(--primary)" : "var(--muted-foreground)",
+              }}
+            >
+              {p === "week" ? "This week" : p === "month" ? "This month" : "All time"}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Platform cards */}
-      <div className="grid gap-2.5 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
-        <PlatformCard
-          color={PLATFORM_COLORS["42"]}
-          name="42 Paris"
-          value={ft ? (ft.level ?? 0).toFixed(1) : "—"}
-          detail={ft ? `Level · ${ft.correctionPoints ?? 0} corr` : "Not connected"}
-        />
-        <PlatformCard
-          color={PLATFORM_COLORS.thm}
-          name="TryHackMe"
-          value={thm ? `Top ${thm.rank ?? "?"}%` : "—"}
-          detail={thm ? `${thm.roomsCompleted ?? 0} rooms · ${thm.streak ?? 0}d streak` : "Not connected"}
-        />
-        <PlatformCard
-          color={PLATFORM_COLORS.htb}
-          name="HackTheBox"
-          value={htb ? (htb.rank ?? "—") : "—"}
-          detail={htb ? `${htb.points ?? 0} pts · ${(htb.systemOwns ?? 0) + (htb.userOwns ?? 0)} owns` : "Not connected"}
-        />
-        <PlatformCard
-          color={PLATFORM_COLORS.maldev}
-          name="Maldev"
-          value={maldev ? `${(maldev.overallProgress ?? 0).toFixed(0)}%` : "—"}
-          detail={maldev ? `${maldev.modulesCompleted ?? 0}/${maldev.totalModules ?? 0} modules` : "Not connected"}
-        />
-        <PlatformCard
-          color={PLATFORM_COLORS.rootme}
-          name="Root-me"
-          value={rootme ? (rootme.score ?? 0).toLocaleString("en-US") : "—"}
-          detail={rootme ? `${rootme.challengesSolved ?? 0} solved · #${rootme.position ?? "?"}` : "Not connected"}
-        />
-      </div>
+      {/* Narrative summary — week/month views */}
+      {period !== "all" && (
+        <div
+          className="rounded-sm border border-border px-5 py-4"
+          style={{ background: "oklch(0.17 0.005 75)" }}
+        >
+          <p className="text-[12px] font-semibold uppercase tracking-wider text-primary mb-2">
+            {period === "week" ? currentWeekLabel() : currentMonthLabel()}
+          </p>
+          {milestones.length > 0 ? (
+            <p className="text-[13px] text-muted-foreground leading-relaxed">
+              {milestones.length} activit{milestones.length === 1 ? "y" : "ies"} recorded.
+              {" "}Keep syncing to build a richer picture here.
+            </p>
+          ) : (
+            <p className="text-[13px] text-muted-foreground leading-relaxed">
+              No activity recorded yet for this period. Sync your platforms to see a summary here.
+            </p>
+          )}
+        </div>
+      )}
 
-      {/* Holy Graph + Competency Map */}
+      {/* Delta stats row — week/month views */}
+      {period !== "all" && (
+        <div className="grid grid-cols-5 gap-2">
+          <DeltaStat
+            label="42"
+            value={ft ? (ft.level ?? 0).toFixed(1) : "—"}
+          />
+          <DeltaStat
+            label="HTB"
+            value={htb ? `${(htb.systemOwns ?? 0) + (htb.userOwns ?? 0)}` : "—"}
+          />
+          <DeltaStat
+            label="Root-me"
+            value={rootme ? `${rootme.challengesSolved ?? 0}` : "—"}
+          />
+          <DeltaStat
+            label="Maldev"
+            value={maldev ? `${(maldev.overallProgress ?? 0).toFixed(0)}%` : "—"}
+          />
+          <DeltaStat
+            label="Total"
+            value={
+              String(
+                (ft ? 1 : 0) +
+                (htb ? (htb.systemOwns ?? 0) + (htb.userOwns ?? 0) : 0) +
+                (rootme?.challengesSolved ?? 0)
+              )
+            }
+          />
+        </div>
+      )}
+
+      {/* Platform cards — all time view */}
+      {period === "all" && (
+        <div className="grid gap-2.5 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+          <PlatformCard
+            color={PLATFORM_COLORS["42"]}
+            name="42 Paris"
+            value={ft ? (ft.level ?? 0).toFixed(1) : "—"}
+            detail={ft ? `Level · ${ft.correctionPoints ?? 0} corr` : "Not connected"}
+          />
+          <PlatformCard
+            color={PLATFORM_COLORS.thm}
+            name="TryHackMe"
+            value={thm ? `Top ${thm.rank ?? "?"}%` : "—"}
+            detail={thm ? `${thm.roomsCompleted ?? 0} rooms · ${thm.streak ?? 0}d streak` : "Not connected"}
+          />
+          <PlatformCard
+            color={PLATFORM_COLORS.htb}
+            name="HackTheBox"
+            value={htb ? (htb.rank ?? "—") : "—"}
+            detail={htb ? `${htb.points ?? 0} pts · ${(htb.systemOwns ?? 0) + (htb.userOwns ?? 0)} owns` : "Not connected"}
+          />
+          <PlatformCard
+            color={PLATFORM_COLORS.maldev}
+            name="Maldev"
+            value={maldev ? `${(maldev.overallProgress ?? 0).toFixed(0)}%` : "—"}
+            detail={maldev ? `${maldev.modulesCompleted ?? 0}/${maldev.totalModules ?? 0} modules` : "Not connected"}
+          />
+          <PlatformCard
+            color={PLATFORM_COLORS.rootme}
+            name="Root-me"
+            value={rootme ? (rootme.score ?? 0).toLocaleString("en-US") : "—"}
+            detail={rootme ? `${rootme.challengesSolved ?? 0} solved · #${rootme.position ?? "?"}` : "Not connected"}
+          />
+        </div>
+      )}
+
+      {/* Competency map — changes view for week/month, full for all time */}
+      {period !== "all" ? (
+        <Card>
+          <CardContent className="pt-4 pb-4 px-5">
+            <div className="flex items-center gap-2 mb-3">
+              <Radar className="h-3.5 w-3.5 text-muted-foreground" />
+              <p className="section-label">Competency changes this {period === "week" ? "week" : "month"}</p>
+            </div>
+            {(() => {
+              const nonZero = competencies.filter((c) => c.level > 0);
+              if (nonZero.length === 0) {
+                return (
+                  <p className="text-[13px] text-muted-foreground text-center py-4">
+                    All competencies at 0 — sync platforms and complete activities to see changes here.
+                  </p>
+                );
+              }
+              return (
+                <div className="space-y-2">
+                  {nonZero.map((c) => (
+                    <div key={c.id} className="flex items-center gap-3">
+                      <span className="text-[12px] w-[140px] shrink-0" style={{ color: c.level < 2 ? "var(--status-warning)" : "var(--foreground)" }}>
+                        {c.label}
+                      </span>
+                      <div className="flex gap-[3px] flex-1">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <div
+                            key={i}
+                            className="h-1.5 flex-1 rounded-[1px]"
+                            style={{ background: i < c.level ? (c.level < 2 ? "var(--status-warning)" : "var(--primary)") : "var(--muted)" }}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-[12px] text-muted-foreground tabular-nums w-8 text-right">
+                        {c.level} / 5
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+            <div className="text-center mt-3">
+              <button
+                onClick={() => setPeriod("all")}
+                className="text-[12px] text-primary hover:underline"
+              >
+                View full competency map
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardContent className="pt-4 pb-4 px-5">
+            <div className="flex items-center gap-2 mb-3">
+              <Radar className="h-3.5 w-3.5 text-muted-foreground" />
+              <p className="section-label">Competency map</p>
+            </div>
+            {competencies.length === 0 ? (
+              <p className="text-[13px] text-muted-foreground text-center py-8">
+                Sync platforms to build your competency map.
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-5">
+                {grouped.map(([area, entries]) => (
+                  <div key={area}>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">
+                      {area}
+                    </p>
+                    <div className="space-y-2">
+                      {entries.map((c) => {
+                        const isGap = c.level < 2;
+                        return (
+                          <div key={c.id}>
+                            <div className="flex items-center gap-3">
+                              <span
+                                className="text-[12px] w-[140px] shrink-0"
+                                style={{
+                                  color: isGap ? "var(--status-warning)" : "var(--muted-foreground)",
+                                }}
+                              >
+                                {c.label}
+                              </span>
+                              <div className="flex-1 flex gap-[3px]">
+                                {Array.from({ length: 5 }, (_, i) => (
+                                  <div
+                                    key={i}
+                                    className="h-1.5 flex-1 rounded-[1px]"
+                                    style={{
+                                      backgroundColor:
+                                        i < c.level
+                                          ? isGap ? "var(--status-warning)" : "var(--primary)"
+                                          : "var(--muted)",
+                                    }}
+                                  />
+                                ))}
+                              </div>
+                              <span className="text-[11px] text-muted-foreground w-8 text-right tabular-nums">
+                                {c.level} / 5
+                              </span>
+                            </div>
+                            {c.evidence && c.evidence !== "No tracked activity yet" && (
+                              <p className="text-[11px] text-muted-foreground/70 pl-[calc(140px+0.75rem)] mt-0.5 leading-tight">
+                                {c.evidence}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {competencies.some((c) => c.level < 2) && (
+              <p className="text-[12px] text-muted-foreground mt-4 leading-relaxed">
+                Items in{" "}
+                <span style={{ color: "var(--status-warning)" }}>orange</span>
+                {" "}are below where they should be for your red team objective.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Holy Graph + Weekly activity side by side */}
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
         <Card>
           <CardContent className="pt-4 pb-3 px-4">
@@ -190,7 +385,7 @@ export function ProgressClient({
                   </div>
                 ))}
             </div>
-            {ftProgress.availableProjects.length > 0 && (
+            {nextProjects.length > 0 && (
               <>
                 <div className="border-t border-border my-3" />
                 <p className="section-label mb-2">Available now</p>
@@ -201,148 +396,122 @@ export function ProgressClient({
                     </Badge>
                   ))}
                 </div>
+                <p className="text-[11px] text-muted-foreground mt-2">
+                  Next: {nextLabel} → unlock Circle {ftProgress.currentCircle + 1}
+                </p>
               </>
             )}
           </CardContent>
         </Card>
 
+        {/* Weekly activity by platform */}
         <Card>
           <CardContent className="pt-4 pb-3 px-4">
             <div className="flex items-center gap-2 mb-3">
-              <Radar className="h-3.5 w-3.5 text-muted-foreground" />
-              <p className="section-label">Competency map</p>
-            </div>
-            {competencies.length === 0 ? (
-              <p className="text-[13px] text-muted-foreground text-center py-8">
-                Sync platforms to build your competency map.
+              <Activity className="h-3.5 w-3.5 text-muted-foreground" />
+              <p className="section-label">
+                {period === "week" ? "This week" : period === "month" ? "This month" : "All time"} activity by platform
               </p>
-            ) : (
-              <div className="space-y-4">
-                {grouped.map(([area, entries]) => (
-                  <div key={area}>
-                    <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-2">
-                      {area}
-                    </p>
-                    <div className="space-y-2">
-                      {entries.map((c) => (
-                        <div key={c.id}>
-                          <div className="flex items-center gap-3">
-                            <span className="text-[12px] text-muted-foreground w-40 shrink-0">
-                              {c.label}
-                            </span>
-                            <div className="flex-1 flex gap-0.5">
-                              {Array.from({ length: 5 }, (_, i) => (
-                                <div
-                                  key={i}
-                                  className="h-2 flex-1 rounded-[1px]"
-                                  style={{
-                                    backgroundColor:
-                                      i < c.level
-                                        ? "var(--primary)"
-                                        : "var(--muted)",
-                                  }}
-                                />
-                              ))}
-                            </div>
-                            <span className="text-[11px] text-muted-foreground w-16 text-right tabular-nums">
-                              {LEVEL_LABELS[c.level] ?? c.level}
-                            </span>
-                          </div>
-                          {c.evidence && c.evidence !== "No tracked activity yet" && (
-                            <p className="text-[11px] text-muted-foreground/70 ml-[calc(10rem+0.75rem)] mt-0.5 leading-tight">
-                              {c.evidence}
-                            </p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            </div>
+            <PlatformActivityBars
+              activity={activity}
+              period={period}
+            />
           </CardContent>
         </Card>
       </div>
 
-      {/* Activity Heatmap */}
-      <Card>
-        <CardContent className="pt-4 pb-3 px-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-            <p className="section-label">Activity · 365 days</p>
-          </div>
-          <ActivityHeatmap data={heatmapData} />
-        </CardContent>
-      </Card>
-
-      {/* Progress Over Time */}
-      {progressData.length > 0 && (
-        <Card>
-          <CardContent className="pt-4 pb-3 px-4">
-            <div className="flex items-center gap-2 mb-3">
-              <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
-              <p className="section-label">Progress over time</p>
-            </div>
-            <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={progressData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" strokeOpacity={0.5} />
-                <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} />
-                <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "var(--popover)",
-                    border: "1px solid var(--border)",
-                    borderRadius: "2px",
-                    fontSize: "12px",
-                  }}
-                />
-                <Line type="monotone" dataKey="42 Level" stroke="var(--platform-42)" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="HTB Points" stroke="var(--platform-htb)" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="THM Rooms" stroke="var(--platform-thm)" strokeWidth={2} dot={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Recent Activity */}
+      {/* Recent milestones */}
       <Card>
         <CardContent className="pt-4 pb-3 px-4">
           <div className="flex items-center gap-2 mb-3">
             <Activity className="h-3.5 w-3.5 text-muted-foreground" />
-            <p className="section-label">Recent activity</p>
+            <p className="section-label">Recent milestones</p>
           </div>
-          {recentActivity.length === 0 ? (
+          {milestones.length === 0 ? (
             <p className="text-[13px] text-muted-foreground text-center py-8">
-              No activity yet. Sync your platforms to see updates here.
+              No activity yet. Sync your platforms to see milestones here.
             </p>
           ) : (
-            <div className="space-y-0">
-              {recentActivity.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center gap-2.5 py-2.5 border-b border-border last:border-b-0"
-                >
-                  <span
-                    className="h-1.5 w-1.5 rounded-full shrink-0"
-                    style={{ backgroundColor: PLATFORM_COLORS[item.platform] ?? "var(--muted-foreground)" }}
-                  />
-                  <Badge variant="secondary" className="shrink-0 uppercase">
-                    {item.platform}
-                  </Badge>
-                  <span className="text-[14px] flex-1 truncate">{item.title}</span>
-                  <span className="text-[12px] text-muted-foreground shrink-0 tabular-nums" suppressHydrationWarning>
-                    {formatRelative(item.timestamp)}
-                  </span>
-                </div>
-              ))}
+            <div className="relative pl-5">
+              <div
+                className="absolute left-[3px] top-2 bottom-2 w-[2px]"
+                style={{ background: "var(--border)" }}
+              />
+              <div className="space-y-3">
+                {milestones.map((item) => {
+                  const isSignificant = item.eventType === "validation" || item.eventType === "own" || item.eventType === "milestone";
+                  return (
+                    <div key={item.id} className="relative flex items-start gap-3">
+                      <div
+                        className="absolute left-[-17px] top-1.5 h-2.5 w-2.5 rounded-full border-2"
+                        style={{
+                          borderColor: isSignificant ? "var(--status-success)" : "var(--border)",
+                          background: isSignificant ? "var(--status-success)" : "var(--background)",
+                        }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="h-1.5 w-1.5 rounded-full shrink-0"
+                            style={{ backgroundColor: PLATFORM_COLORS[item.platform] ?? "var(--muted-foreground)" }}
+                          />
+                          <span className="text-[13px] font-medium truncate">{item.title}</span>
+                          <span className="text-[11px] text-muted-foreground shrink-0 tabular-nums ml-auto" suppressHydrationWarning>
+                            {formatRelative(item.timestamp)}
+                          </span>
+                        </div>
+                        {item.details && (
+                          <p className="text-[11px] text-muted-foreground mt-0.5 pl-[14px]">
+                            {tryParseDetails(item.details)}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
         </CardContent>
       </Card>
+
+      {/* Monthly snapshots archive teaser */}
+      <div className="rounded-sm border border-dashed border-border px-5 py-4 flex items-center gap-3">
+        <span className="text-[20px]">&#x1F4CA;</span>
+        <div className="flex-1">
+          <p className="text-[13px] font-medium">Monthly snapshots</p>
+          <p className="text-[12px] text-muted-foreground">
+            Saved automatically every month. Compare your competency map, platform stats,
+            and activity across time periods.
+          </p>
+        </div>
+        <span className="text-[12px] text-muted-foreground">Coming soon</span>
+      </div>
     </div>
   );
 }
+
+/* ─── Delta stats ─── */
+
+function DeltaStat({ label, value, delta }: { label: string; value: string; delta?: string }) {
+  return (
+    <div
+      className="rounded-sm border border-border text-center px-3 py-2.5"
+      style={{ background: "oklch(0.17 0.005 75)" }}
+    >
+      <p className="text-[11px] text-muted-foreground">{label}</p>
+      <p className="text-[18px] font-bold tabular-nums mt-0.5">{value}</p>
+      {delta && (
+        <p className="text-[11px] mt-0.5" style={{ color: "var(--status-success)" }}>
+          {delta}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/* ─── Platform cards ─── */
 
 function PlatformCard({ color, name, value, detail }: { color: string; name: string; value: string; detail: string }) {
   return (
@@ -357,40 +526,74 @@ function PlatformCard({ color, name, value, detail }: { color: string; name: str
   );
 }
 
-function ActivityHeatmap({ data }: { data: { date: string; count: number }[] }) {
-  const maxCount = Math.max(...data.map((d) => d.count), 1);
-  const weeks: { date: string; count: number }[][] = [];
-  for (let i = 0; i < data.length; i += 7) {
-    weeks.push(data.slice(i, i + 7));
+/* ─── Platform activity bars ─── */
+
+function PlatformActivityBars({ activity, period }: { activity: ActivityItem[]; period: Period }) {
+  const now = new Date();
+  const cutoff = new Date();
+  if (period === "week") cutoff.setDate(now.getDate() - 7);
+  else if (period === "month") cutoff.setDate(now.getDate() - 30);
+  else cutoff.setFullYear(2000);
+
+  const filtered = activity.filter(
+    (a) => a.eventType !== "sync" && new Date(a.timestamp) >= cutoff
+  );
+
+  const counts: Record<string, number> = {};
+  for (const a of filtered) {
+    counts[a.platform] = (counts[a.platform] ?? 0) + 1;
   }
 
+  const platforms = [
+    { key: "42", label: "42 Paris" },
+    { key: "thm", label: "TryHackMe" },
+    { key: "htb", label: "HackTheBox" },
+    { key: "rootme", label: "Root-me" },
+    { key: "maldev", label: "Maldev" },
+  ];
+
+  const maxCount = Math.max(...Object.values(counts), 1);
+
   return (
-    <div className="overflow-x-auto">
-      <div className="flex gap-[2px] min-w-fit">
-        {weeks.map((week, wi) => (
-          <div key={wi} className="flex flex-col gap-[2px]">
-            {week.map((day) => {
-              const intensity = day.count / maxCount;
-              return (
+    <div className="space-y-2">
+      {platforms.map((p) => {
+        const count = counts[p.key] ?? 0;
+        const pct = (count / maxCount) * 100;
+        return (
+          <div key={p.key} className="flex items-center gap-3">
+            <span className="text-[11px] text-muted-foreground w-[70px] shrink-0 truncate">
+              {p.label}
+            </span>
+            <div
+              className="flex-1 h-2 rounded-[1px]"
+              style={{ background: "oklch(0.21 0.006 75)" }}
+            >
+              {count > 0 && (
                 <div
-                  key={day.date}
-                  className="w-2.5 h-2.5 rounded-[1px]"
-                  title={`${day.date}: ${day.count} activities`}
+                  className="h-full rounded-[1px] transition-all"
                   style={{
-                    backgroundColor:
-                      day.count === 0
-                        ? "var(--muted)"
-                        : `color-mix(in oklch, var(--primary) ${Math.max(intensity * 100, 25)}%, transparent)`,
+                    width: `${Math.max(pct, 3)}%`,
+                    background: `color-mix(in oklch, ${PLATFORM_COLORS[p.key]} 50%, transparent)`,
                   }}
                 />
-              );
-            })}
+              )}
+            </div>
+            <span className="text-[11px] text-muted-foreground tabular-nums w-6 text-right">
+              {count}
+            </span>
           </div>
-        ))}
-      </div>
+        );
+      })}
+      {Object.keys(counts).length === 0 && (
+        <p className="text-[12px] text-muted-foreground text-center py-4">
+          No activity recorded for this period.
+        </p>
+      )}
     </div>
   );
 }
+
+/* ─── Helpers ─── */
 
 function groupByArea(competencies: CompetencyEntry[]): [string, CompetencyEntry[]][] {
   const map = new Map<string, CompetencyEntry[]>();
@@ -402,40 +605,47 @@ function groupByArea(competencies: CompetencyEntry[]): [string, CompetencyEntry[
   return [...map.entries()];
 }
 
-function buildHeatmapData(activity: ActivityItem[]) {
-  const counts: Record<string, number> = {};
-  activity.forEach((a) => {
-    const date = a.timestamp.split("T")[0];
-    counts[date] = (counts[date] || 0) + 1;
-  });
-
-  const today = new Date();
-  const data = [];
-  for (let i = 364; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    const key = d.toISOString().split("T")[0];
-    data.push({ date: key, count: counts[key] || 0 });
+function tryParseDetails(details: string): string {
+  try {
+    const parsed = JSON.parse(details);
+    if (typeof parsed === "object" && parsed !== null) {
+      return Object.entries(parsed)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join(" · ");
+    }
+    return details;
+  } catch {
+    return details;
   }
-  return data;
 }
 
-function buildProgressData(snapshots: Snapshot[]) {
-  const byDate: Record<string, Record<string, number>> = {};
+function currentWeekLabel(): string {
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - ((dayOfWeek + 6) % 7));
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  const weekNum = getWeekNumber(now);
+  return `Week ${weekNum} · ${formatShortDate(monday)}–${formatShortDate(sunday)}`;
+}
 
-  snapshots.forEach((s) => {
-    try {
-      const parsed = JSON.parse(s.data);
-      if (!byDate[s.date]) byDate[s.date] = {};
-      if (s.platform === "42" && parsed.level) byDate[s.date]["42 Level"] = parsed.level;
-      if (s.platform === "htb" && parsed.points) byDate[s.date]["HTB Points"] = parsed.points;
-      if (s.platform === "thm" && parsed.roomsCompleted) byDate[s.date]["THM Rooms"] = parsed.roomsCompleted;
-    } catch {}
-  });
+function currentMonthLabel(): string {
+  const now = new Date();
+  return now.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+}
 
-  return Object.entries(byDate)
-    .map(([date, values]) => ({ date, ...values }))
-    .sort((a, b) => a.date.localeCompare(b.date));
+function getWeekNumber(d: Date): number {
+  const target = new Date(d.valueOf());
+  const dayNr = (d.getDay() + 6) % 7;
+  target.setDate(target.getDate() - dayNr + 3);
+  const firstThursday = new Date(target.getFullYear(), 0, 4);
+  const diff = target.getTime() - firstThursday.getTime();
+  return 1 + Math.round(diff / (7 * 24 * 60 * 60 * 1000));
+}
+
+function formatShortDate(d: Date): string {
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 function formatRelative(dateStr: string): string {

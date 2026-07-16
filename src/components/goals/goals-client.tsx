@@ -37,7 +37,50 @@ import type { MetricSourceKey } from "@/lib/goals/shared";
 import { PLATFORM_COLORS, PLATFORM_LABELS } from "@/lib/platform-colors";
 import { assertOk } from "@/lib/utils";
 
-export function GoalsClient({ goals }: { goals: GoalWithPacing[] }) {
+type CompetencySlim = {
+  id: string;
+  label: string;
+  area: string;
+  level: number;
+};
+
+type FocusSlim = { type: string; title: string };
+
+function matchFocusToGoal(goal: GoalWithPacing, focusItems: FocusSlim[]): FocusSlim[] {
+  return focusItems.filter((f) => {
+    if (goal.category && goal.category !== "general" && f.type === goal.category) return true;
+    const goalLower = goal.title.toLowerCase();
+    if (goalLower.includes(f.title.toLowerCase().slice(0, 15))) return true;
+    return false;
+  });
+}
+
+function getCompetencyTags(goal: GoalWithPacing, competencies: CompetencySlim[]): string[] {
+  const titleLower = goal.title.toLowerCase();
+  const match = competencies.find((c) => titleLower.includes(c.label.toLowerCase()));
+  if (match) return [match.area];
+  if (goal.category && goal.category !== "general") {
+    const platformAreas: Record<string, string[]> = {
+      "42": ["Low-level & C", "Linux & systems"],
+      thm: ["Networking", "Active Directory"],
+      htb: ["Networking", "Active Directory"],
+      rootme: ["Web", "Crypto & forensics basics"],
+      maldev: ["Windows internals & maldev"],
+    };
+    return platformAreas[goal.category] ?? [];
+  }
+  return [];
+}
+
+export function GoalsClient({
+  goals,
+  competencies,
+  focusItems = [],
+}: {
+  goals: GoalWithPacing[];
+  competencies: CompetencySlim[];
+  focusItems?: FocusSlim[];
+}) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [title, setTitle] = useState("");
@@ -48,6 +91,14 @@ export function GoalsClient({ goals }: { goals: GoalWithPacing[] }) {
 
   const activeGoals = goals.filter((g) => g.status === "active");
   const completedGoals = goals.filter((g) => g.status === "completed");
+  const behindGoals = activeGoals.filter(
+    (g) => g.pacing && !g.pacing.onTrack && g.pacing.percentComplete < 100
+  );
+  const [adding, setAdding] = useState<string | null>(null);
+  const goalTitles = new Set(goals.map((g) => g.title.toLowerCase()));
+  const suggestedGoals = competencies
+    .filter((c) => c.level < 2 && !goalTitles.has(`improve ${c.label}`.toLowerCase()))
+    .slice(0, 3);
 
   function applyPreset(preset: (typeof GOAL_PRESETS)[number]) {
     setTitle(preset.title);
@@ -139,13 +190,24 @@ export function GoalsClient({ goals }: { goals: GoalWithPacing[] }) {
   );
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 max-w-[896px]">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="page-title">Goals</h1>
           <p className="page-subtitle mt-1">
-            Your destinations — where you&apos;re heading and whether you&apos;re on pace
+            {activeGoals.length > 0 || completedGoals.length > 0 ? (
+              <>
+                {activeGoals.length} active
+                {behindGoals.length > 0 && (
+                  <span style={{ color: "var(--status-danger)" }}>
+                    {" "}· {behindGoals.length} behind pace
+                  </span>
+                )}
+              </>
+            ) : (
+              "Your destinations — where you're heading and whether you're on pace"
+            )}
           </p>
         </div>
         <Dialog
@@ -158,7 +220,6 @@ export function GoalsClient({ goals }: { goals: GoalWithPacing[] }) {
           <DialogTrigger render={<Button size="sm" onClick={resetForm} />}>
             <Plus className="h-3.5 w-3.5 mr-1" />
             New goal
-            <ArrowRight className="h-3 w-3 ml-1" />
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
@@ -276,6 +337,29 @@ export function GoalsClient({ goals }: { goals: GoalWithPacing[] }) {
         </Dialog>
       </div>
 
+      {/* Behind-pace alert */}
+      {behindGoals.length > 0 && (
+        <div
+          className="rounded-sm px-4 py-3 space-y-2"
+          style={{
+            background: "oklch(0.70 0.18 25 / 0.08)",
+            border: "1px solid oklch(0.70 0.18 25 / 0.2)",
+          }}
+        >
+          {behindGoals.map((g) => (
+            <div key={g.id} className="flex items-center gap-2">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--status-danger)" }} />
+              <span className="text-[13px] font-medium" style={{ color: "var(--status-danger)" }}>
+                {g.title}
+              </span>
+              <span className="text-[12px] text-muted-foreground">
+                — {g.pacing?.daysRemaining}d left, need {g.pacing?.requiredPace}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Active goals */}
       {activeGoals.length === 0 && completedGoals.length === 0 ? (
         <Card>
@@ -289,7 +373,7 @@ export function GoalsClient({ goals }: { goals: GoalWithPacing[] }) {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-2.5">
+        <div className="space-y-3">
           {activeGoals.map((goal) => (
             <GoalCard
               key={goal.id}
@@ -297,8 +381,71 @@ export function GoalsClient({ goals }: { goals: GoalWithPacing[] }) {
               onComplete={completeGoal}
               onDelete={deleteGoal}
               onEdit={openEdit}
+              weekItems={matchFocusToGoal(goal, focusItems)}
+              competencyTags={getCompetencyTags(goal, competencies)}
             />
           ))}
+        </div>
+      )}
+
+      {/* Suggested goals from competency gaps */}
+      {suggestedGoals.length > 0 && (
+        <div>
+          <p className="section-label mb-2">
+            Suggested goals (based on competency gaps)
+          </p>
+          <div className="space-y-1.5">
+            {suggestedGoals.map((c) => (
+              <div
+                key={c.id}
+                className="flex items-center gap-3 px-4 py-3 rounded-sm border border-dashed border-border"
+              >
+                <div className="flex-1 min-w-0">
+                  <span className="text-[13px] font-medium">
+                    Improve {c.label}
+                  </span>
+                  <span className="text-[12px] text-muted-foreground ml-2">
+                    {c.level}/5 → target {Math.min(c.level + 2, 5)}/5
+                  </span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="xs"
+                  disabled={adding === c.id}
+                  onClick={async () => {
+                    setAdding(c.id);
+                    const target = Math.min(c.level + 2, 5);
+                    const deadlineDate = new Date();
+                    deadlineDate.setMonth(deadlineDate.getMonth() + 3);
+                    const dl = deadlineDate.toISOString().slice(0, 10);
+                    try {
+                      const res = await fetch("/api/goals", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          title: `Improve ${c.label}`,
+                          description: `Reach competency level ${target}/5 in ${c.area}. Currently at ${c.level}/5.`,
+                          category: "general",
+                          targetValue: target,
+                          currentValue: c.level,
+                          deadline: dl,
+                          metricSource: null,
+                        }),
+                      });
+                      await assertOk(res);
+                      window.location.reload();
+                    } catch (e) {
+                      alert(e instanceof Error ? e.message : "Failed to create goal.");
+                      setAdding(null);
+                    }
+                  }}
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  {adding === c.id ? "Adding..." : "Add"}
+                </Button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -341,31 +488,44 @@ function GoalCard({
   onComplete,
   onDelete,
   onEdit,
+  weekItems,
+  competencyTags,
 }: {
   goal: GoalWithPacing;
   onComplete: (id: number) => void;
   onDelete: (id: number) => void;
   onEdit: (goal: GoalWithPacing) => void;
+  weekItems: FocusSlim[];
+  competencyTags: string[];
 }) {
   const progress = goal.pacing?.percentComplete ?? 0;
   const color = PLATFORM_COLORS[goal.category ?? "general"] ?? "var(--muted-foreground)";
+  const isBehind = goal.pacing && !goal.pacing.onTrack && goal.pacing.percentComplete < 100;
 
   return (
-    <Card className="overflow-hidden group gap-0 py-0">
+    <Card
+      className="overflow-hidden group gap-0 py-0"
+      style={isBehind ? { borderColor: "oklch(0.70 0.18 25 / 0.3)" } : undefined}
+    >
       <div className="h-[3px]" style={{ backgroundColor: color }} />
-      <CardContent className="pt-3.5 pb-3.5 px-4 space-y-2.5">
+      <CardContent className="pt-4 pb-4 px-5 space-y-3">
+        {/* Header row */}
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-[14px] tracking-tight truncate">{goal.title}</h3>
-              {goal.category && (
-                <span
-                  className="text-[10px] font-bold uppercase tracking-widest shrink-0"
-                  style={{ color }}
-                >
-                  {PLATFORM_LABELS[goal.category] ?? goal.category}
-                </span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-[15px] font-semibold tracking-tight">{goal.title}</h3>
+              {goal.pacing && (
+                <PaceStatus pacing={goal.pacing} />
               )}
+              {competencyTags.map((tag) => (
+                <span
+                  key={tag}
+                  className="text-[10px] px-2 py-0.5 rounded-sm"
+                  style={{ color: "var(--muted-foreground)", background: "oklch(0.22 0.005 75)" }}
+                >
+                  → {tag}
+                </span>
+              ))}
             </div>
             {goal.deadline && (
               <p className="text-[12px] text-muted-foreground mt-0.5">
@@ -373,38 +533,66 @@ function GoalCard({
               </p>
             )}
           </div>
-          <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-            <button onClick={() => onEdit(goal)} className="p-1 hover:text-primary text-muted-foreground transition-colors" title="Edit goal">
-              <Pencil className="h-3.5 w-3.5" />
-            </button>
-            <button onClick={() => onComplete(goal.id)} className="p-1 hover:text-success text-muted-foreground transition-colors" title="Mark complete">
-              <CheckCircle className="h-3.5 w-3.5" />
-            </button>
-            <button onClick={() => onDelete(goal.id)} className="p-1 hover:text-destructive text-muted-foreground transition-colors" title="Delete goal">
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
-          </div>
+          {goal.targetValue != null && (
+            <span
+              className="text-[24px] font-bold tabular-nums shrink-0"
+              style={{ color: isBehind ? "var(--status-danger)" : "var(--foreground)" }}
+            >
+              {progress.toFixed(0)}%
+            </span>
+          )}
         </div>
 
+        {/* Progress bar with milestone markers */}
         {goal.targetValue != null && (
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-[12px]">
-              <span className="text-muted-foreground tabular-nums">
-                {goal.currentValue ?? 0} / {goal.targetValue}
-              </span>
-              <div className="flex items-center gap-2">
-                <span className="text-muted-foreground tabular-nums">
-                  {progress.toFixed(0)}%
-                </span>
-                {goal.pacing && <PaceStatus pacing={goal.pacing} />}
+          <div className="space-y-1">
+            <div className="relative">
+              <div className="progress-track" style={{ height: "6px" }}>
+                <div
+                  className="progress-fill"
+                  style={{
+                    width: `${progress}%`,
+                    backgroundColor: isBehind ? "var(--status-danger)" : color,
+                    height: "6px",
+                  }}
+                />
               </div>
+              {goal.milestones.map((m) => {
+                if (!goal.targetValue) return null;
+                const mVal = m.targetValue ?? 0;
+                const pos = (mVal / goal.targetValue) * 100;
+                return (
+                  <div
+                    key={m.id}
+                    className="absolute top-0 -translate-x-1/2"
+                    style={{ left: `${Math.min(pos, 100)}%` }}
+                  >
+                    <div
+                      className="h-[6px] w-[2px]"
+                      style={{
+                        background: m.reachedAt ? "var(--status-success)" : "var(--foreground)",
+                        opacity: m.reachedAt ? 1 : 0.4,
+                      }}
+                    />
+                    <span className="text-[9px] text-muted-foreground block mt-0.5 whitespace-nowrap">
+                      {m.reachedAt ? "✓" : ""}{mVal}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
-            <div className="progress-track">
-              <div className="progress-fill" style={{ width: `${progress}%`, backgroundColor: color }} />
+            <div className="flex items-center justify-between text-[12px] text-muted-foreground tabular-nums">
+              <span>{goal.currentValue ?? 0} / {goal.targetValue}</span>
+              {goal.metricSource && (
+                <span className="text-[11px]">
+                  Auto: {METRIC_SOURCES[goal.metricSource as MetricSourceKey]?.label ?? goal.metricSource}
+                </span>
+              )}
             </div>
           </div>
         )}
 
+        {/* Pacing stats */}
         {goal.pacing && (
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted-foreground">
             <span className="flex items-center gap-1">
@@ -422,29 +610,49 @@ function GoalCard({
           </div>
         )}
 
-        {goal.metricSource && (
-          <p className="text-[11px] text-muted-foreground">
-            Auto-tracked:{" "}
-            {METRIC_SOURCES[goal.metricSource as MetricSourceKey]?.label ?? goal.metricSource}
-          </p>
-        )}
-
-        {goal.milestones.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {goal.milestones.map((m) => (
-              <span
-                key={m.id}
-                className={`text-[11px] px-1.5 py-0.5 rounded-sm border ${
-                  m.reachedAt
-                    ? "border-success/30 text-success"
-                    : "border-border text-muted-foreground"
-                }`}
-              >
-                {m.reachedAt ? "✓" : "○"} {m.title}
-              </span>
-            ))}
+        {/* This week connection */}
+        {weekItems.length > 0 && (
+          <div
+            className="flex items-center gap-2 px-3 py-2 rounded-sm text-[12px]"
+            style={{ background: "oklch(0.58 0.16 250 / 0.06)" }}
+          >
+            <span className="font-semibold text-primary shrink-0">THIS WEEK</span>
+            <span className="text-muted-foreground">
+              {weekItems.length}× {weekItems.map((w) => w.title).join(", ").slice(0, 60)}
+              {weekItems.map((w) => w.title).join(", ").length > 60 ? "…" : ""} from mentor plan
+            </span>
           </div>
         )}
+
+        {/* Actions row for behind-pace goals */}
+        {isBehind && (
+          <div
+            className="flex items-center gap-3 px-3 py-2 rounded-sm text-[12px]"
+            style={{ background: "oklch(0.70 0.18 25 / 0.06)" }}
+          >
+            <AlertTriangle className="h-3 w-3 shrink-0" style={{ color: "var(--status-danger)" }} />
+            <span className="text-muted-foreground">Action needed — increase effort, extend deadline, or reduce scope</span>
+            <button
+              onClick={() => onEdit(goal)}
+              className="text-primary hover:underline ml-auto shrink-0"
+            >
+              Adjust →
+            </button>
+          </div>
+        )}
+
+        {/* Hover actions */}
+        <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button onClick={() => onEdit(goal)} className="p-1 hover:text-primary text-muted-foreground transition-colors" title="Edit goal">
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
+          <button onClick={() => onComplete(goal.id)} className="p-1 hover:text-success text-muted-foreground transition-colors" title="Mark complete">
+            <CheckCircle className="h-3.5 w-3.5" />
+          </button>
+          <button onClick={() => onDelete(goal.id)} className="p-1 hover:text-destructive text-muted-foreground transition-colors" title="Delete goal">
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </CardContent>
     </Card>
   );
@@ -466,8 +674,7 @@ function PaceStatus({ pacing }: { pacing: NonNullable<GoalWithPacing["pacing"]> 
     return <Badge variant="success">On track</Badge>;
   }
   return (
-    <Badge variant="warning">
-      <AlertTriangle className="h-2.5 w-2.5 mr-0.5" />
+    <Badge variant="danger">
       Behind
     </Badge>
   );

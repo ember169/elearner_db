@@ -8,6 +8,7 @@ import {
   ftSkills,
   activityFeed,
   dailySnapshots,
+  syncLog,
 } from "@/lib/db/schema";
 import { desc } from "drizzle-orm";
 import { runGuidanceEngine } from "@/lib/guidance/engine";
@@ -31,6 +32,14 @@ export default function ProgressPage() {
     .limit(500)
     .all();
   const snapshots = db.select().from(dailySnapshots).all();
+
+  const lastSync =
+    db
+      .select()
+      .from(syncLog)
+      .orderBy(desc(syncLog.startedAt))
+      .limit(1)
+      .all()[0] ?? null;
 
   const guidance = runGuidanceEngine();
 
@@ -59,6 +68,7 @@ export default function ProgressPage() {
       snapshots={snapshots}
       ftProgress={guidance.ftProgress}
       competencies={competencies}
+      lastSync={lastSync?.startedAt ?? null}
     />
   );
 }
