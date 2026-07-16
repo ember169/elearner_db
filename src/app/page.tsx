@@ -9,13 +9,13 @@ import {
   tasks,
 } from "@/lib/db/schema";
 import { desc, eq } from "drizzle-orm";
-import { runGuidanceEngine } from "@/lib/guidance/engine";
+import { loadCurrentPlan } from "@/lib/mentor/store";
 import { PathClient } from "@/components/path/path-client";
 
 export const dynamic = "force-dynamic";
 
 export default function HomePage() {
-  const guidance = runGuidanceEngine();
+  const mentorResult = loadCurrentPlan();
 
   const pinnedTasks = db
     .select()
@@ -39,7 +39,7 @@ export default function HomePage() {
 
   return (
     <PathClient
-      guidance={guidance}
+      mentor={mentorResult}
       pinnedTasks={pinnedTasks}
       platforms={{
         ft: ft ? { level: ft.level, coalition: ft.coalition } : null,

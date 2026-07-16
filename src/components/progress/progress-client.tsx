@@ -52,6 +52,14 @@ interface ActivityItem {
   timestamp: string;
 }
 
+interface CompetencyEntry {
+  id: string;
+  label: string;
+  area: string;
+  level: number;
+  evidence: string;
+}
+
 interface ProgressClientProps {
   ft: FtProfileData | null;
   thm: {
@@ -84,8 +92,10 @@ interface ProgressClientProps {
     inProgressProjects: string[];
     availableProjects: FtProject[];
   };
-  skillProfile: Record<string, number>;
+  competencies: CompetencyEntry[];
 }
+
+const LEVEL_LABELS = ["None", "Basics", "Familiar", "Proficient", "Strong", "Expert"];
 
 export function ProgressClient({
   ft,
@@ -93,15 +103,17 @@ export function ProgressClient({
   htb,
   maldev,
   rootme,
-  skills,
+  skills: _skills,
   activity,
   snapshots,
   ftProgress,
-  skillProfile,
+  competencies,
 }: ProgressClientProps) {
   const heatmapData = buildHeatmapData(activity);
   const progressData = buildProgressData(snapshots);
   const recentActivity = activity.slice(0, 10);
+
+  const grouped = groupByArea(competencies);
 
   return (
     <div className="space-y-5">
@@ -147,7 +159,7 @@ export function ProgressClient({
         />
       </div>
 
-      {/* Holy Graph + Skill Profile */}
+      {/* Holy Graph + Competency Map */}
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
         <Card>
           <CardContent className="pt-4 pb-3 px-4">
@@ -198,33 +210,54 @@ export function ProgressClient({
           <CardContent className="pt-4 pb-3 px-4">
             <div className="flex items-center gap-2 mb-3">
               <Radar className="h-3.5 w-3.5 text-muted-foreground" />
-              <p className="section-label">Skill Profile</p>
+              <p className="section-label">Competency map</p>
             </div>
-            {Object.keys(skillProfile).length === 0 ? (
+            {competencies.length === 0 ? (
               <p className="text-[13px] text-muted-foreground text-center py-8">
-                Sync platforms to build your skill profile.
+                Sync platforms to build your competency map.
               </p>
             ) : (
-              <div className="space-y-2.5">
-                {Object.entries(skillProfile)
-                  .sort((a, b) => b[1] - a[1])
-                  .slice(0, 8)
-                  .map(([skill, level]) => (
-                    <div key={skill} className="flex items-center gap-3">
-                      <span className="text-[12px] text-muted-foreground w-20 capitalize truncate">
-                        {skill.replace(/-/g, " ")}
-                      </span>
-                      <div className="flex-1 progress-track">
-                        <div
-                          className="progress-fill bg-primary"
-                          style={{ width: `${Math.min(100, (level / 20) * 100)}%` }}
-                        />
-                      </div>
-                      <span className="text-[12px] text-muted-foreground w-8 text-right tabular-nums">
-                        {level.toFixed(1)}
-                      </span>
+              <div className="space-y-4">
+                {grouped.map(([area, entries]) => (
+                  <div key={area}>
+                    <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-2">
+                      {area}
+                    </p>
+                    <div className="space-y-2">
+                      {entries.map((c) => (
+                        <div key={c.id}>
+                          <div className="flex items-center gap-3">
+                            <span className="text-[12px] text-muted-foreground w-40 shrink-0">
+                              {c.label}
+                            </span>
+                            <div className="flex-1 flex gap-0.5">
+                              {Array.from({ length: 5 }, (_, i) => (
+                                <div
+                                  key={i}
+                                  className="h-2 flex-1 rounded-[1px]"
+                                  style={{
+                                    backgroundColor:
+                                      i < c.level
+                                        ? "var(--primary)"
+                                        : "var(--muted)",
+                                  }}
+                                />
+                              ))}
+                            </div>
+                            <span className="text-[11px] text-muted-foreground w-16 text-right tabular-nums">
+                              {LEVEL_LABELS[c.level] ?? c.level}
+                            </span>
+                          </div>
+                          {c.evidence && c.evidence !== "No tracked activity yet" && (
+                            <p className="text-[11px] text-muted-foreground/70 ml-[calc(10rem+0.75rem)] mt-0.5 leading-tight">
+                              {c.evidence}
+                            </p>
+                          )}
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  </div>
+                ))}
               </div>
             )}
           </CardContent>
@@ -357,6 +390,16 @@ function ActivityHeatmap({ data }: { data: { date: string; count: number }[] }) 
       </div>
     </div>
   );
+}
+
+function groupByArea(competencies: CompetencyEntry[]): [string, CompetencyEntry[]][] {
+  const map = new Map<string, CompetencyEntry[]>();
+  for (const c of competencies) {
+    const list = map.get(c.area) ?? [];
+    list.push(c);
+    map.set(c.area, list);
+  }
+  return [...map.entries()];
 }
 
 function buildHeatmapData(activity: ActivityItem[]) {

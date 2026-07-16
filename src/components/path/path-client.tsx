@@ -15,10 +15,43 @@ import {
   Pin,
   Check,
   ArrowRight,
+  Settings,
 } from "lucide-react";
-import type { GuidanceResult, Recommendation, GoalWithPacing } from "@/lib/guidance/engine";
 import { PLATFORM_COLORS } from "@/lib/platform-colors";
 import { assertOk } from "@/lib/utils";
+
+type MentorFocus = {
+  type: string;
+  title: string;
+  why: string;
+  estimatedTime: string;
+  priority: "high" | "medium" | "low";
+  ref?: string;
+  link?: string;
+};
+
+type MentorCompetency = {
+  id: string;
+  level: number;
+  evidence: string;
+  nextStep: string;
+};
+
+type MentorPlan = {
+  version: number;
+  generatedAt: string;
+  objectiveEcho: string;
+  headline: string;
+  focus: MentorFocus[];
+  competencies: MentorCompetency[];
+  fallback?: boolean;
+};
+
+type MentorResult = {
+  plan: MentorPlan;
+  stale: boolean;
+  hasKey: boolean;
+};
 
 interface PinnedTask {
   id: number;
@@ -36,7 +69,7 @@ interface PlatformStatus {
 }
 
 interface PathClientProps {
-  guidance: GuidanceResult;
+  mentor: MentorResult;
   pinnedTasks: PinnedTask[];
   platforms: PlatformStatus;
   lastSync: string | null;
@@ -48,30 +81,44 @@ const priorityVariant: Record<string, "danger" | "warning" | "info"> = {
   low: "info",
 };
 
-export function PathClient({ guidance, pinnedTasks: initialPinned, platforms, lastSync }: PathClientProps) {
-  const [llmAdvice, setLlmAdvice] = useState<string | null>(null);
-  const [loadingLlm, setLoadingLlm] = useState(false);
-  const [llmError, setLlmError] = useState<string | null>(null);
+const FOCUS_TYPE_LABELS: Record<string, string> = {
+  "42": "42 Paris",
+  maldev: "Maldev",
+  thm: "TryHackMe",
+  rootme: "Root-me",
+  htb: "HackTheBox",
+  "side-project": "Side project",
+  skill: "Skill",
+};
+
+export function PathClient({ mentor, pinnedTasks: initialPinned, platforms, lastSync }: PathClientProps) {
+  const [plan, setPlan] = useState(mentor.plan);
+  const [stale, setStale] = useState(mentor.stale);
+  const [hasKey, setHasKey] = useState(mentor.hasKey);
+  const [regenerating, setRegenerating] = useState(false);
+  const [regenError, setRegenError] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [pinned, setPinned] = useState(initialPinned);
   const [newTask, setNewTask] = useState("");
   const [showAddTask, setShowAddTask] = useState(false);
 
-  async function fetchLlmAdvice() {
-    setLoadingLlm(true);
-    setLlmError(null);
+  async function regeneratePlan() {
+    setRegenerating(true);
+    setRegenError(null);
     try {
-      const res = await fetch("/api/guidance", { method: "POST" });
+      const res = await fetch("/api/mentor", { method: "POST" });
       const data = await res.json();
-      if (data.llmAdvice?.startsWith("Error:")) {
-        setLlmError(data.llmAdvice);
-      } else {
-        setLlmAdvice(data.llmAdvice);
+      if (!res.ok) {
+        setRegenError(data.error ?? "Failed to generate plan.");
+        return;
       }
+      setPlan(data.plan);
+      setStale(data.stale);
+      setHasKey(data.hasKey);
     } catch {
-      setLlmError("Failed to fetch AI guidance.");
+      setRegenError("Failed to reach the mentor API.");
     } finally {
-      setLoadingLlm(false);
+      setRegenerating(false);
     }
   }
 
@@ -133,52 +180,67 @@ export function PathClient({ guidance, pinnedTasks: initialPinned, platforms, la
     }
   }
 
-  const { recommendations, goals } = guidance;
-  const behindGoals = goals.filter(
-    (g) => g.pacing && !g.pacing.onTrack && g.pacing.percentComplete < 100
-  );
-  const nextDeadline = goals
-    .filter((g) => g.deadline && g.pacing)
-    .sort((a, b) => (a.pacing!.daysRemaining > b.pacing!.daysRemaining ? 1 : -1))[0];
-
   return (
     <div className="space-y-5">
-      {/* Header */}
+      {/* Objective banner */}
       <div>
-        <h1 className="page-title">Learning path</h1>
-        <p className="page-subtitle mt-1">
-          Your personalized guidance based on current progress and goals
-        </p>
-      </div>
-
-      {/* Behind-on-goal alerts */}
-      {behindGoals.map((g) => (
-        <div key={g.id} className="flex items-start gap-3 rounded-sm border border-danger/25 bg-danger/8 px-4 py-3">
-          <AlertTriangle className="h-4 w-4 text-danger mt-0.5 shrink-0" />
-          <div>
-            <p className="text-[14px] font-medium text-danger">
-              Behind on &ldquo;{g.title}&rdquo;
-            </p>
-            {g.pacing && (
-              <p className="text-[12px] text-muted-foreground mt-0.5">
-                {g.pacing.percentComplete.toFixed(0)}% done, {g.pacing.daysRemaining}d left
-                {g.pacing.requiredPace !== "Complete!" &&
-                  g.pacing.requiredPace !== "Overdue" &&
-                  ` — need ${g.pacing.requiredPace}`}
-              </p>
-            )}
+        <h1 className="page-title">Mentor</h1>
+        <p className="page-subtitle mt-1">{plan.objectiveEcho}</p>
+        <div className="flex items-center gap-3 mt-2">
+          {stale && (
+            <Badge variant="warning">Stale</Badge>
+          )}
+          {plan.fallback && !hasKey && (
+            <span className="text-[12px] text-muted-foreground">
+              Rule-based plan —{" "}
+              <a href="/settings" className="underline hover:text-foreground transition-colors">
+                add an API key
+              </a>{" "}
+              for full mentor guidance
+            </span>
+          )}
+          <div className="ml-auto flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="xs"
+              onClick={regeneratePlan}
+              disabled={regenerating}
+            >
+              <RefreshCw className={`h-3 w-3 mr-1 ${regenerating ? "animate-spin" : ""}`} />
+              {regenerating ? "Generating..." : "Regenerate"}
+            </Button>
+            <a href="/settings">
+              <Button variant="ghost" size="xs">
+                <Settings className="h-3 w-3" />
+              </Button>
+            </a>
           </div>
         </div>
-      ))}
+        {regenError && (
+          <p className="text-[13px] text-destructive mt-2">{regenError}</p>
+        )}
+      </div>
+
+      {/* Headline */}
+      {plan.headline && (
+        <Card className="gold-glow overflow-visible">
+          <CardContent className="pt-3 pb-3 px-4 relative z-10">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
+              <p className="text-[14px] font-medium text-primary">{plan.headline}</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Main grid */}
       <div className="grid gap-5 grid-cols-1 lg:grid-cols-[1fr_200px]">
         {/* Left column */}
         <div className="space-y-5">
-          {/* Focus Queue */}
+          {/* Focus items */}
           <Card>
             <CardContent className="pt-4 pb-3 px-4">
-              <p className="section-label mb-3">Focus queue</p>
+              <p className="section-label mb-3">This week&apos;s focus</p>
 
               <div className="space-y-1.5">
                 {/* Pinned tasks */}
@@ -201,14 +263,14 @@ export function PathClient({ guidance, pinnedTasks: initialPinned, platforms, la
                   </div>
                 ))}
 
-                {/* Recommendations */}
-                {recommendations.length === 0 && pinned.length === 0 ? (
+                {/* Focus items from mentor plan */}
+                {plan.focus.length === 0 && pinned.length === 0 ? (
                   <p className="text-[14px] text-muted-foreground text-center py-10">
-                    Sync your platforms and set goals to get recommendations.
+                    Sync your platforms to get mentor recommendations.
                   </p>
                 ) : (
-                  recommendations.map((rec, i) => (
-                    <RecommendationRow key={i} rec={rec} />
+                  plan.focus.map((item, i) => (
+                    <FocusRow key={i} item={item} />
                   ))
                 )}
               </div>
@@ -240,62 +302,6 @@ export function PathClient({ guidance, pinnedTasks: initialPinned, platforms, la
               )}
             </CardContent>
           </Card>
-
-          {/* AI Insight */}
-          <Card className="gold-glow overflow-visible">
-            <CardContent className="pt-4 pb-4 px-4 relative z-10">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="h-3.5 w-3.5 text-primary" />
-                  <p className="section-label !text-primary">AI insight</p>
-                </div>
-                {(llmAdvice || llmError) && (
-                  <button
-                    onClick={fetchLlmAdvice}
-                    disabled={loadingLlm}
-                    className="text-[11px] text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
-                  >
-                    <RefreshCw className={`h-3 w-3 ${loadingLlm ? "animate-spin" : ""}`} />
-                    Refresh
-                  </button>
-                )}
-              </div>
-
-              {llmAdvice ? (
-                <div
-                  className="text-[14px] text-muted-foreground leading-relaxed [&_strong]:text-foreground [&_h3]:text-foreground [&_h3]:font-semibold [&_h3]:text-[14px] [&_h3]:mt-3 [&_h3]:mb-1 [&_li]:ml-3 [&_li]:list-disc"
-                  dangerouslySetInnerHTML={{ __html: renderMarkdown(llmAdvice) }}
-                />
-              ) : llmError ? (
-                <div>
-                  <p className="text-[14px] text-destructive">{llmError}</p>
-                  <p className="text-[12px] text-muted-foreground mt-1">
-                    Configure your Anthropic API key in Settings to enable AI guidance.
-                  </p>
-                </div>
-              ) : (
-                <div className="text-center py-6">
-                  <p className="text-[14px] text-muted-foreground mb-3">
-                    Get personalized learning advice powered by Claude
-                  </p>
-                  <Button onClick={fetchLlmAdvice} disabled={loadingLlm} size="sm">
-                    {loadingLlm ? (
-                      <>
-                        <RefreshCw className="h-3 w-3 mr-1.5 animate-spin" />
-                        Thinking...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="h-3 w-3 mr-1.5" />
-                        Get AI advice
-                        <ArrowRight className="h-3 w-3 ml-1" />
-                      </>
-                    )}
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
         </div>
 
         {/* Right sidebar */}
@@ -310,29 +316,6 @@ export function PathClient({ guidance, pinnedTasks: initialPinned, platforms, la
                 <StatusRow color={PLATFORM_COLORS.rootme} label="Root-me" value={platforms.rootme ? `${(platforms.rootme.score ?? 0).toLocaleString("en-US")} pts` : "—"} />
                 <StatusRow color={PLATFORM_COLORS.maldev} label="Maldev" value={platforms.maldev ? `${(platforms.maldev.progress ?? 0).toFixed(0)}%` : "—"} />
               </div>
-
-              {nextDeadline?.pacing && (
-                <>
-                  <div className="border-t border-border my-3.5" />
-                  <div>
-                    <p className="section-label">Next deadline</p>
-                    <p className="text-[13px] font-medium mt-1.5 truncate">{nextDeadline.title}</p>
-                    <div className="progress-track mt-2">
-                      <div
-                        className="progress-fill"
-                        style={{
-                          width: `${nextDeadline.pacing.percentComplete}%`,
-                          backgroundColor: nextDeadline.pacing.onTrack ? "var(--status-success)" : "var(--status-danger)",
-                        }}
-                      />
-                    </div>
-                    <div className="flex justify-between text-[11px] text-muted-foreground mt-1.5">
-                      <span>{nextDeadline.pacing.percentComplete.toFixed(0)}%</span>
-                      <span>{nextDeadline.pacing.daysRemaining}d left</span>
-                    </div>
-                  </div>
-                </>
-              )}
 
               <div className="border-t border-border my-3.5" />
               <div className="flex items-center justify-between">
@@ -364,49 +347,47 @@ function StatusRow({ color, label, value }: { color: string; label: string; valu
   );
 }
 
-function RecommendationRow({ rec }: { rec: Recommendation }) {
+function FocusRow({ item }: { item: MentorFocus }) {
+  const color = PLATFORM_COLORS[item.type] ?? "var(--muted-foreground)";
   return (
     <div className="flex items-start gap-2.5 px-3 py-2.5 rounded-sm border border-border hover:bg-accent/30 transition-colors group">
       <span
         className="mt-1.5 h-2 w-2 rounded-full shrink-0"
-        style={{ backgroundColor: PLATFORM_COLORS[rec.platform] ?? "var(--muted-foreground)" }}
+        style={{ backgroundColor: color }}
       />
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-[14px] font-medium">{rec.title}</span>
-          <Badge variant={priorityVariant[rec.priority]}>
-            {rec.priority}
+        <div className="flex items-center gap-2 mb-1 flex-wrap">
+          <span className="text-[14px] font-medium">{item.title}</span>
+          <Badge variant={priorityVariant[item.priority]}>
+            {item.priority}
           </Badge>
+          <span className="text-[11px] text-muted-foreground">
+            {FOCUS_TYPE_LABELS[item.type] ?? item.type}
+          </span>
         </div>
-        <p className="text-[12px] text-muted-foreground leading-relaxed">{rec.reason}</p>
-        {rec.estimatedHours && (
-          <div className="flex items-center gap-1 mt-1 text-[12px] text-muted-foreground">
-            <Clock className="h-3 w-3" />
-            ~{rec.estimatedHours}h
-            {rec.skills && rec.skills.length > 0 && (
-              <span className="ml-1">· {rec.skills.slice(0, 3).join(", ")}</span>
-            )}
-          </div>
-        )}
+        <p className="text-[12px] text-muted-foreground leading-relaxed">{item.why}</p>
+        <div className="flex items-center gap-1 mt-1 text-[12px] text-muted-foreground">
+          <Clock className="h-3 w-3" />
+          {item.estimatedTime}
+          {item.ref && (
+            <span className="ml-1.5 font-mono text-[11px] text-muted-foreground/70">
+              {item.ref}
+            </span>
+          )}
+        </div>
       </div>
+      {item.link && (
+        <a
+          href={item.link}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="shrink-0 mt-1 text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowRight className="h-3.5 w-3.5" />
+        </a>
+      )}
     </div>
   );
-}
-
-function renderMarkdown(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*(.+?)\*/g, "<em>$1</em>")
-    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-    .replace(/^## (.+)$/gm, '<h3>$1</h3>')
-    .replace(/^# (.+)$/gm, '<h3>$1</h3>')
-    .replace(/^- (.+)$/gm, '<li>$1</li>')
-    .replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>')
-    .replace(/\n{2,}/g, "<br/><br/>")
-    .replace(/\n/g, "<br/>");
 }
 
 function formatRelative(dateStr: string): string {

@@ -11,6 +11,8 @@ import {
 } from "@/lib/db/schema";
 import { desc } from "drizzle-orm";
 import { runGuidanceEngine } from "@/lib/guidance/engine";
+import { computeCompetencySignals } from "@/lib/mentor/competency-signals";
+import { COMPETENCIES } from "@/lib/mentor/competency-map";
 import { ProgressClient } from "@/components/progress/progress-client";
 
 export const dynamic = "force-dynamic";
@@ -32,6 +34,19 @@ export default function ProgressPage() {
 
   const guidance = runGuidanceEngine();
 
+  const signals = computeCompetencySignals(
+    guidance.snapshot,
+    guidance.ftProgress
+  );
+
+  const competencies = COMPETENCIES.map((c) => ({
+    id: c.id,
+    label: c.label,
+    area: c.area,
+    level: signals[c.id]?.autoLevel ?? 0,
+    evidence: signals[c.id]?.evidence ?? "",
+  }));
+
   return (
     <ProgressClient
       ft={ft}
@@ -43,7 +58,7 @@ export default function ProgressPage() {
       activity={activity}
       snapshots={snapshots}
       ftProgress={guidance.ftProgress}
-      skillProfile={guidance.skillProfile}
+      competencies={competencies}
     />
   );
 }

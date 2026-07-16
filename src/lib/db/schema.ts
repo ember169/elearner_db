@@ -25,6 +25,8 @@ export const settings = sqliteTable("settings", {
   // LLM
   llmApiKey: text("llm_api_key"),
   llmModel: text("llm_model").default("claude-sonnet-5"),
+  // Mentor: free-text long-term objective the guidance optimizes toward
+  objective: text("objective"),
   // App
   theme: text("theme").default("dark"),
   syncIntervalMinutes: integer("sync_interval_minutes").default(60),
@@ -278,6 +280,19 @@ export const guidanceCache = sqliteTable("guidance_cache", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   prompt: text("prompt").notNull(),
   response: text("response").notNull(),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+// Structured mentor plans (append-only; newest row is the current plan)
+export const mentorPlan = sqliteTable("mentor_plan", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  version: integer("version").notNull().default(1),
+  // the objective the plan was generated for (staleness check)
+  objective: text("objective").notNull(),
+  // the full plan JSON (focus items + competency assessment)
+  plan: text("plan").notNull(),
   createdAt: text("created_at")
     .notNull()
     .default(sql`(datetime('now'))`),

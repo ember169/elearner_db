@@ -39,6 +39,7 @@ interface Config {
   maldevDbPath: string | null;
   llmApiKey: string | null;
   llmModel: string | null;
+  objective: string | null;
   theme: string | null;
   syncIntervalMinutes: number | null;
 }
@@ -77,6 +78,7 @@ export function SettingsClient({
   const [rootmeUserId, setRootmeUserId] = useState(config.rootmeUserId ?? "");
   const [llmApiKey, setLlmApiKey] = useState(config.llmApiKey ?? "");
   const [llmModel, setLlmModel] = useState(config.llmModel ?? "claude-sonnet-5");
+  const [objective, setObjective] = useState(config.objective ?? "");
 
   async function saveSettings() {
     setSaving(true);
@@ -97,6 +99,7 @@ export function SettingsClient({
           maldevDbPath: maldevDbPath || null,
           llmApiKey: llmApiKey || null,
           llmModel: llmModel || null,
+          objective: objective || null,
         }),
       });
       await assertOk(res);
@@ -227,13 +230,28 @@ export function SettingsClient({
 
       <PlatformSection
         icon={<Brain className="h-4 w-4" />}
-        name="AI Guidance"
+        name="AI Mentor"
         configured={!!llmApiKey}
-        hint="Powers the personalized learning path recommendations on the Path page"
+        hint="Powers the personalized mentor plan on the home page. The objective drives all recommendations."
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <Field label="Anthropic API Key" value={llmApiKey} onChange={setLlmApiKey} placeholder="sk-ant-..." type="password" />
-          <Field label="Model" value={llmModel} onChange={setLlmModel} placeholder="claude-sonnet-5" />
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label className="text-[13px]">Learning objective</Label>
+            <textarea
+              value={objective}
+              onChange={(e) => setObjective(e.target.value)}
+              placeholder="Red team / malware development, with solid generalist foundations (networking, web, Linux)."
+              rows={3}
+              className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-[14px] placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            />
+            <p className="text-[12px] text-muted-foreground">
+              Describe your long-term goal. The mentor will tailor every recommendation to this.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <Field label="Anthropic API Key" value={llmApiKey} onChange={setLlmApiKey} placeholder="sk-ant-..." type="password" />
+            <Field label="Model" value={llmModel} onChange={setLlmModel} placeholder="claude-sonnet-5" />
+          </div>
         </div>
       </PlatformSection>
 

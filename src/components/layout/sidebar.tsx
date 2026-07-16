@@ -14,7 +14,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { href: "/", label: "Path", icon: Compass },
+  { href: "/", label: "Mentor", icon: Compass },
   { href: "/progress", label: "Progress", icon: Map },
   { href: "/goals", label: "Goals", icon: Target },
   { href: "/settings", label: "Settings", icon: Settings },
