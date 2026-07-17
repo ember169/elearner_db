@@ -16,6 +16,7 @@ import { GoalsTree } from "./goals-tree";
 import { DetailPane } from "./detail-pane";
 import { CreateForm } from "./create-form";
 import { Generate42Dialog } from "./generate-42-dialog";
+import { SuggestPane } from "./suggest-pane";
 import { SuggestDialog } from "./suggest-dialog";
 import { GoalsMobile } from "./goals-mobile";
 
@@ -34,7 +35,8 @@ function findGoalById(id: number, tree: GoalWithPacing[]): GoalWithPacing | null
 type RightPane =
   | { mode: "detail" }
   | { mode: "create"; parentGoal?: GoalWithPacing | null }
-  | { mode: "edit"; goal: GoalWithPacing };
+  | { mode: "edit"; goal: GoalWithPacing }
+  | { mode: "suggest" };
 
 export function GoalsClient({
   goals,
@@ -142,7 +144,7 @@ export function GoalsClient({
           selectedId={selectedId}
           onSelect={handleSelect}
           onNewGoal={handleNewGoal}
-          onSuggest={() => setShowSuggestDialog(true)}
+          onSuggest={() => { setSelectedId(null); setRightPane({ mode: "suggest" }); }}
           on42Plan={() => setShow42Dialog(true)}
         />
 
@@ -159,6 +161,11 @@ export function GoalsClient({
             editingGoal={rightPane.goal}
             onDone={handleFormDone}
             onCancel={handleFormCancel}
+          />
+        ) : rightPane.mode === "suggest" ? (
+          <SuggestPane
+            competencies={competencies}
+            onDone={() => { setRightPane({ mode: "detail" }); router.refresh(); }}
           />
         ) : (
           <DetailPane

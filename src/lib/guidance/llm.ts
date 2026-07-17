@@ -100,7 +100,9 @@ function buildPrompt(guidance: GuidanceResult): string {
   lines.push("Give 3-5 prioritized recommendations.");
   lines.push("For each: what to do, which platform, why now, and how it connects to their goals.");
   lines.push("If they're behind on a goal, flag it and suggest catch-up strategies.");
-  lines.push("If they have skill gaps relevant to upcoming 42 projects, suggest specific THM rooms or Root-me categories.");
+  lines.push("For skill gaps, prefer HackTheBox machines, challenges, and Academy modules as the primary resource.");
+  lines.push("Only suggest TryHackMe rooms as a fallback: when HTB has no matching content for a topic, or when the learner is struggling on a subject even after completing HTB modules and needs a more guided approach.");
+  lines.push("Root-me challenges are good for specific technical drills (crypto, web, forensics).");
   lines.push("Keep it under 500 words. Use markdown formatting.");
 
   return lines.join("\n");
