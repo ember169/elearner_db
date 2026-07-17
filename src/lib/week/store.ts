@@ -70,18 +70,19 @@ function generateBriefing(focusItems: { type: string; title: string; priority: s
     "side-project": "side project", skill: "skill-building",
   };
 
-  const first = high[0]?.title ?? focusItems[0]?.title ?? "your tasks";
+  const rawFirst = high[0]?.title ?? focusItems[0]?.title ?? "your tasks";
+  const first = /^(Finish|Start|Continue)\s/i.test(rawFirst) ? rawFirst : `Finish ${rawFirst}`;
   const second = (high[1] ?? rest[0])?.title;
   const fills = platforms
     .filter((p) => p !== high[0]?.type)
     .map((p) => platformLabels[p] ?? p)
     .slice(0, 2);
 
-  let briefing = `Finish ${first} first — you're close, and it feeds into maldev later.`;
+  let briefing = `${first} first — it feeds into what comes next.`;
   if (second) briefing += ` Then ${second}.`;
   if (fills.length) briefing += ` Fill gaps with ${fills.join(" + ")}.`;
 
-  let collapsed = `Finish ${first}`;
+  let collapsed = first;
   if (second) collapsed += `, then ${second}.`;
   if (fills.length) collapsed += ` Fill with ${fills.join(" + ")}.`;
 
@@ -338,22 +339,45 @@ export function createMonthPlan(weekStarts: string[]): WeekPlanWithItems[] {
   const weekItems: MonthItem[][] = weekStarts.map(() => []);
   const budgets = weekStarts.map(() => weeklyBudget);
 
-  // 1. Maldev: small recurring allocation every week
-  for (const rec of maldevRecs) {
-    const perWeek = Math.min(rec.estimatedHours ?? 2, 3);
-    for (let w = 0; w < numWeeks; w++) {
-      if (budgets[w] >= perWeek) {
-        weekItems[w].push({
-          title: rec.title,
-          type: rec.platform,
-          why: rec.reason,
-          hours: perWeek,
-          priority: rec.priority,
-          ref: rec.ref,
-          link: rec.link ?? resolveLink(rec.platform, rec.ref),
-        });
-        budgets[w] -= perWeek;
+  // Reserve fixed slots per week for non-42 items
+  const maldevPerWeek = maldevRecs.length > 0 ? Math.min(maldevRecs[0].estimatedHours ?? 2, 3) : 0;
+  const platformPerWeek = 2;
+
+  // 1. 42 projects: sequential queue — finish one before starting the next
+  // This is the core budget, so allocate first for cleaner sequencing.
+  const ft42Budget = budgets.map((b) => b - maldevPerWeek - platformPerWeek);
+  const projectQueue = all42.map((r) => ({
+    ...r,
+    remaining: r.estimatedHours ?? 10,
+    started: false,
+  }));
+
+  for (let w = 0; w < numWeeks; w++) {
+    let weekBudget42 = Math.max(ft42Budget[w], 0);
+
+    for (const proj of projectQueue) {
+      if (proj.remaining <= 0 || weekBudget42 < 2) continue;
+
+      const alloc = Math.min(proj.remaining, weekBudget42);
+
+      let title = proj.title;
+      if (proj.started) {
+        title = title.replace(/^(Start|Finish)\s/, "Continue ");
+        if (!title.startsWith("Continue")) title = `Continue ${title}`;
       }
+
+      weekItems[w].push({
+        title,
+        type: "42",
+        why: proj.reason,
+        hours: alloc,
+        priority: proj.started ? "medium" : proj.priority,
+        ref: proj.ref,
+      });
+      budgets[w] -= alloc;
+      weekBudget42 -= alloc;
+      proj.remaining -= alloc;
+      proj.started = true;
     }
   }
 
@@ -375,7 +399,6 @@ export function createMonthPlan(weekStarts: string[]): WeekPlanWithItems[] {
         budgets[w] -= hours;
       }
     } else if (platformRecs.length > 0) {
-      // Backfill: create generic practice items for weeks beyond specific recs
       const platforms = [...new Set(platformRecs.map((r) => r.platform))];
       const plat = platforms[w % platforms.length];
       const label =
@@ -399,32 +422,22 @@ export function createMonthPlan(weekStarts: string[]): WeekPlanWithItems[] {
     }
   }
 
-  // 3. 42 projects: sequential, large projects span multiple weeks
-  for (const rec of all42) {
-    let remaining = rec.estimatedHours ?? 10;
-    let isFirst = true;
-    for (let w = 0; w < numWeeks && remaining > 0; w++) {
-      if (budgets[w] < 2) continue;
-      const alloc = Math.min(remaining, budgets[w], 8);
-      if (alloc < 1) continue;
-
-      let title = rec.title;
-      if (!isFirst) {
-        title = title.replace(/^(Start|Finish)\s/, "Continue ");
-        if (!title.startsWith("Continue")) title = `Continue ${title}`;
+  // 3. Maldev: recurring every week
+  for (const rec of maldevRecs) {
+    const perWeek = Math.min(rec.estimatedHours ?? 2, 3);
+    for (let w = 0; w < numWeeks; w++) {
+      if (budgets[w] >= perWeek) {
+        weekItems[w].push({
+          title: rec.title,
+          type: rec.platform,
+          why: rec.reason,
+          hours: perWeek,
+          priority: rec.priority,
+          ref: rec.ref,
+          link: rec.link ?? resolveLink(rec.platform, rec.ref),
+        });
+        budgets[w] -= perWeek;
       }
-
-      weekItems[w].push({
-        title,
-        type: "42",
-        why: rec.reason,
-        hours: alloc,
-        priority: isFirst ? rec.priority : "medium",
-        ref: rec.ref,
-      });
-      budgets[w] -= alloc;
-      remaining -= alloc;
-      isFirst = false;
     }
   }
 
