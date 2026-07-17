@@ -3,6 +3,7 @@ import { readMentorConfig } from "@/lib/mentor/store";
 import { runGuidanceEngine } from "@/lib/guidance/engine";
 import { computeCompetencySignals } from "@/lib/mentor/competency-signals";
 import { COMPETENCIES } from "@/lib/mentor/competency-map";
+import { suggestRuleBased } from "@/lib/goals/rule-based-suggest";
 
 type SuggestedTask = { title: string; ftSlug?: string };
 type SuggestedIssue = { title: string; deadline?: string; tasks: SuggestedTask[] };
@@ -72,7 +73,7 @@ async function suggestViaAnthropic(
 ): Promise<GoalSuggestionTree> {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
-    signal: AbortSignal.timeout(120_000),
+    signal: AbortSignal.timeout(45_000),
     headers: {
       "Content-Type": "application/json",
       "x-api-key": apiKey,
@@ -117,7 +118,7 @@ async function suggestViaOpenAI(
 
   const res = await fetch(url, {
     method: "POST",
-    signal: AbortSignal.timeout(420_000),
+    signal: AbortSignal.timeout(90_000),
     headers: {
       "Content-Type": "application/json",
       ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
@@ -156,19 +157,27 @@ async function suggestViaOpenAI(
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const scope = body.scope as string ?? "full_epic";
-
-  const config = readMentorConfig();
-  const canGenerate = config.provider === "local" ? !!config.baseUrl : !!config.apiKey;
-  if (!canGenerate) {
-    return NextResponse.json(
-      { error: "No LLM configured. Add an API key or local LLM URL in Settings." },
-      { status: 400 }
-    );
-  }
+  const mode = (body.mode as string) ?? "auto";
 
   const guidance = runGuidanceEngine();
   const signals = computeCompetencySignals(guidance.snapshot, guidance.ftProgress);
+
+  const existingGoalTitles = guidance.goals
+    .filter((g) => !g.parentGoalId)
+    .map((g) => g.title);
+
+  if (mode === "quick") {
+    const suggestion = suggestRuleBased(signals, existingGoalTitles);
+    return NextResponse.json({ suggestion, mode: "rule-based" });
+  }
+
+  const config = readMentorConfig();
+  const canGenerate = config.provider === "local" ? !!config.baseUrl : !!config.apiKey;
+
+  if (!canGenerate) {
+    const suggestion = suggestRuleBased(signals, existingGoalTitles);
+    return NextResponse.json({ suggestion, mode: "rule-based" });
+  }
 
   const allCompetencies = COMPETENCIES
     .map((c) => ({ label: c.label, area: c.area, level: signals[c.id]?.autoLevel ?? 0 }))
@@ -219,14 +228,15 @@ Suggest a new learning goal tree targeting the student's weakest competencies.
     } else {
       suggestion = await suggestViaAnthropic(prompt, config.apiKey!, config.model);
     }
-    return NextResponse.json({ suggestion });
+    return NextResponse.json({ suggestion, mode: "llm" });
   } catch (e) {
     let msg = e instanceof Error ? e.message : "Failed to generate suggestion";
     if (e instanceof Error && e.cause) {
       const cause = e.cause as { code?: string; message?: string };
       msg += ` (${cause.code ?? cause.message ?? String(e.cause)})`;
     }
-    console.error("[suggest] LLM error:", msg);
-    return NextResponse.json({ error: msg }, { status: 502 });
+    console.error("[suggest] LLM failed, falling back to rule-based:", msg);
+    const suggestion = suggestRuleBased(signals, existingGoalTitles);
+    return NextResponse.json({ suggestion, mode: "rule-based" });
   }
 }

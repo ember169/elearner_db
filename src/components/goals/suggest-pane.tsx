@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Zap, RefreshCw, AlertTriangle } from "lucide-react";
+import { Zap, RefreshCw, AlertTriangle, Sparkles } from "lucide-react";
 import { assertOk } from "@/lib/utils";
 
 type SuggestedTask = { title: string; ftSlug?: string };
@@ -31,6 +31,7 @@ export function SuggestPane({
   onDone: () => void;
 }) {
   const [suggestion, setSuggestion] = useState<GoalSuggestion | null>(null);
+  const [resultMode, setResultMode] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [applying, setApplying] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,15 +40,16 @@ export function SuggestPane({
 
   const gaps = competencies.filter((c) => c.level < 2).sort((a, b) => a.level - b.level);
 
-  async function generate() {
+  async function generate(mode: "quick" | "auto" = "quick") {
     setLoading(true);
     setError(null);
     setSuggestion(null);
+    setResultMode(null);
     try {
       const res = await fetch("/api/goals/suggest", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scope: "full_epic" }),
+        body: JSON.stringify({ scope: "full_epic", mode }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -55,6 +57,7 @@ export function SuggestPane({
         return;
       }
       setSuggestion(data.suggestion);
+      setResultMode(data.mode ?? "unknown");
       setSelectedIssues(new Set(data.suggestion.issues.map((_: SuggestedIssue, i: number) => i)));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Network error.");
@@ -66,7 +69,7 @@ export function SuggestPane({
   useEffect(() => {
     if (!hasFetched.current) {
       hasFetched.current = true;
-      generate();
+      generate("quick");
     }
   }, []);
 
@@ -112,16 +115,30 @@ export function SuggestPane({
             <Zap className="h-4 w-4" style={{ color: "var(--primary)" }} />
             <h2 className="text-[18px] font-bold">Goal Suggestion</h2>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={generate}
-            disabled={loading}
-            className="text-[11px]"
-          >
-            <RefreshCw className={`h-3 w-3 mr-1 ${loading ? "animate-spin" : ""}`} />
-            {suggestion ? "New suggestion" : "Retry"}
-          </Button>
+          <div className="flex items-center gap-1">
+            {resultMode && (
+              <Badge
+                variant="outline"
+                className="text-[8px] px-1 py-0"
+                style={{
+                  borderColor: resultMode === "llm" ? "var(--primary)" : "var(--muted-foreground)",
+                  color: resultMode === "llm" ? "var(--primary)" : "var(--muted-foreground)",
+                }}
+              >
+                {resultMode === "llm" ? "AI" : "RULE-BASED"}
+              </Badge>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => generate("quick")}
+              disabled={loading}
+              className="text-[11px]"
+            >
+              <RefreshCw className={`h-3 w-3 mr-1 ${loading ? "animate-spin" : ""}`} />
+              {suggestion ? "New suggestion" : "Retry"}
+            </Button>
+          </div>
         </div>
 
         {/* Competency gaps context */}
@@ -159,7 +176,6 @@ export function SuggestPane({
           <div className="py-12 text-center">
             <RefreshCw className="h-5 w-5 animate-spin mx-auto mb-3" style={{ color: "var(--primary)" }} />
             <p className="text-[13px] text-muted-foreground">Analyzing your progress and gaps...</p>
-            <p className="text-[11px] text-muted-foreground mt-1">This can take 1-2 min with a local LLM. Browse goals while it loads.</p>
           </div>
         )}
 
@@ -246,9 +262,13 @@ export function SuggestPane({
               <Button size="sm" onClick={handleAccept} disabled={applying || selectedIssues.size === 0}>
                 {applying ? "Creating..." : `Accept ${selectedIssues.size} issue${selectedIssues.size !== 1 ? "s" : ""}`}
               </Button>
-              <Button variant="ghost" size="sm" onClick={generate} disabled={loading}>
-                <RefreshCw className="h-3 w-3 mr-1" />
+              <Button variant="ghost" size="sm" onClick={() => generate("quick")} disabled={loading}>
+                <Sparkles className="h-3 w-3 mr-1" />
                 Different suggestion
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => generate("auto")} disabled={loading}>
+                <Zap className="h-3 w-3 mr-1" />
+                Use LLM
               </Button>
             </div>
           </div>

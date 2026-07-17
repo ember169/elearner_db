@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Zap, RefreshCw } from "lucide-react";
+import { Zap, RefreshCw, Sparkles } from "lucide-react";
 import { assertOk } from "@/lib/utils";
 
 type SuggestedTask = { title: string; ftSlug?: string };
@@ -37,20 +37,22 @@ export function SuggestDialog({
   onDone: () => void;
 }) {
   const [suggestion, setSuggestion] = useState<GoalSuggestion | null>(null);
+  const [resultMode, setResultMode] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [applying, setApplying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedIssues, setSelectedIssues] = useState<Set<number>>(new Set());
 
-  async function generate() {
+  async function generate(mode: "quick" | "auto") {
     setLoading(true);
     setError(null);
     setSuggestion(null);
+    setResultMode(null);
     try {
       const res = await fetch("/api/goals/suggest", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scope: "full_epic" }),
+        body: JSON.stringify({ scope: "full_epic", mode }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -58,6 +60,7 @@ export function SuggestDialog({
         return;
       }
       setSuggestion(data.suggestion);
+      setResultMode(data.mode ?? "unknown");
       setSelectedIssues(new Set(data.suggestion.issues.map((_: SuggestedIssue, i: number) => i)));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Network error.");
@@ -106,43 +109,66 @@ export function SuggestDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-[15px]">
             <Zap className="h-4 w-4" style={{ color: "var(--primary)" }} />
-            LLM Goal Suggestion
+            Goal Suggestion
           </DialogTitle>
         </DialogHeader>
 
         {!suggestion && !loading && !error && (
-          <div className="py-4 text-center">
-            <p className="text-[12px] text-muted-foreground mb-3">
-              Ask the AI to suggest a goal tree based on your competency gaps and current progress.
+          <div className="py-4 text-center space-y-3">
+            <p className="text-[12px] text-muted-foreground">
+              Generate a goal tree based on your competency gaps and current progress.
             </p>
-            <Button size="sm" onClick={generate}>
-              <Zap className="h-3 w-3 mr-1" />
-              Generate suggestion
-            </Button>
+            <div className="flex justify-center gap-2">
+              <Button size="sm" onClick={() => generate("quick")}>
+                <Sparkles className="h-3 w-3 mr-1" />
+                Quick suggest
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => generate("auto")}>
+                <Zap className="h-3 w-3 mr-1" />
+                Use LLM
+              </Button>
+            </div>
+            <p className="text-[10px] text-muted-foreground/60">
+              Quick uses your competency data directly. LLM generates custom suggestions (needs API key).
+            </p>
           </div>
         )}
 
         {loading && (
           <div className="py-8 text-center text-[12px] text-muted-foreground">
             <RefreshCw className="h-4 w-4 animate-spin mx-auto mb-2" />
-            Asking the AI for suggestions...
+            Generating suggestions...
           </div>
         )}
 
         {error && (
           <div className="py-4">
             <p className="text-[12px] text-red-400 mb-3">{error}</p>
-            <Button variant="ghost" size="sm" onClick={generate}>
-              Try again
+            <Button variant="ghost" size="sm" onClick={() => generate("quick")}>
+              Try quick suggest instead
             </Button>
           </div>
         )}
 
         {suggestion && (
           <div className="space-y-3">
-            <p className="text-[11px] text-muted-foreground italic">
-              &ldquo;{suggestion.reasoning}&rdquo;
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-[11px] text-muted-foreground italic flex-1">
+                &ldquo;{suggestion.reasoning}&rdquo;
+              </p>
+              {resultMode && (
+                <Badge
+                  variant="outline"
+                  className="text-[8px] px-1 py-0 shrink-0"
+                  style={{
+                    borderColor: resultMode === "llm" ? "var(--primary)" : "var(--muted-foreground)",
+                    color: resultMode === "llm" ? "var(--primary)" : "var(--muted-foreground)",
+                  }}
+                >
+                  {resultMode === "llm" ? "AI" : "RULE-BASED"}
+                </Badge>
+              )}
+            </div>
 
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-[12px] font-semibold">
@@ -178,7 +204,7 @@ export function SuggestDialog({
                     {issue.deadline && (
                       <span className="text-muted-foreground text-[10px]">by {issue.deadline}</span>
                     )}
-                    <span className="text-muted-foreground text-[10px]">· {issue.tasks.length} tasks</span>
+                    <span className="text-muted-foreground text-[10px]">&middot; {issue.tasks.length} tasks</span>
                   </label>
                   {selectedIssues.has(idx) && (
                     <div className="pl-6 space-y-0.5">
@@ -201,7 +227,7 @@ export function SuggestDialog({
               <Button size="sm" onClick={handleAccept} disabled={applying || selectedIssues.size === 0}>
                 {applying ? "Creating..." : `Accept (${selectedIssues.size} issues)`}
               </Button>
-              <Button variant="ghost" size="sm" onClick={generate} disabled={loading}>
+              <Button variant="ghost" size="sm" onClick={() => generate("quick")} disabled={loading}>
                 <RefreshCw className="h-3 w-3 mr-1" />
                 Regenerate
               </Button>
