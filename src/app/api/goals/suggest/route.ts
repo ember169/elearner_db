@@ -170,27 +170,24 @@ export async function POST(req: NextRequest) {
   const guidance = runGuidanceEngine();
   const signals = computeCompetencySignals(guidance.snapshot, guidance.ftProgress);
 
-  const competencySummary = COMPETENCIES.map((c) => {
-    const sig = signals[c.id];
-    return `${c.label}: ${sig?.autoLevel ?? 0}/5`;
-  }).join(", ");
+  const weakest = COMPETENCIES
+    .map((c) => ({ label: c.label, level: signals[c.id]?.autoLevel ?? 0 }))
+    .filter((c) => c.level < 3)
+    .sort((a, b) => a.level - b.level)
+    .slice(0, 5);
 
-  const goalsSummary = guidance.goals
-    .map((g) => `- ${g.title} (${g.category}, ${g.status})`)
-    .join("\n");
+  const activeGoalTitles = guidance.goals
+    .filter((g) => g.status === "active" && !g.parentGoalId)
+    .slice(0, 5)
+    .map((g) => g.title);
 
-  const prompt = `You are a cybersecurity learning advisor for a student at 42 Paris.
+  const prompt = `Cybersecurity student at 42 Paris needs a new learning goal.
 
-Current competency levels: ${competencySummary}
+Weakest skills: ${weakest.map((c) => `${c.label} (${c.level}/5)`).join(", ")}
+Current goals: ${activeGoalTitles.join(", ") || "none"}
+Platforms: HackTheBox (prefer), Root-me, TryHackMe (fallback), 42 (C/C++)
 
-Existing goals:
-${goalsSummary}
-
-Platforms: 42 Paris (C/C++ projects), TryHackMe (rooms), HackTheBox (machines), Root-me (challenges), Maldev (custom elearning)
-
-Scope: ${scope === "full_epic" ? "Suggest a complete new learning epic with issues and tasks based on the student's weakest competencies." : scope === "cross_platform" ? "Suggest a cross-platform learning epic spanning multiple platforms." : "Suggest a focused goal tree."}
-
-Create a practical, achievable goal tree. Focus on areas where the student is weakest. Use specific platform content (room names, challenge categories, machine names) when possible. Set realistic deadlines 3-6 months out.`;
+Suggest 1 epic with 2-3 issues and 2-3 tasks each. Focus on the weakest skill. Use real platform content names. Deadlines 3-6 months out.`;
 
   try {
     let suggestion: GoalSuggestionTree;
