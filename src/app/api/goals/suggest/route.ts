@@ -117,7 +117,7 @@ async function suggestViaOpenAI(
 
   const res = await fetch(url, {
     method: "POST",
-    signal: AbortSignal.timeout(180_000),
+    signal: AbortSignal.timeout(300_000),
     headers: {
       "Content-Type": "application/json",
       ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
@@ -170,24 +170,47 @@ export async function POST(req: NextRequest) {
   const guidance = runGuidanceEngine();
   const signals = computeCompetencySignals(guidance.snapshot, guidance.ftProgress);
 
-  const weakest = COMPETENCIES
-    .map((c) => ({ label: c.label, level: signals[c.id]?.autoLevel ?? 0 }))
-    .filter((c) => c.level < 3)
-    .sort((a, b) => a.level - b.level)
-    .slice(0, 5);
+  const allCompetencies = COMPETENCIES
+    .map((c) => ({ label: c.label, area: c.area, level: signals[c.id]?.autoLevel ?? 0 }))
+    .sort((a, b) => a.level - b.level);
+  const gaps = allCompetencies.filter((c) => c.level < 3);
+  const strengths = allCompetencies.filter((c) => c.level >= 3);
 
-  const activeGoalTitles = guidance.goals
-    .filter((g) => g.status === "active" && !g.parentGoalId)
-    .slice(0, 5)
-    .map((g) => g.title);
+  const topLevelGoals = guidance.goals
+    .filter((g) => !g.parentGoalId)
+    .map((g) => {
+      const status = g.status === "completed" ? "done" : g.pacing && !g.pacing.onTrack ? "behind" : "active";
+      return `- ${g.title} (${g.category}, ${status})`;
+    });
 
-  const prompt = `Cybersecurity student at 42 Paris needs a new learning goal.
+  const { snapshot } = guidance;
+  const platformStats: string[] = [];
+  if (snapshot.htb.profile) platformStats.push(`HackTheBox: ${(snapshot.htb.profile.systemOwns ?? 0) + (snapshot.htb.profile.userOwns ?? 0)} owns`);
+  if (snapshot.thm.profile) platformStats.push(`TryHackMe: ${snapshot.thm.roomsCompleted} rooms`);
+  if (snapshot.rootme.profile) platformStats.push(`Root-me: ${snapshot.rootme.challengesSolved} challenges`);
+  if (snapshot.ft.profile) platformStats.push(`42: level ${snapshot.ft.profile.level}`);
 
-Weakest skills: ${weakest.map((c) => `${c.label} (${c.level}/5)`).join(", ")}
-Current goals: ${activeGoalTitles.join(", ") || "none"}
-Platforms: HackTheBox (prefer), Root-me, TryHackMe (fallback), 42 (C/C++)
+  const prompt = `You are a cybersecurity learning advisor for a student at 42 Paris focused on red team / malware development.
 
-Suggest 1 epic with 2-3 issues and 2-3 tasks each. Focus on the weakest skill. Use real platform content names. Deadlines 3-6 months out.`;
+## Competency gaps (prioritize these)
+${gaps.map((c) => `- ${c.label} (${c.area}): ${c.level}/5`).join("\n")}
+
+${strengths.length > 0 ? `## Strengths\n${strengths.map((c) => `- ${c.label}: ${c.level}/5`).join("\n")}` : ""}
+
+## Platform progress
+${platformStats.join("\n") || "No platform data yet"}
+
+## Existing top-level goals (avoid duplicates)
+${topLevelGoals.join("\n") || "none"}
+
+## Instructions
+Suggest a new learning goal tree targeting the student's weakest competencies.
+- Prefer HackTheBox machines, challenges, and Academy modules as primary resources.
+- Only suggest TryHackMe as fallback when HTB lacks content for a topic.
+- Root-me is good for specific technical drills (crypto, web, forensics).
+- Use real, specific platform content names when possible (machine names, room names, challenge categories).
+- Set realistic deadlines 3-6 months out from today.
+- Structure: 1 epic, 2-3 issues, 2-4 tasks per issue. Keep it focused and achievable.`;
 
   try {
     let suggestion: GoalSuggestionTree;
