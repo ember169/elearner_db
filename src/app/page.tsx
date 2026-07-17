@@ -1,41 +1,20 @@
 import { db } from "@/lib/db";
 import {
-  ftProfile,
-  thmProfile,
-  htbProfile,
-  maldevProfile,
-  rootmeProfile,
-  syncLog,
   tasks,
   settings,
 } from "@/lib/db/schema";
-import { desc, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { loadCurrentPlan } from "@/lib/mentor/store";
 import { runGuidanceEngine, flattenGoals } from "@/lib/guidance/engine";
 import { computeCompetencySignals } from "@/lib/mentor/competency-signals";
 import { COMPETENCIES } from "@/lib/mentor/competency-map";
-import { getWeekStart, getMonthWeekStarts, getOrCreateWeekPlan, getISOWeekNumber, loadWeekPlan, createMonthPlan } from "@/lib/week/store";
+import { initializeBoard } from "@/lib/board/store";
 import { PlannerClient } from "@/components/planner/planner-client";
 
 export const dynamic = "force-dynamic";
 
 export default function HomePage() {
-  const now = new Date();
-  const todayWeek = getWeekStart();
-  const weekStarts = getMonthWeekStarts(now);
-
-  // Use existing plans if all weeks already have one; otherwise generate as a month
-  const existingPlans = weekStarts.map((ws) => loadWeekPlan(ws));
-  const allExist = existingPlans.every((p) => p !== null);
-  const plans = allExist
-    ? (existingPlans as NonNullable<typeof existingPlans[number]>[])
-    : createMonthPlan(weekStarts);
-
-  const monthPlans = weekStarts.map((ws, i) => ({
-    weekStart: ws,
-    weekNum: getISOWeekNumber(ws),
-    plan: plans[i],
-  }));
+  const board = initializeBoard();
 
   const mentorResult = loadCurrentPlan();
   const cfg = db.select().from(settings).limit(1).all()[0] ?? null;
@@ -75,9 +54,9 @@ export default function HomePage() {
 
   return (
     <PlannerClient
-      monthPlans={monthPlans}
-      currentMonth={{ year: now.getFullYear(), month: now.getMonth() }}
-      todayWeek={todayWeek}
+      boardItems={board.items}
+      mentorBriefing={board.mentorBriefing}
+      collapsedBriefing={board.collapsedBriefing}
       objective={objective}
       competencies={competencies}
       goals={activeGoals}

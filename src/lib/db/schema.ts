@@ -334,6 +334,9 @@ export const planItems = sqliteTable("plan_items", {
   createdAt: text("created_at")
     .notNull()
     .default(sql`(datetime('now'))`),
+  goalId: integer("goal_id").references(() => goals.id, { onDelete: "set null" }),
+  category: text("category"),
+  boardStatus: text("board_status").default("backlog"),
 });
 
 export const catalogEntries = sqliteTable("catalog_entries", {
