@@ -88,7 +88,7 @@ async function suggestViaAnthropic(
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`LLM API error ${res.status}: ${text.slice(0, 200)}`);
+    throw new Error(`Anthropic API error ${res.status}: ${text.slice(0, 500)}`);
   }
 
   const data = await res.json();
@@ -107,7 +107,12 @@ async function suggestViaOpenAI(
   apiKey: string | null,
 ): Promise<GoalSuggestionTree> {
   const url = `${baseUrl.replace(/\/+$/, "")}/v1/chat/completions`;
-  const schema = suggestToolSchema();
+
+  const jsonSchema = `{
+  "epic": { "title": "string", "platform": "42|thm|htb|rootme|maldev|general", "metricSource?": "string", "targetValue?": "number", "deadline?": "YYYY-MM-DD" },
+  "issues": [{ "title": "string", "deadline?": "YYYY-MM-DD", "tasks": [{ "title": "string", "ftSlug?": "string" }] }],
+  "reasoning": "string"
+}`;
 
   const res = await fetch(url, {
     method: "POST",
@@ -119,39 +124,32 @@ async function suggestViaOpenAI(
       model,
       max_tokens: 4096,
       messages: [
-        { role: "system", content: "You are a cybersecurity learning advisor. Respond with a JSON object matching the requested schema." },
-        { role: "user", content: `${prompt}\n\nRespond with a JSON object with this structure:\n- epic: { title, platform (one of: 42, thm, htb, rootme, maldev, general), metricSource?, targetValue?, deadline? }\n- issues: [ { title, deadline?, tasks: [ { title, ftSlug? } ] } ]\n- reasoning: string explaining your suggestion` },
+        { role: "system", content: "You are a cybersecurity learning advisor. Always respond with a single valid JSON object, no markdown fences, no extra text." },
+        { role: "user", content: `${prompt}\n\nRespond with ONLY a JSON object matching this schema (no markdown, no explanation outside the JSON):\n${jsonSchema}` },
       ],
-      tools: [{
-        type: "function",
-        function: {
-          name: schema.name,
-          description: schema.description,
-          parameters: schema.input_schema,
-        },
-      }],
-      tool_choice: { type: "function", function: { name: schema.name } },
+      temperature: 0.7,
     }),
   });
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`LLM API error ${res.status}: ${text.slice(0, 200)}`);
+    throw new Error(`Local LLM error ${res.status}: ${text.slice(0, 500)}`);
   }
 
   const data = await res.json();
-  const msg = data.choices?.[0]?.message;
+  const content = data.choices?.[0]?.message?.content;
 
-  if (msg?.tool_calls?.[0]?.function?.arguments) {
-    return JSON.parse(msg.tool_calls[0].function.arguments) as GoalSuggestionTree;
+  if (!content) throw new Error("Local LLM returned empty response.");
+
+  const cleaned = content.replace(/```(?:json)?\s*/g, "").replace(/```\s*/g, "").trim();
+  const match = cleaned.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error(`Local LLM response is not JSON: ${cleaned.slice(0, 300)}`);
+
+  try {
+    return JSON.parse(match[0]) as GoalSuggestionTree;
+  } catch (e) {
+    throw new Error(`Failed to parse LLM JSON: ${(e as Error).message}. Response: ${match[0].slice(0, 300)}`);
   }
-
-  if (msg?.content) {
-    const match = msg.content.match(/\{[\s\S]*\}/);
-    if (match) return JSON.parse(match[0]) as GoalSuggestionTree;
-  }
-
-  throw new Error("LLM did not return a suggestion.");
 }
 
 export async function POST(req: NextRequest) {
@@ -201,9 +199,12 @@ Create a practical, achievable goal tree. Focus on areas where the student is we
     }
     return NextResponse.json({ suggestion });
   } catch (e) {
-    return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Failed to generate suggestion" },
-      { status: 502 }
-    );
+    let msg = e instanceof Error ? e.message : "Failed to generate suggestion";
+    if (e instanceof Error && e.cause) {
+      const cause = e.cause as { code?: string; message?: string };
+      msg += ` (${cause.code ?? cause.message ?? String(e.cause)})`;
+    }
+    console.error("[suggest] LLM error:", msg);
+    return NextResponse.json({ error: msg }, { status: 502 });
   }
 }
