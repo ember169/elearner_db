@@ -65,14 +65,104 @@ function suggestToolSchema() {
   };
 }
 
+async function suggestViaAnthropic(
+  prompt: string,
+  apiKey: string,
+  model: string,
+): Promise<GoalSuggestionTree> {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 4096,
+      tools: [suggestToolSchema()],
+      tool_choice: { type: "tool", name: "emit_goal_suggestion" },
+      messages: [{ role: "user", content: prompt }],
+    }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`LLM API error ${res.status}: ${text.slice(0, 200)}`);
+  }
+
+  const data = await res.json();
+  const block = Array.isArray(data.content)
+    ? data.content.find((b: { type?: string }) => b.type === "tool_use")
+    : null;
+
+  if (!block?.input) throw new Error("LLM did not return a suggestion.");
+  return block.input as GoalSuggestionTree;
+}
+
+async function suggestViaOpenAI(
+  prompt: string,
+  model: string,
+  baseUrl: string,
+  apiKey: string | null,
+): Promise<GoalSuggestionTree> {
+  const url = `${baseUrl.replace(/\/+$/, "")}/v1/chat/completions`;
+  const schema = suggestToolSchema();
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 4096,
+      messages: [
+        { role: "system", content: "You are a cybersecurity learning advisor. Respond with a JSON object matching the requested schema." },
+        { role: "user", content: `${prompt}\n\nRespond with a JSON object with this structure:\n- epic: { title, platform (one of: 42, thm, htb, rootme, maldev, general), metricSource?, targetValue?, deadline? }\n- issues: [ { title, deadline?, tasks: [ { title, ftSlug? } ] } ]\n- reasoning: string explaining your suggestion` },
+      ],
+      tools: [{
+        type: "function",
+        function: {
+          name: schema.name,
+          description: schema.description,
+          parameters: schema.input_schema,
+        },
+      }],
+      tool_choice: { type: "function", function: { name: schema.name } },
+    }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`LLM API error ${res.status}: ${text.slice(0, 200)}`);
+  }
+
+  const data = await res.json();
+  const msg = data.choices?.[0]?.message;
+
+  if (msg?.tool_calls?.[0]?.function?.arguments) {
+    return JSON.parse(msg.tool_calls[0].function.arguments) as GoalSuggestionTree;
+  }
+
+  if (msg?.content) {
+    const match = msg.content.match(/\{[\s\S]*\}/);
+    if (match) return JSON.parse(match[0]) as GoalSuggestionTree;
+  }
+
+  throw new Error("LLM did not return a suggestion.");
+}
+
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const scope = body.scope as string ?? "full_epic";
 
   const config = readMentorConfig();
-  if (!config.apiKey) {
+  const canGenerate = config.provider === "local" ? !!config.baseUrl : !!config.apiKey;
+  if (!canGenerate) {
     return NextResponse.json(
-      { error: "No API key configured. Add one in Settings." },
+      { error: "No LLM configured. Add an API key or local LLM URL in Settings." },
       { status: 400 }
     );
   }
@@ -103,48 +193,17 @@ Scope: ${scope === "full_epic" ? "Suggest a complete new learning epic with issu
 Create a practical, achievable goal tree. Focus on areas where the student is weakest. Use specific platform content (room names, challenge categories, machine names) when possible. Set realistic deadlines 3-6 months out.`;
 
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": config.apiKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: config.model,
-        max_tokens: 4096,
-        tools: [suggestToolSchema()],
-        tool_choice: { type: "tool", name: "emit_goal_suggestion" },
-        messages: [{ role: "user", content: prompt }],
-      }),
-    });
-
-    if (!res.ok) {
-      const text = await res.text();
-      return NextResponse.json(
-        { error: `LLM API error ${res.status}: ${text.slice(0, 200)}` },
-        { status: 502 }
-      );
+    let suggestion: GoalSuggestionTree;
+    if (config.provider === "local" && config.baseUrl) {
+      suggestion = await suggestViaOpenAI(prompt, config.model, config.baseUrl, config.apiKey);
+    } else {
+      suggestion = await suggestViaAnthropic(prompt, config.apiKey!, config.model);
     }
-
-    const data = await res.json();
-    const block = Array.isArray(data.content)
-      ? data.content.find((b: { type?: string }) => b.type === "tool_use")
-      : null;
-
-    if (!block?.input) {
-      return NextResponse.json(
-        { error: "LLM did not return a suggestion." },
-        { status: 502 }
-      );
-    }
-
-    const suggestion = block.input as GoalSuggestionTree;
     return NextResponse.json({ suggestion });
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Failed to generate suggestion" },
-      { status: 500 }
+      { status: 502 }
     );
   }
 }

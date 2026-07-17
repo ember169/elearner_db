@@ -128,6 +128,17 @@ export const FT_COMMON_CORE: FtProject[] = [
     estimatedHours: 60,
   },
 
+  {
+    slug: "exam02",
+    name: "Exam Rank 02",
+    circle: 2,
+    prerequisites: ["ft_printf", "get_next_line"],
+    skills: ["c", "algorithms", "string-manipulation"],
+    description:
+      "Timed exam: C function exercises covering strings, arrays, and basic algorithms.",
+    estimatedHours: 4,
+  },
+
   // --- Circle 3 ---
   {
     slug: "philosophers",
@@ -155,6 +166,17 @@ export const FT_COMMON_CORE: FtProject[] = [
     description:
       "Create a simple shell that handles pipes, redirections, environment variables, and builtins.",
     estimatedHours: 120,
+  },
+
+  {
+    slug: "exam03",
+    name: "Exam Rank 03",
+    circle: 3,
+    prerequisites: ["philosophers", "minishell"],
+    skills: ["c", "string-manipulation", "programming-fundamentals"],
+    description:
+      "Timed exam: get_next_line and mini_paint/micro_paint exercises.",
+    estimatedHours: 4,
   },
 
   // --- Circle 4 ---
@@ -249,6 +271,17 @@ export const FT_COMMON_CORE: FtProject[] = [
     estimatedHours: 15,
   },
 
+  {
+    slug: "exam04",
+    name: "Exam Rank 04",
+    circle: 4,
+    prerequisites: ["cpp04"],
+    skills: ["c", "cpp", "algorithms", "programming-fundamentals"],
+    description:
+      "Timed exam: microshell — a simplified shell in C.",
+    estimatedHours: 4,
+  },
+
   // --- Circle 5 ---
   {
     slug: "cpp05",
@@ -328,11 +361,21 @@ export const FT_COMMON_CORE: FtProject[] = [
     group: "circle5-server",
   },
 
-  // --- Circle 6 ---
+  {
+    slug: "exam05",
+    name: "Exam Rank 05",
+    circle: 5,
+    prerequisites: ["cpp09"],
+    skills: ["cpp", "algorithms", "programming-fundamentals"],
+    description:
+      "Timed exam: C++ module exercises covering containers, iterators, and algorithms.",
+    estimatedHours: 4,
+  },
+
   {
     slug: "inception",
     name: "Inception",
-    circle: 6,
+    circle: 5,
     prerequisites: ["cpp09"],
     skills: [
       "docker",
@@ -347,6 +390,7 @@ export const FT_COMMON_CORE: FtProject[] = [
       "Set up a multi-container Docker infrastructure with NGINX, WordPress, and MariaDB.",
     estimatedHours: 80,
   },
+  // --- Circle 6 ---
   {
     slug: "ft_transcendence",
     name: "ft_transcendence",
@@ -365,6 +409,16 @@ export const FT_COMMON_CORE: FtProject[] = [
     description:
       "Build a full-stack web application with a Pong game, chat, user management, and matchmaking.",
     estimatedHours: 200,
+  },
+  {
+    slug: "exam06",
+    name: "Exam Rank 06",
+    circle: 6,
+    prerequisites: ["ft_transcendence"],
+    skills: ["c", "networking", "sockets", "multiplexing"],
+    description:
+      "Timed exam: mini_serv — a minimal server handling multiple clients.",
+    estimatedHours: 4,
   },
 ];
 

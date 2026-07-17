@@ -438,7 +438,7 @@ export function DetailPane({
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="px-6 py-5 max-w-2xl">
+      <div className="px-6 py-5">
         {/* Breadcrumb */}
         {parentChain.length > 0 && (
           <div className="flex items-center gap-1 text-[10px] text-muted-foreground mb-1.5 flex-wrap">

@@ -325,7 +325,7 @@ Applies selected sync changes. Body: `{ epicId, applyAutoComplete, newTaskSlugs[
 
 ### `POST /api/goals/suggest`
 
-LLM-powered goal suggestion. Body: `{ scope }`. Calls Anthropic API with `tool_use` pattern (forced `emit_goal_suggestion` tool) to generate a structured goal tree. Prompt includes current competency levels, existing goals, and platform info. Returns: `{ suggestion: { epic, issues[], reasoning } }`. Requires API key in mentor config.
+LLM-powered goal suggestion. Body: `{ scope }`. Supports both Anthropic API (`tool_use` pattern with forced `emit_goal_suggestion` tool) and OpenAI-compatible endpoints (function calling) for local LLMs. Routes based on `config.provider`: when `"local"` with a `baseUrl`, uses `suggestViaOpenAI()` against `{baseUrl}/v1/chat/completions`; otherwise uses `suggestViaAnthropic()`. Prompt includes current competency levels, existing goals, and platform info. Returns: `{ suggestion: { epic, issues[], reasoning } }`. Requires API key (Anthropic) or base URL (local LLM) in mentor config.
 
 ### `GET /api/deadlines`
 
@@ -484,9 +484,10 @@ Each competency has **signal tokens** -- evidence markers drawn from platform da
 
 **File**: `src/lib/guidance/ft-project-tree.ts`
 
-30 projects spanning circles 0-6 with:
+30 projects + 5 exam ranks spanning circles 0-6 with:
 - Prerequisite chains (e.g., Minishell requires Pipex)
 - Choice groups (e.g., circle 2: pick Pipex OR minitalk for IPC, pick so_long OR fract-ol OR FdF for graphics)
+- Exam ranks (Exam Rank 02 in circle 2 through Exam Rank 06 in circle 6)
 - Estimated hours per project (from 10h for Libft to 200h for ft_transcendence)
 - Skill tags per project
 
