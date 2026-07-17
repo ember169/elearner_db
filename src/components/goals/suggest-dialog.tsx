@@ -13,8 +13,8 @@ import {
 import { Zap, RefreshCw, Sparkles } from "lucide-react";
 import { assertOk } from "@/lib/utils";
 
-type SuggestedTask = { title: string; ftSlug?: string };
-type SuggestedIssue = { title: string; deadline?: string; tasks: SuggestedTask[] };
+type SuggestedTask = { title: string; ftSlug?: string; description?: string };
+type SuggestedIssue = { title: string; deadline?: string; description?: string; tasks: SuggestedTask[] };
 type GoalSuggestion = {
   epic: {
     title: string;
@@ -79,10 +79,12 @@ export function SuggestDialog({
           .filter((_, idx) => selectedIssues.has(idx))
           .map((issue, idx) => ({
             title: issue.title,
+            description: issue.description ?? null,
             deadline: issue.deadline ?? null,
             sortOrder: idx,
             tasks: issue.tasks.map((task, tIdx) => ({
               title: task.title,
+              description: task.description ?? null,
               ftSlug: task.ftSlug ?? null,
               sortOrder: tIdx,
             })),
@@ -115,7 +117,7 @@ export function SuggestDialog({
 
         {!suggestion && !loading && !error && (
           <div className="py-4 text-center space-y-3">
-            <p className="text-[12px] text-muted-foreground">
+            <p className="text-[14px] text-muted-foreground">
               Generate a goal tree based on your competency gaps and current progress.
             </p>
             <div className="flex justify-center gap-2">
@@ -128,14 +130,14 @@ export function SuggestDialog({
                 Use LLM
               </Button>
             </div>
-            <p className="text-[10px] text-muted-foreground/60">
+            <p className="text-[14px] text-muted-foreground/60">
               Quick uses your competency data directly. LLM generates custom suggestions (needs API key).
             </p>
           </div>
         )}
 
         {loading && (
-          <div className="py-8 text-center text-[12px] text-muted-foreground">
+          <div className="py-8 text-center text-[14px] text-muted-foreground">
             <RefreshCw className="h-4 w-4 animate-spin mx-auto mb-2" />
             Generating suggestions...
           </div>
@@ -143,7 +145,7 @@ export function SuggestDialog({
 
         {error && (
           <div className="py-4">
-            <p className="text-[12px] text-red-400 mb-3">{error}</p>
+            <p className="text-[14px] text-red-400 mb-3">{error}</p>
             <Button variant="ghost" size="sm" onClick={() => generate("quick")}>
               Try quick suggest instead
             </Button>
@@ -153,16 +155,17 @@ export function SuggestDialog({
         {suggestion && (
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <p className="text-[11px] text-muted-foreground italic flex-1">
+              <p className="text-[15px] text-muted-foreground italic flex-1">
                 &ldquo;{suggestion.reasoning}&rdquo;
               </p>
               {resultMode && (
                 <Badge
                   variant="outline"
-                  className="text-[8px] px-1 py-0 shrink-0"
+                  className="text-[11px] px-1.5 py-0.5 font-semibold shrink-0"
                   style={{
-                    borderColor: resultMode === "llm" ? "var(--primary)" : "var(--muted-foreground)",
-                    color: resultMode === "llm" ? "var(--primary)" : "var(--muted-foreground)",
+                    borderColor: resultMode === "llm" ? "oklch(0.7 0.15 290)" : "oklch(0.7 0.15 150)",
+                    color: resultMode === "llm" ? "oklch(0.7 0.15 290)" : "oklch(0.7 0.15 150)",
+                    background: resultMode === "llm" ? "oklch(0.7 0.15 290 / 0.1)" : "oklch(0.7 0.15 150 / 0.1)",
                   }}
                 >
                   {resultMode === "llm" ? "AI" : "RULE-BASED"}
@@ -171,17 +174,17 @@ export function SuggestDialog({
             </div>
 
             <div className="space-y-1">
-              <div className="flex items-center gap-2 text-[12px] font-semibold">
+              <div className="flex items-center gap-2 text-[14px] font-semibold">
                 <Badge
                   variant="outline"
-                  className="text-[8px] px-1 py-0"
+                  className="text-[14px] px-1 py-0"
                   style={{ borderColor: "var(--primary)", color: "var(--primary)" }}
                 >
                   EPIC
                 </Badge>
                 {suggestion.epic.title}
                 {suggestion.epic.deadline && (
-                  <span className="text-muted-foreground font-normal text-[10px]">
+                  <span className="text-muted-foreground font-normal text-[14px]">
                     by {suggestion.epic.deadline}
                   </span>
                 )}
@@ -189,7 +192,7 @@ export function SuggestDialog({
 
               {suggestion.issues.map((issue, idx) => (
                 <div key={idx} className="pl-3">
-                  <label className="flex items-center gap-2 text-[11px] py-0.5 cursor-pointer">
+                  <label className="flex items-center gap-2 text-[15px] py-0.5 cursor-pointer">
                     <Checkbox
                       checked={selectedIssues.has(idx)}
                       onCheckedChange={(checked) => {
@@ -199,21 +202,21 @@ export function SuggestDialog({
                       }}
                       className="h-3 w-3"
                     />
-                    <Badge variant="outline" className="text-[8px] px-1 py-0">ISSUE</Badge>
+                    <Badge variant="outline" className="text-[14px] px-1 py-0">ISSUE</Badge>
                     <span className="font-medium">{issue.title}</span>
                     {issue.deadline && (
-                      <span className="text-muted-foreground text-[10px]">by {issue.deadline}</span>
+                      <span className="text-muted-foreground text-[14px]">by {issue.deadline}</span>
                     )}
-                    <span className="text-muted-foreground text-[10px]">&middot; {issue.tasks.length} tasks</span>
+                    <span className="text-muted-foreground text-[14px]">&middot; {issue.tasks.length} tasks</span>
                   </label>
                   {selectedIssues.has(idx) && (
                     <div className="pl-6 space-y-0.5">
                       {issue.tasks.map((task, tIdx) => (
-                        <div key={tIdx} className="text-[10px] text-muted-foreground flex items-center gap-1.5">
+                        <div key={tIdx} className="text-[14px] text-muted-foreground flex items-center gap-1.5">
                           <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/30" />
                           {task.title}
                           {task.ftSlug && (
-                            <span className="font-mono text-[9px]">{task.ftSlug}</span>
+                            <span className="font-mono text-[15px]">{task.ftSlug}</span>
                           )}
                         </div>
                       ))}

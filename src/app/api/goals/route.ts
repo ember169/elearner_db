@@ -135,6 +135,7 @@ export async function PATCH(req: NextRequest) {
   if (body.ftSlug !== undefined) updates.ftSlug = body.ftSlug;
   if (body.estimatedHours !== undefined) updates.estimatedHours = body.estimatedHours;
   if (body.originalTarget !== undefined) updates.originalTarget = body.originalTarget;
+  if (body.customFields !== undefined) updates.customFields = body.customFields;
 
   db.update(goals).set(updates).where(eq(goals.id, body.id)).run();
 

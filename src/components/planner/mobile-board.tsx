@@ -13,10 +13,10 @@ import {
   Play,
   CheckCircle2,
   ChevronRight,
-  Square,
 } from "lucide-react";
 import { PLATFORM_COLORS, PLATFORM_LABELS } from "@/lib/platform-colors";
-import type { PlanItemData, SideProject } from "./types";
+import { PacingAlerts } from "./pacing-alerts";
+import type { PlanItemData, SideProject, GoalSlim } from "./types";
 
 type MobileTab = "focus" | "board" | "backlog";
 
@@ -56,17 +56,13 @@ function formatHours(h: number | null): string {
 export function MobileBoardView({
   items,
   sideProject,
-  pinnedTasks,
+  goals,
   onItemUpdate,
-  onAddPinned,
-  onCompletePinned,
 }: {
   items: PlanItemData[];
   sideProject?: SideProject | null;
-  pinnedTasks: { id: number; title: string }[];
+  goals: GoalSlim[];
   onItemUpdate: (id: number, updates: Record<string, unknown>) => void;
-  onAddPinned: (title: string) => void;
-  onCompletePinned: (id: number) => void;
 }) {
   const [tab, setTab] = useState<MobileTab>("focus");
 
@@ -93,7 +89,7 @@ export function MobileBoardView({
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className="flex-1 py-1.5 rounded-sm text-[12px] font-medium transition-colors"
+            className="flex-1 py-1.5 rounded-sm text-[14px] font-medium transition-colors"
             style={{
               background: tab === t.id ? "var(--background)" : "transparent",
               color: tab === t.id ? "var(--foreground)" : "var(--muted-foreground)",
@@ -101,7 +97,7 @@ export function MobileBoardView({
           >
             {t.label}
             {t.count > 0 && (
-              <span className="ml-1 text-[10px] text-muted-foreground">{t.count}</span>
+              <span className="ml-1 text-[14px] text-muted-foreground">{t.count}</span>
             )}
           </button>
         ))}
@@ -112,10 +108,8 @@ export function MobileBoardView({
           <FocusView
             items={focusItems}
             sideProject={sideProject}
-            pinnedTasks={pinnedTasks}
+            goals={goals}
             onItemUpdate={onItemUpdate}
-            onAddPinned={onAddPinned}
-            onCompletePinned={onCompletePinned}
           />
         )}
         {tab === "board" && (
@@ -132,17 +126,13 @@ export function MobileBoardView({
 function FocusView({
   items,
   sideProject,
-  pinnedTasks,
+  goals,
   onItemUpdate,
-  onAddPinned,
-  onCompletePinned,
 }: {
   items: PlanItemData[];
   sideProject?: SideProject | null;
-  pinnedTasks: { id: number; title: string }[];
+  goals: GoalSlim[];
   onItemUpdate: (id: number, updates: Record<string, unknown>) => void;
-  onAddPinned: (title: string) => void;
-  onCompletePinned: (id: number) => void;
 }) {
   const inProgress = items.filter((i) => i.boardStatus === "in_progress");
   const todo = items.filter((i) => i.boardStatus === "todo");
@@ -150,7 +140,7 @@ function FocusView({
   return (
     <div className="space-y-4">
       {inProgress.length === 0 && todo.length === 0 && (
-        <p className="text-[13px] text-muted-foreground py-6 text-center">
+        <p className="text-[15px] text-muted-foreground py-6 text-center">
           No active items. Move something from the backlog.
         </p>
       )}
@@ -160,7 +150,7 @@ function FocusView({
         <div>
           <div className="flex items-center gap-1.5 mb-2">
             <Play className="h-3 w-3" style={{ color: "var(--primary)" }} />
-            <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--primary)" }}>
+            <span className="text-[14px] font-semibold uppercase tracking-wider" style={{ color: "var(--primary)" }}>
               In Progress
             </span>
           </div>
@@ -192,7 +182,7 @@ function FocusView({
         <div>
           <div className="flex items-center gap-1.5 mb-2">
             <ListTodo className="h-3 w-3 text-muted-foreground" />
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <span className="text-[14px] font-semibold uppercase tracking-wider text-muted-foreground">
               To Do
             </span>
           </div>
@@ -221,35 +211,17 @@ function FocusView({
       {/* Side project */}
       {sideProject && (
         <div className="mt-4">
-          <p className="text-[11px] font-semibold text-muted-foreground uppercase mb-2">
+          <p className="text-[15px] font-semibold text-muted-foreground uppercase mb-2">
             Weekend: {sideProject.title}
           </p>
-          <p className="text-[12px] text-muted-foreground">{sideProject.description}</p>
+          <p className="text-[14px] text-muted-foreground">{sideProject.description}</p>
         </div>
       )}
 
-      {/* Pinned tasks */}
-      {pinnedTasks.length > 0 && (
-        <div className="mt-4 space-y-1">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-            Pinned
-          </p>
-          {pinnedTasks.map((t) => (
-            <div
-              key={t.id}
-              className="flex items-center gap-2 py-1"
-            >
-              <button
-                onClick={() => onCompletePinned(t.id)}
-                className="text-muted-foreground"
-              >
-                <Square className="h-3 w-3" />
-              </button>
-              <span className="text-[12px]">{t.title}</span>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Pacing alerts */}
+      <div className="mt-4">
+        <PacingAlerts goals={goals} />
+      </div>
     </div>
   );
 }
@@ -285,10 +257,10 @@ function BoardColumnsView({
                           : "var(--muted-foreground)",
                   }}
                 />
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <span className="text-[14px] font-semibold uppercase tracking-wider text-muted-foreground">
                   {col.label}
                 </span>
-                <span className="text-[9px] text-muted-foreground/60 tabular-nums ml-auto">
+                <span className="text-[15px] text-muted-foreground/60 tabular-nums ml-auto">
                   {colItems.length} · {hours.toFixed(0)}h
                 </span>
               </div>
@@ -312,7 +284,7 @@ function BoardColumnsView({
                   );
                 })}
                 {colItems.length === 0 && (
-                  <p className="text-[11px] text-muted-foreground/40 text-center py-4">
+                  <p className="text-[15px] text-muted-foreground/40 text-center py-4">
                     Empty
                   </p>
                 )}
@@ -335,7 +307,7 @@ function BacklogListView({
   return (
     <div className="space-y-2">
       {items.length === 0 && (
-        <p className="text-[13px] text-muted-foreground py-6 text-center">
+        <p className="text-[15px] text-muted-foreground py-6 text-center">
           Backlog is empty. Hit Regenerate to get new items.
         </p>
       )}
@@ -368,7 +340,7 @@ function LaneBadge({ lane }: { lane: { label: string; color: string } }) {
   return (
     <div className="flex items-center gap-1.5 mb-1 mt-1">
       <div className="w-1.5 h-1.5 rounded-full" style={{ background: lane.color }} />
-      <span className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: lane.color }}>
+      <span className="text-[15px] font-semibold uppercase tracking-wider" style={{ color: lane.color }}>
         {lane.label}
       </span>
     </div>
@@ -401,7 +373,7 @@ function MobileCard({
     >
       <Icon className="h-3 w-3 shrink-0" style={{ color }} />
       <span
-        className="text-[9px] font-bold uppercase px-1 py-[1px] rounded-sm shrink-0"
+        className="text-[15px] font-bold uppercase px-1 py-[1px] rounded-sm shrink-0"
         style={{
           color: platformColor,
           background: `color-mix(in oklch, ${platformColor} 15%, transparent)`,
@@ -414,14 +386,14 @@ function MobileCard({
         {item.goalId ? (
           <a
             href={`/goals?goal=${item.goalId}`}
-            className={`${compact ? "text-[11px]" : "text-[13px]"} font-medium truncate block hover:underline`}
+            className={`${compact ? "text-[15px]" : "text-[15px]"} font-medium truncate block hover:underline`}
             style={{ textDecoration: isDone ? "line-through" : undefined }}
           >
             {item.title}
           </a>
         ) : (
           <span
-            className={`${compact ? "text-[11px]" : "text-[13px]"} font-medium truncate block`}
+            className={`${compact ? "text-[15px]" : "text-[15px]"} font-medium truncate block`}
             style={{ textDecoration: isDone ? "line-through" : undefined }}
           >
             {item.title}
@@ -429,7 +401,7 @@ function MobileCard({
         )}
       </div>
 
-      <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
+      <span className="text-[14px] text-muted-foreground tabular-nums shrink-0">
         {formatHours(item.estimatedHours)}
       </span>
 
@@ -439,7 +411,7 @@ function MobileCard({
             <button
               key={a.label}
               onClick={a.action}
-              className="text-[10px] px-1.5 py-0.5 rounded-sm font-medium transition-colors"
+              className="text-[14px] px-1.5 py-0.5 rounded-sm font-medium transition-colors"
               style={{
                 color: "var(--primary)",
                 background: "color-mix(in oklch, var(--primary) 10%, transparent)",

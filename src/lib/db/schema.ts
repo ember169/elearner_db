@@ -260,6 +260,7 @@ export const goals = sqliteTable("goals", {
   estimatedHours: real("estimated_hours"),
   originalTarget: real("original_target"),
   status: text("status").default("active"),
+  customFields: text("custom_fields"),
   createdAt: text("created_at")
     .notNull()
     .default(sql`(datetime('now'))`),

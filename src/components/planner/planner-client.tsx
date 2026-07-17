@@ -2,22 +2,15 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { RefreshCw, Plus, X, Square, AlertTriangle } from "lucide-react";
+import { RefreshCw, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { StatusKanbanBoard } from "./kanban-board";
 import { SideProjectBrief } from "./side-project-brief";
 import { CompetencySpotlight } from "./competency-spotlight";
+import { PacingAlerts } from "./pacing-alerts";
 import { MobileBoardView } from "./mobile-board";
 import type { PlanItemData, GoalSlim, SideProject, CompetencyEntry } from "./types";
 import { assertOk } from "@/lib/utils";
-
-interface PinnedTask {
-  id: number;
-  title: string;
-  category: string | null;
-  isCompleted: boolean | null;
-}
 
 interface PlannerClientProps {
   boardItems: PlanItemData[];
@@ -26,7 +19,6 @@ interface PlannerClientProps {
   objective: string;
   competencies: CompetencyEntry[];
   goals: GoalSlim[];
-  pinnedTasks: PinnedTask[];
   sideProject?: SideProject | null;
   hasKey: boolean;
   stale: boolean;
@@ -39,7 +31,6 @@ export function PlannerClient({
   objective,
   competencies,
   goals,
-  pinnedTasks: initialPinned,
   sideProject: initialSideProject,
   hasKey,
   stale,
@@ -50,9 +41,6 @@ export function PlannerClient({
   const [collapsedBriefing, setCollapsedBriefing] = useState(initialCollapsed);
   const [sideProject, setSideProject] = useState(initialSideProject);
   const [regenerating, setRegenerating] = useState(false);
-  const [pinned, setPinned] = useState(initialPinned);
-  const [newTask, setNewTask] = useState("");
-  const [showAddTask, setShowAddTask] = useState(false);
   const [deadlineWarnings, setDeadlineWarnings] = useState<string[]>([]);
   const [deadlineUrgency, setDeadlineUrgency] = useState<string>("normal");
 
@@ -165,52 +153,6 @@ export function PlannerClient({
     }
   }
 
-  async function addPinnedTask() {
-    if (!newTask.trim()) return;
-    try {
-      const res = await fetch("/api/checklist", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: newTask.trim(), category: "general" }),
-      });
-      await assertOk(res);
-      const task = await res.json();
-      setPinned((prev) => [...prev, task]);
-      setNewTask("");
-      setShowAddTask(false);
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "Failed to add task.");
-    }
-  }
-
-  async function completePinnedTask(id: number) {
-    try {
-      const res = await fetch("/api/checklist", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, isCompleted: true }),
-      });
-      await assertOk(res);
-      setPinned((prev) => prev.filter((t) => t.id !== id));
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "Failed.");
-    }
-  }
-
-  async function deletePinnedTask(id: number) {
-    try {
-      const res = await fetch("/api/checklist", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
-      });
-      await assertOk(res);
-      setPinned((prev) => prev.filter((t) => t.id !== id));
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "Failed.");
-    }
-  }
-
   return (
     <div className="space-y-5">
       {/* Header */}
@@ -219,7 +161,7 @@ export function PlannerClient({
           <h1 className="text-[28px] font-bold tracking-tight leading-tight">
             Planner
           </h1>
-          <p className="text-[13px] text-muted-foreground mt-0.5 truncate">
+          <p className="text-[15px] text-muted-foreground mt-0.5 truncate">
             {objective}
           </p>
         </div>
@@ -228,7 +170,7 @@ export function PlannerClient({
             className="flex items-center gap-1.5 rounded-sm px-2.5 py-1"
             style={{ background: "var(--muted)" }}
           >
-            <span className="text-[11px] font-semibold tabular-nums">
+            <span className="text-[15px] font-semibold tabular-nums">
               {totalHours.toFixed(0)}h
             </span>
             <div
@@ -275,14 +217,14 @@ export function PlannerClient({
               style={{ background: "var(--primary)" }}
             >
               <span
-                className="text-[9px] font-bold"
+                className="text-[15px] font-bold"
                 style={{ color: "var(--primary-foreground)" }}
               >
                 M
               </span>
             </div>
             <p
-              className="text-[13px] leading-relaxed flex-1 min-w-0"
+              className="text-[15px] leading-relaxed flex-1 min-w-0"
               style={{ color: "var(--muted-foreground)" }}
             >
               {briefingCollapsed
@@ -299,14 +241,14 @@ export function PlannerClient({
                     String(next)
                   );
                 }}
-                className="text-[11px] text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                className="text-[15px] text-muted-foreground hover:text-foreground transition-colors shrink-0"
               >
                 {briefingCollapsed ? "More" : "Less"}
               </button>
             )}
           </div>
           {!hasKey && (
-            <p className="text-[11px] text-muted-foreground mt-2 pl-8">
+            <p className="text-[15px] text-muted-foreground mt-2 pl-8">
               Rule-based plan —{" "}
               <a
                 href="/settings"
@@ -326,7 +268,7 @@ export function PlannerClient({
             className="rounded-sm border border-border px-4 py-4 flex items-center justify-center"
             style={{ background: "var(--card)" }}
           >
-            <p className="text-[12px] text-muted-foreground">
+            <p className="text-[14px] text-muted-foreground">
               <a
                 href="/settings"
                 className="underline hover:text-foreground transition-colors"
@@ -355,14 +297,14 @@ export function PlannerClient({
                 style={{ background: "var(--primary)" }}
               >
                 <span
-                  className="text-[9px] font-bold"
+                  className="text-[15px] font-bold"
                   style={{ color: "var(--primary-foreground)" }}
                 >
                   M
                 </span>
               </div>
               <p
-                className="text-[12px] leading-relaxed flex-1 min-w-0"
+                className="text-[14px] leading-relaxed flex-1 min-w-0"
                 style={{ color: "var(--muted-foreground)" }}
               >
                 {collapsedBriefing ?? briefing}
@@ -405,7 +347,7 @@ export function PlannerClient({
               }}
             />
             <span
-              className="text-[12px] font-medium"
+              className="text-[14px] font-medium"
               style={{ color: "var(--foreground)" }}
             >
               {deadlineUrgency === "critical"
@@ -418,7 +360,7 @@ export function PlannerClient({
           {deadlineWarnings.map((w, i) => (
             <p
               key={i}
-              className="text-[12px] leading-relaxed pl-5.5"
+              className="text-[14px] leading-relaxed pl-5.5"
               style={{ color: "var(--muted-foreground)" }}
             >
               {w}
@@ -441,18 +383,8 @@ export function PlannerClient({
         <MobileBoardView
           items={items}
           sideProject={sideProject}
-          pinnedTasks={pinned.map((t) => ({ id: t.id, title: t.title }))}
+          goals={goals}
           onItemUpdate={handleItemUpdate}
-          onAddPinned={async (title) => {
-            const res = await fetch("/api/checklist", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ title, category: "general" }),
-            });
-            const task = await res.json();
-            setPinned((prev) => [...prev, task]);
-          }}
-          onCompletePinned={completePinnedTask}
         />
       </div>
 
@@ -460,63 +392,7 @@ export function PlannerClient({
       <div className="hidden md:block space-y-3">
         <div className="grid grid-cols-2 gap-3">
           <CompetencySpotlight competencies={competencies} />
-          <div className="flex items-center gap-3 flex-wrap px-4 py-2.5 rounded-sm border border-border">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Pinned
-            </span>
-            {pinned.map((task) => (
-              <div key={task.id} className="flex items-center gap-1.5 group">
-                <button
-                  onClick={() => completePinnedTask(task.id)}
-                  className="text-muted-foreground hover:text-success transition-colors"
-                >
-                  <Square className="h-3 w-3" />
-                </button>
-                <span className="text-[12px]">{task.title}</span>
-                <button
-                  onClick={() => deletePinnedTask(task.id)}
-                  className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-danger transition-all"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            ))}
-            {showAddTask ? (
-              <div className="flex gap-1.5 items-center">
-                <Input
-                  value={newTask}
-                  onChange={(e) => setNewTask(e.target.value)}
-                  placeholder="Task..."
-                  className="h-6 text-[12px] w-40"
-                  onKeyDown={(e) => e.key === "Enter" && addPinnedTask()}
-                  autoFocus
-                />
-                <Button
-                  size="xs"
-                  onClick={addPinnedTask}
-                  className="h-6 text-[10px]"
-                >
-                  Add
-                </Button>
-                <button
-                  onClick={() => {
-                    setShowAddTask(false);
-                    setNewTask("");
-                  }}
-                  className="text-muted-foreground"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setShowAddTask(true)}
-                className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <Plus className="h-3 w-3" /> Add
-              </button>
-            )}
-          </div>
+          <PacingAlerts goals={goals} />
         </div>
       </div>
     </div>

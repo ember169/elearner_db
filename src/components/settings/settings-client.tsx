@@ -283,7 +283,7 @@ export function SettingsClient({
       >
         <div className="space-y-3">
           <div className="space-y-1.5">
-            <Label className="text-[13px]">Learning objective</Label>
+            <Label className="text-[15px]">Learning objective</Label>
             <textarea
               value={objective}
               onChange={(e) => setObjective(e.target.value)}
@@ -291,18 +291,18 @@ export function SettingsClient({
               rows={3}
               className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-[14px] placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             />
-            <p className="text-[12px] text-muted-foreground">
+            <p className="text-[14px] text-muted-foreground">
               Describe your long-term goal. The mentor will tailor every recommendation to this.
             </p>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-[13px]">Provider</Label>
+            <Label className="text-[15px]">Provider</Label>
             <div className="flex gap-1">
               {(["anthropic", "local"] as const).map((p) => (
                 <button
                   key={p}
                   onClick={() => setLlmProvider(p)}
-                  className={`px-3 py-1.5 text-[13px] rounded-sm border transition-colors ${
+                  className={`px-3 py-1.5 text-[15px] rounded-sm border transition-colors ${
                     llmProvider === p
                       ? "border-primary bg-primary/10 text-primary font-medium"
                       : "border-border text-muted-foreground hover:text-foreground"
@@ -338,14 +338,14 @@ export function SettingsClient({
               <Badge variant="success">Active</Badge>
             )}
           </div>
-          <p className="text-[12px] text-muted-foreground">
+          <p className="text-[14px] text-muted-foreground">
             Set your target date for completing the 42 common core. The system will backward-plan circle and project deadlines,
             compute required weekly hours, and warn you when the pace is unsustainable.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-[13px]">Common core target date</Label>
+              <Label className="text-[15px]">Common core target date</Label>
               <Input
                 type="date"
                 value={deadlineDate}
@@ -354,7 +354,7 @@ export function SettingsClient({
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[13px]">Weekly 42 budget (hours)</Label>
+              <Label className="text-[15px]">Weekly 42 budget (hours)</Label>
               <Input
                 type="number"
                 value={deadlineBudget}
@@ -379,7 +379,7 @@ export function SettingsClient({
           {deadlineResult?.plan && (
             <div className="space-y-3 mt-2">
               <Separator />
-              <div className="flex items-center gap-6 text-[13px]">
+              <div className="flex items-center gap-6 text-[15px]">
                 <div>
                   <span className="text-muted-foreground">Hours remaining: </span>
                   <span className="font-medium">{deadlineResult.plan.totalHoursRemaining}h</span>
@@ -398,10 +398,10 @@ export function SettingsClient({
 
               {deadlineResult.plan.circlePlans.length > 0 && (
                 <div className="space-y-1">
-                  <p className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Circle deadlines</p>
+                  <p className="text-[14px] font-semibold text-muted-foreground uppercase tracking-wider">Circle deadlines</p>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                     {deadlineResult.plan.circlePlans.map((cp) => (
-                      <div key={cp.circle} className="px-3 py-2 rounded-sm border border-border text-[12px]">
+                      <div key={cp.circle} className="px-3 py-2 rounded-sm border border-border text-[14px]">
                         <span className="font-medium">Circle {cp.circle}</span>
                         <span className="text-muted-foreground"> — {cp.totalHours}h</span>
                         <p className="text-muted-foreground">Due {cp.dueBy}</p>
@@ -414,7 +414,7 @@ export function SettingsClient({
               {deadlineResult.plan.warnings.length > 0 && (
                 <div className="space-y-1.5">
                   {deadlineResult.plan.warnings.map((w, i) => (
-                    <div key={i} className="flex items-start gap-2 text-[12px] text-warning">
+                    <div key={i} className="flex items-start gap-2 text-[14px] text-warning">
                       <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
                       <span>{w}</span>
                     </div>
@@ -532,7 +532,7 @@ export function SettingsClient({
                   {recentSyncs.map((sync) => (
                     <div
                       key={sync.id}
-                      className="px-3 py-2.5 rounded-sm border border-border text-[13px]"
+                      className="px-3 py-2.5 rounded-sm border border-border text-[15px]"
                     >
                       <div className="flex items-center gap-2.5">
                         <Badge variant={statusVariant[sync.status] ?? "secondary"}>
@@ -550,12 +550,12 @@ export function SettingsClient({
                               )
                             }
                             title={expandedSyncId === sync.id ? "Collapse" : "Show full error"}
-                            className="text-destructive truncate max-w-[180px] text-[12px] text-left cursor-pointer hover:underline"
+                            className="text-destructive truncate max-w-[180px] text-[14px] text-left cursor-pointer hover:underline"
                           >
                             {sync.error}
                           </button>
                         )}
-                        <span className="ml-auto text-[12px] text-muted-foreground tabular-nums shrink-0">
+                        <span className="ml-auto text-[14px] text-muted-foreground tabular-nums shrink-0">
                           {new Date(sync.startedAt).toLocaleString("en-US", {
                             dateStyle: "short",
                             timeStyle: "medium",
@@ -563,7 +563,7 @@ export function SettingsClient({
                         </span>
                       </div>
                       {sync.error && expandedSyncId === sync.id && (
-                        <p className="mt-1.5 text-[12px] text-destructive leading-relaxed whitespace-pre-wrap break-words select-text">
+                        <p className="mt-1.5 text-[14px] text-destructive leading-relaxed whitespace-pre-wrap break-words select-text">
                           {sync.error}
                         </p>
                       )}
@@ -610,14 +610,14 @@ function PlatformSection({
             {configured ? "Configured" : "Not set"}
           </Badge>
           {lastSync && (
-            <span className="text-[11px] text-muted-foreground ml-auto tabular-nums">
+            <span className="text-[15px] text-muted-foreground ml-auto tabular-nums">
               Last sync: {formatRelative(lastSync)}
             </span>
           )}
         </div>
         {children}
         <div className="flex items-center gap-3">
-          <p className="text-[12px] text-muted-foreground flex-1">{hint}</p>
+          <p className="text-[14px] text-muted-foreground flex-1">{hint}</p>
           {onTest && (
             <Button variant="ghost" size="xs" onClick={onTest} disabled={testingNow}>
               <RefreshCw className={`h-3 w-3 mr-1 ${testingNow ? "animate-spin" : ""}`} />
@@ -626,7 +626,7 @@ function PlatformSection({
           )}
         </div>
         {tr && (
-          <p className={`text-[12px] ${tr.ok ? "text-success" : "text-destructive"}`}>
+          <p className={`text-[14px] ${tr.ok ? "text-success" : "text-destructive"}`}>
             {tr.msg}
           </p>
         )}
@@ -651,7 +651,7 @@ function Field({
 }) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-[13px]">{label}</Label>
+      <Label className="text-[15px]">{label}</Label>
       <Input
         type={type}
         value={value}

@@ -21,13 +21,13 @@ export function CompetencySpotlight({ competencies }: { competencies: Competency
 
   return (
     <div className="rounded-sm border border-border px-5 py-4">
-      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+      <p className="text-[14px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">
         Biggest gaps
       </p>
       <div className="space-y-2.5">
         {gaps.map((c) => (
           <div key={c.id} className="flex items-center gap-3">
-            <span className="text-[12px] text-muted-foreground w-[110px] shrink-0 truncate">
+            <span className="text-[14px] text-muted-foreground w-[110px] shrink-0 truncate">
               {c.label}
             </span>
             <div className="flex gap-[3px] flex-1">
@@ -45,11 +45,11 @@ export function CompetencySpotlight({ competencies }: { competencies: Competency
         ))}
       </div>
       {targetAreas.length > 0 && (
-        <p className="text-[11px] text-muted-foreground mt-3">
+        <p className="text-[15px] text-muted-foreground mt-3">
           This week targets {targetAreas.join(" + ")}
         </p>
       )}
-      <a href="/progress" className="text-[11px] text-primary hover:underline mt-1 inline-block">
+      <a href="/progress" className="text-[15px] text-primary hover:underline mt-1 inline-block">
         Full map →
       </a>
     </div>

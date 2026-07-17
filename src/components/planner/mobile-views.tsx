@@ -23,7 +23,7 @@ function PlatformBadge({ type }: { type: string }) {
   const label = PLATFORM_LABELS[type] ?? type.toUpperCase().slice(0, 3);
   return (
     <span
-      className="text-[9px] font-bold uppercase px-1 py-[1px] rounded-sm"
+      className="text-[15px] font-bold uppercase px-1 py-[1px] rounded-sm"
       style={{ color, background: `color-mix(in oklch, ${color} 15%, transparent)` }}
     >
       {label}
@@ -70,12 +70,12 @@ export function TodayView({
 
   return (
     <div className="space-y-4">
-      <p className="text-[12px] font-bold" style={{ color: "var(--primary)" }}>
+      <p className="text-[14px] font-bold" style={{ color: "var(--primary)" }}>
         {dayStr}
       </p>
 
       {todayItems.length === 0 && (
-        <p className="text-[13px] text-muted-foreground py-6 text-center">Nothing scheduled for today.</p>
+        <p className="text-[15px] text-muted-foreground py-6 text-center">Nothing scheduled for today.</p>
       )}
 
       {todayItems.map((item) => (
@@ -85,7 +85,7 @@ export function TodayView({
       {/* Tomorrow preview */}
       {tomorrowItems.length > 0 && (
         <div style={{ opacity: 0.6 }} className="mt-4">
-          <p className="text-[11px] font-semibold text-muted-foreground uppercase mb-2">
+          <p className="text-[15px] font-semibold text-muted-foreground uppercase mb-2">
             Tomorrow · {DAY_NAMES[tomorrowIdx!]} {(() => {
               const d = new Date(start);
               d.setDate(start.getDate() + tomorrowIdx!);
@@ -95,8 +95,8 @@ export function TodayView({
           {tomorrowItems.map((item) => (
             <div key={item.id} className="flex items-center gap-2 py-2.5 px-3 rounded-sm border border-border mb-1">
               <PlatformBadge type={item.type} />
-              <span className="text-[13px] flex-1 min-w-0 truncate">{item.title}</span>
-              <span className="text-[11px] text-muted-foreground tabular-nums">{formatHours(item.estimatedHours)}</span>
+              <span className="text-[15px] flex-1 min-w-0 truncate">{item.title}</span>
+              <span className="text-[15px] text-muted-foreground tabular-nums">{formatHours(item.estimatedHours)}</span>
             </div>
           ))}
         </div>
@@ -108,8 +108,8 @@ export function TodayView({
           className="mt-4 px-3 py-2.5 rounded-sm"
           style={{ borderLeft: "3px solid var(--primary)", background: "color-mix(in oklch, var(--muted) 40%, transparent)" }}
         >
-          <p className="text-[11px] font-semibold">Weekend: {sideProject.title}</p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">
+          <p className="text-[15px] font-semibold">Weekend: {sideProject.title}</p>
+          <p className="text-[15px] text-muted-foreground mt-0.5">
             {sideProject.steps?.length ?? 0} steps · ~{sideProject.steps?.reduce((s, st) => s + st.estimatedHours, 0) ?? 0}h · Sat + Sun
           </p>
         </div>
@@ -123,7 +123,7 @@ export function TodayView({
               <button onClick={() => onCompletePinned(task.id)} className="shrink-0">
                 <div className="w-3 h-3 border border-muted-foreground rounded-sm" />
               </button>
-              <span className="text-[12px] flex-1">{task.title}</span>
+              <span className="text-[14px] flex-1">{task.title}</span>
             </div>
           ))}
         </div>
@@ -161,11 +161,11 @@ function MobileTodayCard({
       </div>
 
       {item.description && (
-        <p className="text-[12px] text-muted-foreground mb-2">{item.description}</p>
+        <p className="text-[14px] text-muted-foreground mb-2">{item.description}</p>
       )}
 
       <div className="flex items-center justify-between">
-        <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+        <span className="text-[15px] text-muted-foreground flex items-center gap-1">
           <Clock className="h-3 w-3" />
           {formatHours(item.estimatedHours)}
         </span>
@@ -173,14 +173,14 @@ function MobileTodayCard({
           <div className="flex gap-[6px]">
             <button
               onClick={() => onStatusChange(item.id, "done")}
-              className="text-[11px] px-2.5 py-1 rounded-sm font-medium"
+              className="text-[15px] px-2.5 py-1 rounded-sm font-medium"
               style={{ background: "var(--status-done)", color: "var(--primary-foreground)" }}
             >
               Done ✓
             </button>
             <button
               onClick={() => onStatusChange(item.id, "stuck")}
-              className="text-[11px] px-2.5 py-1 rounded-sm border text-muted-foreground"
+              className="text-[15px] px-2.5 py-1 rounded-sm border text-muted-foreground"
               style={{ borderColor: "var(--border)" }}
             >
               Stuck
@@ -255,14 +255,14 @@ export function FullWeekView({
         className="flex items-center gap-2 px-3 py-2 rounded-sm mb-3"
         style={{ background: "var(--muted)" }}
       >
-        <span className="text-[11px] font-semibold tabular-nums">{doneHours.toFixed(0)}h / {budgetTotal}h</span>
+        <span className="text-[15px] font-semibold tabular-nums">{doneHours.toFixed(0)}h / {budgetTotal}h</span>
         <div
           className="flex-1 h-1 rounded-[1px] overflow-hidden"
           style={{ background: "var(--secondary)" }}
         >
           <div className="h-full" style={{ width: `${Math.min(100, pct)}%`, background: "var(--status-done)" }} />
         </div>
-        <span className="text-[10px] text-muted-foreground tabular-nums">{pct.toFixed(0)}%</span>
+        <span className="text-[14px] text-muted-foreground tabular-nums">{pct.toFixed(0)}%</span>
       </div>
 
       {/* Day list */}
@@ -296,7 +296,7 @@ export function FullWeekView({
                 border: isToday ? "1px solid color-mix(in oklch, var(--primary) 15%, transparent)" : undefined,
               }}
             >
-              <p className="text-[11px] font-bold mb-1.5" style={{ color: labelColor }}>
+              <p className="text-[15px] font-bold mb-1.5" style={{ color: labelColor }}>
                 {group.label} {dateNum}
                 {isToday && " · TODAY"}
                 {groupItems.length > 0 && ` · ${hours.toFixed(0)}h`}
@@ -306,7 +306,7 @@ export function FullWeekView({
                 {groupItems.map((item) => {
                   const { Icon, color } = getStatusIcon(item.status, item.sourceWeek);
                   return (
-                    <div key={item.id} className="flex items-center gap-[6px] text-[12px]">
+                    <div key={item.id} className="flex items-center gap-[6px] text-[14px]">
                       <Icon className="h-3 w-3 shrink-0" style={{ color }} />
                       <PlatformBadge type={item.type} />
                       <span className="flex-1 min-w-0 truncate" style={{
@@ -320,7 +320,7 @@ export function FullWeekView({
                   );
                 })}
                 {groupItems.length === 0 && (
-                  <span className="text-[11px] text-muted-foreground" style={{ opacity: 0.5 }}>— rest</span>
+                  <span className="text-[15px] text-muted-foreground" style={{ opacity: 0.5 }}>— rest</span>
                 )}
               </div>
             </div>
@@ -357,14 +357,14 @@ export function BacklogView({
   if (unscheduled.length) groups.push({ label: "UNSCHEDULED", items: unscheduled });
 
   if (groups.length === 0) {
-    return <p className="text-[13px] text-muted-foreground py-8 text-center">Backlog is empty.</p>;
+    return <p className="text-[15px] text-muted-foreground py-8 text-center">Backlog is empty.</p>;
   }
 
   return (
     <div className="space-y-4">
       {groups.map((group) => (
         <div key={group.label}>
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+          <p className="text-[14px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
             {group.label}
           </p>
           <div className="space-y-2">
@@ -407,17 +407,17 @@ function BacklogCard({
       <div className="flex items-center gap-2 mb-1.5">
         <Icon className="h-3 w-3 shrink-0" style={{ color }} />
         <PlatformBadge type={item.type} />
-        <span className="text-[13px] font-medium flex-1 min-w-0 truncate">{item.title}</span>
+        <span className="text-[15px] font-medium flex-1 min-w-0 truncate">{item.title}</span>
       </div>
 
       {item.why && (
-        <p className="text-[11px] text-muted-foreground mb-2 pl-5">{item.why}</p>
+        <p className="text-[15px] text-muted-foreground mb-2 pl-5">{item.why}</p>
       )}
 
       <div className="flex gap-[6px] pl-5">
         <button
           onClick={() => setShowPicker(!showPicker)}
-          className="text-[11px] px-2.5 py-1 rounded-sm font-medium"
+          className="text-[15px] px-2.5 py-1 rounded-sm font-medium"
           style={{ background: "var(--primary)", color: "var(--primary-foreground)" }}
         >
           Schedule →
@@ -425,7 +425,7 @@ function BacklogCard({
         {item.status === "stuck" && (
           <button
             onClick={() => onStatusChange(item.id, "pending")}
-            className="text-[11px] px-2.5 py-1 rounded-sm border text-muted-foreground"
+            className="text-[15px] px-2.5 py-1 rounded-sm border text-muted-foreground"
             style={{ borderColor: "var(--border)" }}
           >
             Retry
@@ -433,7 +433,7 @@ function BacklogCard({
         )}
         <button
           onClick={() => onDrop(item.id)}
-          className="text-[11px] px-2.5 py-1 rounded-sm border text-muted-foreground"
+          className="text-[15px] px-2.5 py-1 rounded-sm border text-muted-foreground"
           style={{ borderColor: "var(--border)" }}
         >
           Drop
@@ -449,7 +449,7 @@ function BacklogCard({
               <button
                 key={idx}
                 onClick={() => { onSchedule(item.id, idx); setShowPicker(false); }}
-                className="text-[10px] px-2 py-1 rounded-sm border border-border hover:bg-white/5 transition-colors"
+                className="text-[14px] px-2 py-1 rounded-sm border border-border hover:bg-white/5 transition-colors"
               >
                 {name} {d.getDate()}
               </button>
@@ -484,7 +484,7 @@ export function ViewToggle({
         <button
           key={tab.key}
           onClick={() => onChange(tab.key)}
-          className="flex-1 py-1.5 text-[11px] font-medium transition-colors"
+          className="flex-1 py-1.5 text-[15px] font-medium transition-colors"
           style={{
             background: active === tab.key ? "color-mix(in oklch, var(--primary) 10%, transparent)" : "transparent",
             color: active === tab.key ? "var(--primary)" : "var(--muted-foreground)",

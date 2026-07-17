@@ -87,9 +87,9 @@ export function PulseBar({
             )}
             <div className="flex items-center gap-1.5 px-2">
               <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
-              <span className="text-[11px] font-bold tabular-nums">{item.value}</span>
+              <span className="text-[15px] font-bold tabular-nums">{item.value}</span>
               {item.delta && (
-                <span className="text-[10px] tabular-nums" style={{ color: "var(--status-success)" }}>
+                <span className="text-[14px] tabular-nums" style={{ color: "var(--status-success)" }}>
                   {item.delta}
                 </span>
               )}
@@ -108,10 +108,10 @@ export function PulseBar({
           className="flex items-center gap-2 rounded-sm px-3 py-2 shrink-0"
           style={{ background: "var(--muted)" }}
         >
-          <span className="text-[11px] font-semibold tabular-nums">
+          <span className="text-[15px] font-semibold tabular-nums">
             Budget
           </span>
-          <span className="text-[12px] font-bold tabular-nums">
+          <span className="text-[14px] font-bold tabular-nums">
             {(budgetUsed ?? 0).toFixed(0)}h
           </span>
           <div

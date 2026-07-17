@@ -239,7 +239,7 @@ export function GoalsClient({
               </div>
               <div>
                 <DialogTitle className="text-[15px]">Delete &ldquo;{deleteGoalObj?.title}&rdquo;?</DialogTitle>
-                <p className="text-[12px] text-muted-foreground mt-0.5">
+                <p className="text-[14px] text-muted-foreground mt-0.5">
                   This {deleteGoalObj?.parentGoalId ? "issue" : "goal"} has {deleteDescendantCount} child {deleteChildLabel}.
                 </p>
               </div>

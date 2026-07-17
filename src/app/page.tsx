@@ -1,9 +1,5 @@
 import { db } from "@/lib/db";
-import {
-  tasks,
-  settings,
-} from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { settings } from "@/lib/db/schema";
 import { loadCurrentPlan } from "@/lib/mentor/store";
 import { runGuidanceEngine, flattenGoals } from "@/lib/guidance/engine";
 import { computeCompetencySignals } from "@/lib/mentor/competency-signals";
@@ -19,12 +15,6 @@ export default function HomePage() {
   const mentorResult = loadCurrentPlan();
   const cfg = db.select().from(settings).limit(1).all()[0] ?? null;
   const objective = cfg?.objective ?? "Red team / malware dev";
-
-  const pinnedTasks = db
-    .select()
-    .from(tasks)
-    .where(eq(tasks.isCompleted, false))
-    .all();
 
   const guidance = runGuidanceEngine();
   const signals = computeCompetencySignals(guidance.snapshot, guidance.ftProgress);
@@ -60,7 +50,6 @@ export default function HomePage() {
       objective={objective}
       competencies={competencies}
       goals={activeGoals}
-      pinnedTasks={pinnedTasks}
       sideProject={mentorResult.plan.side_project ?? null}
       hasKey={mentorResult.hasKey}
       stale={mentorResult.stale}

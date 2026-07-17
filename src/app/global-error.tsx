@@ -13,12 +13,12 @@ export default function GlobalError({
         <div className="flex items-center justify-center min-h-screen">
           <div className="rounded-sm border border-[oklch(0.25_0.007_70)] px-6 py-5 max-w-md w-full space-y-3">
             <h2 className="text-[15px] font-semibold">Something went wrong</h2>
-            <p className="text-[13px] opacity-60 leading-relaxed">
+            <p className="text-[15px] opacity-60 leading-relaxed">
               {error.message || "An unexpected error occurred."}
             </p>
             <button
               onClick={reset}
-              className="px-3 py-1.5 text-[13px] rounded-sm border border-[oklch(0.25_0.007_70)] hover:bg-white/5"
+              className="px-3 py-1.5 text-[15px] rounded-sm border border-[oklch(0.25_0.007_70)] hover:bg-white/5"
             >
               Try again
             </button>

@@ -239,11 +239,11 @@ export function StatusKanbanBoard({
                         : "var(--muted-foreground)",
                 }}
               />
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <span className="text-[14px] font-semibold uppercase tracking-wider text-muted-foreground">
                 {col.label}
               </span>
               {colTotals[ci].count > 0 && (
-                <span className="text-[9px] text-muted-foreground/60 tabular-nums">
+                <span className="text-[15px] text-muted-foreground/60 tabular-nums">
                   {colTotals[ci].count} · {colTotals[ci].hours.toFixed(0)}h
                 </span>
               )}
@@ -265,7 +265,7 @@ export function StatusKanbanBoard({
                   style={{ background: lane.color }}
                 />
                 <span
-                  className="text-[9px] font-bold uppercase tracking-wider"
+                  className="text-[15px] font-bold uppercase tracking-wider"
                   style={{
                     color: lane.color,
                     writingMode: "vertical-lr",
@@ -318,7 +318,7 @@ function BoardCell({
   return (
     <div
       ref={setNodeRef}
-      className="flex flex-col gap-[3px] p-1.5 min-h-[80px]"
+      className={`flex flex-col gap-[3px] p-1.5 ${items.length > 0 ? "min-h-[60px]" : "min-h-[32px]"}`}
       style={{
         background: isOver
           ? "color-mix(in oklch, var(--primary) 8%, var(--background))"
@@ -417,7 +417,7 @@ function BoardCard({
           style={{ color: statusStyle.color }}
         />
         <span
-          className="text-[8px] font-bold uppercase px-1 rounded-sm"
+          className="text-[14px] font-bold uppercase px-1 rounded-sm"
           style={{
             color: platformColor,
             background: `color-mix(in oklch, ${platformColor} 12%, transparent)`,
@@ -428,7 +428,7 @@ function BoardCard({
 
         {(item.status === "blocked" || item.status === "stuck") && (
           <span
-            className="text-[7px] font-semibold uppercase px-1 rounded-sm ml-auto"
+            className="text-[15px] font-semibold uppercase px-1 rounded-sm ml-auto"
             style={{
               color: statusStyle.color,
               background: `color-mix(in oklch, ${statusStyle.color} 12%, transparent)`,
@@ -441,7 +441,7 @@ function BoardCard({
         {!overlay && onItemUpdate && (
           <DropdownMenu>
             <DropdownMenuTrigger
-              className="ml-auto text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+              className="ml-auto text-[14px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
               render={<button />}
               onClick={(e) => e.stopPropagation()}
             >
@@ -451,7 +451,7 @@ function BoardCard({
               {moveActions.map((a) => (
                 <DropdownMenuItem
                   key={a.id}
-                  className="text-[11px]"
+                  className="text-[15px]"
                   onClick={(e) => {
                     e.stopPropagation();
                     onItemUpdate(item.id, { boardStatus: a.id });
@@ -461,7 +461,7 @@ function BoardCard({
                 </DropdownMenuItem>
               ))}
               <DropdownMenuItem
-                className="text-[11px]"
+                className="text-[15px]"
                 onClick={(e) => {
                   e.stopPropagation();
                   onItemUpdate(item.id, { status: "blocked" });
@@ -470,7 +470,7 @@ function BoardCard({
                 Mark blocked
               </DropdownMenuItem>
               <DropdownMenuItem
-                className="text-[11px]"
+                className="text-[15px]"
                 onClick={(e) => {
                   e.stopPropagation();
                   onItemUpdate(item.id, { status: "stuck" });
@@ -487,7 +487,7 @@ function BoardCard({
       {item.goalId ? (
         <a
           href={`/goals?goal=${item.goalId}`}
-          className="text-[10px] font-medium leading-[1.3] hover:underline block"
+          className="text-[14px] font-medium leading-[1.3] hover:underline block"
           style={{
             color: "var(--foreground)",
             textDecoration: done ? "line-through" : undefined,
@@ -501,7 +501,7 @@ function BoardCard({
           href={item.link}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-[10px] font-medium leading-[1.3] text-primary hover:underline block"
+          className="text-[14px] font-medium leading-[1.3] text-primary hover:underline block"
           onClick={(e) => e.stopPropagation()}
           style={{ textDecoration: done ? "line-through" : undefined }}
         >
@@ -509,7 +509,7 @@ function BoardCard({
         </a>
       ) : (
         <p
-          className="text-[10px] font-medium leading-[1.3]"
+          className="text-[14px] font-medium leading-[1.3]"
           style={{ textDecoration: done ? "line-through" : undefined }}
         >
           {item.title}
@@ -519,14 +519,14 @@ function BoardCard({
       {/* Bottom row */}
       <div className="flex items-center gap-1 mt-0.5">
         <Clock className="h-[9px] w-[9px] text-muted-foreground" />
-        <span className="text-[9px] text-muted-foreground tabular-nums">
+        <span className="text-[15px] text-muted-foreground tabular-nums">
           {(item.estimatedHours ?? 2) < 1
             ? `${((item.estimatedHours ?? 2) * 60).toFixed(0)}min`
             : `${(item.estimatedHours ?? 2).toFixed(0)}h`}
         </span>
         {item.status === "blocked" && item.blockedReason && (
           <span
-            className="text-[8px] ml-1 truncate"
+            className="text-[14px] ml-1 truncate"
             style={{ color: "var(--status-blocked)", maxWidth: "80px" }}
           >
             {item.blockedReason}

@@ -124,7 +124,7 @@ export function ProgressClient({
             <button
               key={p}
               onClick={() => setPeriod(p)}
-              className="px-3 py-1.5 text-[12px] font-medium transition-colors"
+              className="px-3 py-1.5 text-[14px] font-medium transition-colors"
               style={{
                 background: period === p ? "color-mix(in oklch, var(--primary) 10%, transparent)" : "transparent",
                 color: period === p ? "var(--primary)" : "var(--muted-foreground)",
@@ -142,16 +142,16 @@ export function ProgressClient({
           className="rounded-sm border border-border px-5 py-4"
           style={{ background: "var(--card)" }}
         >
-          <p className="text-[12px] font-semibold uppercase tracking-wider text-primary mb-2">
+          <p className="text-[14px] font-semibold uppercase tracking-wider text-primary mb-2">
             {period === "week" ? currentWeekLabel() : currentMonthLabel()}
           </p>
           {milestones.length > 0 ? (
-            <p className="text-[13px] text-muted-foreground leading-relaxed">
+            <p className="text-[15px] text-muted-foreground leading-relaxed">
               {milestones.length} activit{milestones.length === 1 ? "y" : "ies"} recorded.
               {" "}Keep syncing to build a richer picture here.
             </p>
           ) : (
-            <p className="text-[13px] text-muted-foreground leading-relaxed">
+            <p className="text-[15px] text-muted-foreground leading-relaxed">
               No activity recorded yet for this period. Sync your platforms to see a summary here.
             </p>
           )}
@@ -238,7 +238,7 @@ export function ProgressClient({
               const nonZero = competencies.filter((c) => c.level > 0);
               if (nonZero.length === 0) {
                 return (
-                  <p className="text-[13px] text-muted-foreground text-center py-4">
+                  <p className="text-[15px] text-muted-foreground text-center py-4">
                     All competencies at 0 — sync platforms and complete activities to see changes here.
                   </p>
                 );
@@ -247,7 +247,7 @@ export function ProgressClient({
                 <div className="space-y-2">
                   {nonZero.map((c) => (
                     <div key={c.id} className="flex items-center gap-3">
-                      <span className="text-[12px] w-[140px] shrink-0" style={{ color: c.level < 2 ? "var(--status-warning)" : "var(--foreground)" }}>
+                      <span className="text-[14px] w-[140px] shrink-0" style={{ color: c.level < 2 ? "var(--status-warning)" : "var(--foreground)" }}>
                         {c.label}
                       </span>
                       <div className="flex gap-[3px] flex-1">
@@ -259,7 +259,7 @@ export function ProgressClient({
                           />
                         ))}
                       </div>
-                      <span className="text-[12px] text-muted-foreground tabular-nums w-8 text-right">
+                      <span className="text-[14px] text-muted-foreground tabular-nums w-8 text-right">
                         {c.level} / 5
                       </span>
                     </div>
@@ -270,7 +270,7 @@ export function ProgressClient({
             <div className="text-center mt-3">
               <button
                 onClick={() => setPeriod("all")}
-                className="text-[12px] text-primary hover:underline"
+                className="text-[14px] text-primary hover:underline"
               >
                 View full competency map
               </button>
@@ -285,14 +285,14 @@ export function ProgressClient({
               <p className="section-label">Competency map</p>
             </div>
             {competencies.length === 0 ? (
-              <p className="text-[13px] text-muted-foreground text-center py-8">
+              <p className="text-[15px] text-muted-foreground text-center py-8">
                 Sync platforms to build your competency map.
               </p>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-5">
                 {grouped.map(([area, entries]) => (
                   <div key={area}>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">
+                    <p className="text-[14px] font-bold uppercase tracking-widest text-muted-foreground mb-2">
                       {area}
                     </p>
                     <div className="space-y-2">
@@ -302,7 +302,7 @@ export function ProgressClient({
                           <div key={c.id}>
                             <div className="flex items-center gap-3">
                               <span
-                                className="text-[12px] w-[140px] shrink-0"
+                                className="text-[14px] w-[140px] shrink-0"
                                 style={{
                                   color: isGap ? "var(--status-warning)" : "var(--muted-foreground)",
                                 }}
@@ -323,12 +323,12 @@ export function ProgressClient({
                                   />
                                 ))}
                               </div>
-                              <span className="text-[11px] text-muted-foreground w-8 text-right tabular-nums">
+                              <span className="text-[15px] text-muted-foreground w-8 text-right tabular-nums">
                                 {c.level} / 5
                               </span>
                             </div>
                             {c.evidence && c.evidence !== "No tracked activity yet" && (
-                              <p className="text-[11px] text-muted-foreground/70 pl-[calc(140px+0.75rem)] mt-0.5 leading-tight">
+                              <p className="text-[15px] text-muted-foreground/70 pl-[calc(140px+0.75rem)] mt-0.5 leading-tight">
                                 {c.evidence}
                               </p>
                             )}
@@ -341,7 +341,7 @@ export function ProgressClient({
               </div>
             )}
             {competencies.some((c) => c.level < 2) && (
-              <p className="text-[12px] text-muted-foreground mt-4 leading-relaxed">
+              <p className="text-[14px] text-muted-foreground mt-4 leading-relaxed">
                 Items in{" "}
                 <span style={{ color: "var(--status-warning)" }}>orange</span>
                 {" "}are below where they should be for your red team objective.
@@ -364,7 +364,7 @@ export function ProgressClient({
                 .sort(([a], [b]) => Number(a) - Number(b))
                 .map(([circle, { total, done }]) => (
                   <div key={circle} className="flex items-center gap-3">
-                    <span className="text-[12px] text-muted-foreground w-16 tabular-nums">
+                    <span className="text-[14px] text-muted-foreground w-16 tabular-nums">
                       Circle {circle}
                     </span>
                     <div className="flex-1 progress-track">
@@ -376,7 +376,7 @@ export function ProgressClient({
                         }}
                       />
                     </div>
-                    <span className="text-[12px] text-muted-foreground w-8 text-right tabular-nums">
+                    <span className="text-[14px] text-muted-foreground w-8 text-right tabular-nums">
                       {done}/{total}
                     </span>
                   </div>
@@ -393,7 +393,7 @@ export function ProgressClient({
                     </Badge>
                   ))}
                 </div>
-                <p className="text-[11px] text-muted-foreground mt-2">
+                <p className="text-[15px] text-muted-foreground mt-2">
                   Next: {nextLabel} → unlock Circle {ftProgress.currentCircle + 1}
                 </p>
               </>
@@ -426,7 +426,7 @@ export function ProgressClient({
             <p className="section-label">Recent milestones</p>
           </div>
           {milestones.length === 0 ? (
-            <p className="text-[13px] text-muted-foreground text-center py-8">
+            <p className="text-[15px] text-muted-foreground text-center py-8">
               No activity yet. Sync your platforms to see milestones here.
             </p>
           ) : (
@@ -453,13 +453,13 @@ export function ProgressClient({
                             className="h-1.5 w-1.5 rounded-full shrink-0"
                             style={{ backgroundColor: PLATFORM_COLORS[item.platform] ?? "var(--muted-foreground)" }}
                           />
-                          <span className="text-[13px] font-medium truncate">{item.title}</span>
-                          <span className="text-[11px] text-muted-foreground shrink-0 tabular-nums ml-auto" suppressHydrationWarning>
+                          <span className="text-[15px] font-medium truncate">{item.title}</span>
+                          <span className="text-[15px] text-muted-foreground shrink-0 tabular-nums ml-auto" suppressHydrationWarning>
                             {formatRelative(item.timestamp)}
                           </span>
                         </div>
                         {item.details && (
-                          <p className="text-[11px] text-muted-foreground mt-0.5 pl-[14px]">
+                          <p className="text-[15px] text-muted-foreground mt-0.5 pl-[14px]">
                             {tryParseDetails(item.details)}
                           </p>
                         )}
@@ -485,7 +485,7 @@ function DeltaStat({ label, value }: { label: string; value: string }) {
       className="rounded-sm border border-border text-center px-3 py-2.5"
       style={{ background: "var(--card)" }}
     >
-      <p className="text-[11px] text-muted-foreground">{label}</p>
+      <p className="text-[15px] text-muted-foreground">{label}</p>
       <p className="text-[18px] font-bold tabular-nums mt-0.5">{value}</p>
     </div>
   );
@@ -501,7 +501,7 @@ function PlatformCard({ color, name, value, detail }: { color: string; name: str
         <CardContent className="pt-3.5 pb-3.5 px-3.5">
           <p className="section-label">{name}</p>
           <p className="stat-value mt-1.5">{value}</p>
-          <p className="text-[11px] text-muted-foreground mt-1">{detail}</p>
+          <p className="text-[15px] text-muted-foreground mt-1">{detail}</p>
         </CardContent>
       </Card>
     </a>
@@ -543,7 +543,7 @@ function PlatformActivityBars({ activity, period }: { activity: ActivityItem[]; 
         const pct = (count / maxCount) * 100;
         return (
           <div key={p.key} className="flex items-center gap-3">
-            <span className="text-[11px] text-muted-foreground w-[70px] shrink-0 truncate">
+            <span className="text-[15px] text-muted-foreground w-[70px] shrink-0 truncate">
               {p.label}
             </span>
             <div
@@ -560,14 +560,14 @@ function PlatformActivityBars({ activity, period }: { activity: ActivityItem[]; 
                 />
               )}
             </div>
-            <span className="text-[11px] text-muted-foreground tabular-nums w-6 text-right">
+            <span className="text-[15px] text-muted-foreground tabular-nums w-6 text-right">
               {count}
             </span>
           </div>
         );
       })}
       {Object.keys(counts).length === 0 && (
-        <p className="text-[12px] text-muted-foreground text-center py-4">
+        <p className="text-[14px] text-muted-foreground text-center py-4">
           No activity recorded for this period.
         </p>
       )}

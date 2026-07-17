@@ -1,10 +1,11 @@
 import { COMPETENCIES } from "@/lib/mentor/competency-map";
 import type { SignalResult } from "@/lib/mentor/competency-signals";
 
-type SuggestedTask = { title: string; ftSlug?: string };
+type SuggestedTask = { title: string; ftSlug?: string; description?: string };
 type SuggestedIssue = {
   title: string;
   deadline?: string;
+  description?: string;
   tasks: SuggestedTask[];
 };
 export type GoalSuggestionTree = {
@@ -54,7 +55,7 @@ const TEMPLATES: Record<string, Template> = {
         title: "Deepen memory management",
         monthOffset: 3,
         tasks: [
-          { title: "Solve 3 Root-me 'Programmation' challenges in C" },
+          { title: "Solve 3 Root-me 'Programmation' challenges in C", description: "https://www.root-me.org/en/Challenges/Programming/" },
           { title: "Write a custom memory allocator (malloc clone)" },
         ],
       },
@@ -112,7 +113,7 @@ const TEMPLATES: Record<string, Template> = {
         title: "Competitive problem solving",
         monthOffset: 3,
         tasks: [
-          { title: "Solve 5 Root-me 'Programmation' challenges" },
+          { title: "Solve 5 Root-me 'Programmation' challenges", description: "https://www.root-me.org/en/Challenges/Programming/" },
           {
             title: "Practice 10 algorithmic CTF challenges on HackTheBox",
           },
@@ -249,8 +250,8 @@ const TEMPLATES: Record<string, Template> = {
         title: "Root-me cracking challenges",
         monthOffset: 1,
         tasks: [
-          { title: "Solve 5 Root-me 'Cracking' challenges (ELF basics)" },
-          { title: "Solve 3 Root-me 'App - Système' challenges" },
+          { title: "Solve 5 Root-me 'Cracking' challenges (ELF basics)", description: "https://www.root-me.org/en/Challenges/Cracking/" },
+          { title: "Solve 3 Root-me 'App - Système' challenges", description: "https://www.root-me.org/en/Challenges/App-System/" },
         ],
       },
       {
@@ -265,8 +266,8 @@ const TEMPLATES: Record<string, Template> = {
         title: "HTB reversing practice",
         monthOffset: 3,
         tasks: [
-          { title: "Solve 3 HackTheBox Reversing challenges" },
-          { title: "Root an HTB machine requiring binary analysis" },
+          { title: "Solve 3 HackTheBox Reversing challenges", description: "https://app.hackthebox.com/challenges?category=reversing" },
+          { title: "Root an HTB machine requiring binary analysis", description: "https://app.hackthebox.com/machines" },
         ],
       },
     ],
@@ -345,7 +346,7 @@ const TEMPLATES: Record<string, Template> = {
             title: "Complete NetPractice (subnetting, routing)",
             ftSlug: "netpractice",
           },
-          { title: "Solve 3 Root-me 'Réseau' challenges" },
+          { title: "Solve 3 Root-me 'Réseau' challenges", description: "https://www.root-me.org/en/Challenges/Network/" },
         ],
       },
       {
@@ -446,8 +447,8 @@ const TEMPLATES: Record<string, Template> = {
         title: "Root-me web exploitation",
         monthOffset: 2,
         tasks: [
-          { title: "Solve 5 Root-me 'Web - Serveur' challenges" },
-          { title: "Solve 3 Root-me 'Web - Client' challenges" },
+          { title: "Solve 5 Root-me 'Web - Serveur' challenges", description: "https://www.root-me.org/en/Challenges/Web-Server/" },
+          { title: "Solve 3 Root-me 'Web - Client' challenges", description: "https://www.root-me.org/en/Challenges/Web-Client/" },
         ],
       },
       {
@@ -547,10 +548,12 @@ const TEMPLATES: Record<string, Template> = {
           {
             title:
               "Solve 5 Root-me 'Cryptanalyse' challenges (classical ciphers)",
+            description: "https://www.root-me.org/en/Challenges/Cryptanalysis/",
           },
           {
             title:
               "Solve 3 Root-me 'Cryptanalyse' challenges (modern crypto)",
+            description: "https://www.root-me.org/en/Challenges/Cryptanalysis/",
           },
         ],
       },
@@ -582,14 +585,14 @@ const TEMPLATES: Record<string, Template> = {
         tasks: [
           { title: "Analyze 3 memory dumps with Volatility3" },
           { title: "Solve 3 HackTheBox forensics challenges" },
-          { title: "Solve 3 Root-me 'Forensique' challenges" },
+          { title: "Solve 3 Root-me 'Forensique' challenges", description: "https://www.root-me.org/en/Challenges/Forensic/" },
         ],
       },
       {
         title: "Steganography and data recovery",
         monthOffset: 3,
         tasks: [
-          { title: "Solve 3 Root-me 'Stéganographie' challenges" },
+          { title: "Solve 3 Root-me 'Stéganographie' challenges", description: "https://www.root-me.org/en/Challenges/Steganography/" },
           { title: "Practice file carving and metadata analysis" },
         ],
       },
@@ -618,7 +621,7 @@ const TEMPLATES: Record<string, Template> = {
         title: "Bash and automation",
         monthOffset: 2,
         tasks: [
-          { title: "Solve 3 Root-me 'App - Script' challenges" },
+          { title: "Solve 3 Root-me 'App - Script' challenges", description: "https://www.root-me.org/en/Challenges/App-Script/" },
           { title: "Automate Nmap → Gobuster → Nuclei workflow" },
         ],
       },

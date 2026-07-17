@@ -19,9 +19,14 @@ function initDb(): DB {
   sqlite.pragma("foreign_keys = ON");
 
   const database = drizzle(sqlite, { schema });
-  migrate(database, {
-    migrationsFolder: path.join(process.cwd(), "src/lib/db/migrations"),
-  });
+  try {
+    migrate(database, {
+      migrationsFolder: path.join(process.cwd(), "src/lib/db/migrations"),
+    });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (!msg.includes("duplicate column name") && !msg.includes("ADD COLUMN")) throw e;
+  }
   return database;
 }
 

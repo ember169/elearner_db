@@ -2,10 +2,11 @@ import { db } from "@/lib/db";
 import { goals } from "@/lib/db/schema";
 import { NextRequest, NextResponse } from "next/server";
 
-type BatchTask = { title: string; ftSlug?: string | null; estimatedHours?: number | null; sortOrder?: number };
+type BatchTask = { title: string; ftSlug?: string | null; estimatedHours?: number | null; sortOrder?: number; description?: string | null };
 type BatchIssue = {
   title: string;
   deadline?: string | null;
+  description?: string | null;
   tasks: BatchTask[];
   sortOrder?: number;
 };
@@ -48,6 +49,7 @@ export async function POST(req: NextRequest) {
         .insert(goals)
         .values({
           title: issue.title,
+          description: issue.description ?? null,
           category: body.epic.platform || "general",
           goalType: "cumulative",
           deadline: issue.deadline ?? null,
@@ -63,6 +65,7 @@ export async function POST(req: NextRequest) {
         db.insert(goals)
           .values({
             title: task.title,
+            description: task.description ?? null,
             category: body.epic.platform || "general",
             goalType: "cumulative",
             ftSlug: task.ftSlug ?? null,

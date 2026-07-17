@@ -142,7 +142,11 @@ export function populateBacklog(): BoardItem[] {
     .from(planItems)
     .where(eq(planItems.weeklyPlanId, sentinelId))
     .all();
-  const existingKeys = new Set(existing.map((i) => `${i.title}::${i.type}`));
+  const normalizeTitle = (t: string) =>
+    t.replace(/^(Start|Finish|Continue)\s+/i, "");
+  const existingKeys = new Set(
+    existing.map((i) => `${normalizeTitle(i.title)}::${i.type}`)
+  );
 
   const maxSort = existing.reduce(
     (max, i) => Math.max(max, i.sortOrder ?? 0),
@@ -150,10 +154,20 @@ export function populateBacklog(): BoardItem[] {
   );
   let nextSort = maxSort + 1;
 
+  const priorityRank: Record<string, number> = { high: 3, medium: 2, low: 1 };
+  const bestByBase = new Map<string, (typeof allRecs)[number]>();
+  for (const rec of allRecs) {
+    const base = `${normalizeTitle(rec.title)}::${rec.platform}`;
+    const prev = bestByBase.get(base);
+    if (!prev || (priorityRank[rec.priority] ?? 0) > (priorityRank[prev.priority] ?? 0)) {
+      bestByBase.set(base, rec);
+    }
+  }
+
   const newItems: BoardItem[] = [];
 
-  for (const rec of allRecs) {
-    const key = `${rec.title}::${rec.platform}`;
+  for (const rec of bestByBase.values()) {
+    const key = `${normalizeTitle(rec.title)}::${rec.platform}`;
     if (existingKeys.has(key)) continue;
 
     const category = categoryFromType(rec.platform);

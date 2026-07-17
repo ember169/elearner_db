@@ -48,7 +48,7 @@ function TreeItem({
     <>
       <button
         className={cn(
-          "w-full text-left flex items-center gap-1.5 py-1.5 pr-2 text-[12px] transition-colors relative",
+          "w-full text-left flex items-center gap-1.5 py-1.5 pr-2 text-[14px] transition-colors relative",
           isSelected && "bg-[oklch(0.82_0.055_80/0.08)] border-l-2 border-l-[oklch(0.82_0.055_80)]",
           !isSelected && "border-l-2 border-l-transparent hover:bg-accent/50",
           isCompleted && "opacity-40"
@@ -110,7 +110,7 @@ function TreeItem({
             ).length;
             if (behindCount > 0) {
               return (
-                <span className="flex-shrink-0 min-w-[16px] h-[16px] rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
+                <span className="flex-shrink-0 min-w-[16px] h-[16px] rounded-full bg-red-500 text-white text-[15px] font-bold flex items-center justify-center">
                   {behindCount}
                 </span>
               );
@@ -120,13 +120,13 @@ function TreeItem({
         })()}
 
         {progress !== null && depth === 0 && !hasChildren && (
-          <span className="text-[10px] text-muted-foreground flex-shrink-0">
+          <span className="text-[14px] text-muted-foreground flex-shrink-0">
             {progress}%
           </span>
         )}
 
         {goal.pacing && depth === 0 && hasChildren && (
-          <span className="text-[10px] text-muted-foreground flex-shrink-0">
+          <span className="text-[14px] text-muted-foreground flex-shrink-0">
             {Math.round(goal.pacing.percentComplete)}%
           </span>
         )}
@@ -136,7 +136,7 @@ function TreeItem({
         )}
 
         {hasChildren && depth > 0 && (
-          <span className="text-[10px] text-muted-foreground flex-shrink-0">
+          <span className="text-[14px] text-muted-foreground flex-shrink-0">
             {goal.currentValue ?? 0}/{goal.targetValue ?? goal.children.length}
           </span>
         )}
@@ -236,7 +236,7 @@ export function GoalsTree({
     <div className="flex flex-col h-full w-[200px] border-r border-border">
       <div className="px-3 pt-4 pb-2">
         <h3 className="text-[18px] font-bold leading-tight">Goals</h3>
-        <p className="text-[11px] text-muted-foreground mt-0.5">
+        <p className="text-[15px] text-muted-foreground mt-0.5">
           {active} active
           {behind > 0 && (
             <span className="text-red-400"> &middot; {behind} behind</span>
@@ -249,7 +249,7 @@ export function GoalsTree({
           {behindGoals.map((g) => (
             <button
               key={g.id}
-              className="flex items-center gap-1 text-[11px] text-red-400 w-full hover:text-red-300 py-0.5"
+              className="flex items-center gap-1 text-[15px] text-red-400 w-full hover:text-red-300 py-0.5"
               onClick={() => onSelect(g.id)}
             >
               <AlertTriangle className="h-3 w-3 flex-shrink-0" />
@@ -291,21 +291,21 @@ export function GoalsTree({
 
       <div className="border-t border-border flex">
         <button
-          className="flex-1 flex items-center justify-center gap-1 py-2 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+          className="flex-1 flex items-center justify-center gap-1 py-2 text-[15px] text-muted-foreground hover:text-foreground transition-colors"
           onClick={onSuggest}
         >
           <Zap className="h-3 w-3" />
           Suggest
         </button>
         <button
-          className="flex-1 flex items-center justify-center gap-1 py-2 text-[11px] text-muted-foreground hover:text-foreground transition-colors border-l border-border"
+          className="flex-1 flex items-center justify-center gap-1 py-2 text-[15px] text-muted-foreground hover:text-foreground transition-colors border-l border-border"
           onClick={on42Plan}
         >
           42 plan
         </button>
         <Button
           size="sm"
-          className="flex-1 rounded-none text-[11px] h-auto py-2"
+          className="flex-1 rounded-none text-[15px] h-auto py-2"
           onClick={onNewGoal}
         >
           <Plus className="h-3 w-3 mr-0.5" />

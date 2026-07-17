@@ -76,6 +76,7 @@ export type GoalWithPacing = {
   estimatedHours: number | null;
   originalTarget: number | null;
   status: string | null;
+  customFields: string | null;
   createdAt: string;
   milestones: (typeof goalMilestones.$inferSelect)[];
   children: GoalWithPacing[];
@@ -254,6 +255,7 @@ export function analyzeGoals(): GoalWithPacing[] {
       estimatedHours: g.estimatedHours,
       originalTarget: g.originalTarget,
       status: g.status,
+      customFields: g.customFields ?? null,
       createdAt: g.createdAt,
       milestones: ms,
       children: [] as GoalWithPacing[],
