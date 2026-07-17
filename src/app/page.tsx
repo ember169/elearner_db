@@ -12,7 +12,7 @@ import {
 } from "@/lib/db/schema";
 import { desc, eq, and, lte } from "drizzle-orm";
 import { loadCurrentPlan } from "@/lib/mentor/store";
-import { runGuidanceEngine } from "@/lib/guidance/engine";
+import { runGuidanceEngine, flattenGoals } from "@/lib/guidance/engine";
 import { computeCompetencySignals } from "@/lib/mentor/competency-signals";
 import { COMPETENCIES } from "@/lib/mentor/competency-map";
 import { getWeekStart, getOrCreateWeekPlan } from "@/lib/week/store";
@@ -58,8 +58,8 @@ export default function HomePage() {
     evidence: signals[c.id]?.evidence ?? "",
   }));
 
-  const activeGoals = guidance.goals
-    .filter((g) => g.status === "active")
+  const activeGoals = flattenGoals(guidance.goals)
+    .filter((g) => g.status === "active" && g.children.length === 0)
     .map((g) => ({
       id: g.id,
       title: g.title,
@@ -70,6 +70,7 @@ export default function HomePage() {
       cadenceValue: g.cadenceValue,
       cadenceUnit: g.cadenceUnit,
       groupId: g.groupId,
+      parentGoalId: g.parentGoalId,
       pacing: g.pacing,
     }));
 

@@ -38,6 +38,7 @@ export type GoalSlim = {
   cadenceValue: number | null;
   cadenceUnit: string | null;
   groupId: number | null;
+  parentGoalId: number | null;
   pacing: {
     onTrack: boolean;
     percentComplete: number;

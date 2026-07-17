@@ -265,6 +265,7 @@ export const goals = sqliteTable("goals", {
   metricSource: text("metric_source"),
   deadline: text("deadline"),
   groupId: integer("group_id"),
+  parentGoalId: integer("parent_goal_id"),
   status: text("status").default("active"),
   createdAt: text("created_at")
     .notNull()

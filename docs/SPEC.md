@@ -131,7 +131,7 @@ Platform APIs          Sync Engine            SQLite DB
 
 | Table | Purpose |
 |-------|---------|
-| `goals` | Trackable goals with two types. **Cumulative**: reach targetValue by deadline. **Cadence**: maintain cadenceValue per cadenceUnit (per_week/per_month) over a rolling window. Fields: title, description, category, goalType, targetValue, currentValue, cadenceValue, cadenceUnit, metricSource, deadline, groupId (FK to goalGroups), status. |
+| `goals` | Trackable goals with two types. **Cumulative**: reach targetValue by deadline. **Cadence**: maintain cadenceValue per cadenceUnit (per_week/per_month) over a rolling window. Supports a 3-level Jira-like hierarchy via self-referential `parentGoalId`: **Epic** (depth 0) → **Issue** (depth 1) → **Task** (depth 2). Parent goals track child completion: targetValue = child count, currentValue = completed child count. Auto-completion cascades up (all children complete → parent completes) and down (complete parent → all children complete). Cadence goals only at leaf level. Fields: title, description, category, goalType, targetValue, currentValue, cadenceValue, cadenceUnit, metricSource, deadline, groupId (FK to goalGroups), parentGoalId (self-referential FK), status. |
 | `goalGroups` | Compound logic groups. Operator is AND (all children must be on track) or OR (any child). One nesting level: a group can contain goals or sub-groups, but sub-groups can only contain goals (max depth 2). Fields: title, operator, parentGroupId. |
 | `goalMilestones` | Milestones (FK to goals, cascade delete): title, target value threshold, reached-at timestamp. |
 
@@ -188,19 +188,21 @@ Multi-view progress dashboard.
 
 ### Goals (`/goals`)
 
-Goal management with two goal types, compound logic groups, and auto-tracking.
+Goal management with two goal types, compound logic groups, hierarchical goals, and auto-tracking.
 
 **Server component** (`src/app/goals/page.tsx`): runs guidance engine, computes competency signals, loads mentor plan focus items, loads goal groups.
 
 **Client features** (`src/components/goals/goals-client.tsx`):
 
 - **Two goal types**: **Cumulative** (reach X by deadline) and **Cadence** (maintain >= X per week/month over a rolling window).
+- **Goal hierarchy**: 3-level Jira-like structure: **Epic** → **Issue** → **Task**. Epics and issues display as expandable `HierarchyCard` components with EPIC/ISSUE badges, progress bars (completedChildren/totalChildren), pacing status, and tree connectors (border-l-2). Tasks display as compact `GoalCard` rows. Completed children show with strikethrough + muted opacity + checkmark icon. Each hierarchy level has "Add issue" or "Add task" buttons. Child creation dialog is simplified: only title and deadline (inherits category from parent, no metric/cadence/group fields).
+- **Progress rollup**: parent goals' targetValue/currentValue are maintained by the API (child count / completed child count). Auto-completion cascades up when all siblings complete, and down when a parent is marked complete. Reopening a child cascades up to reopen completed parents.
 - **Goal cards**: progress bar with milestone markers, pacing badge (on track / behind / overdue), days remaining, required/current pace, competency area tags, "this week" connection showing which focus items feed into the goal. Cadence cards show rolling-window progress ("0 this week — target: 2/wk").
-- **Goal groups**: collapsible container cards with AND/OR operator toggle and combined status badge ("0/1 met"). Groups can nest one level deep. Goals are assigned to groups via the edit dialog.
-- **Behind-pace alert**: banner listing all goals that are behind schedule, with cadence-aware phrasing.
+- **Goal groups**: collapsible container cards with AND/OR operator toggle and combined status badge ("0/1 met"). Groups can nest one level deep. Goals are assigned to groups via the edit dialog. Groups are orthogonal to the hierarchy.
+- **Behind-pace alert**: banner listing all leaf goals that are behind schedule, with cadence-aware phrasing.
 - **Create/edit dialog**: goal type toggle (Cumulative/Cadence), title, platform category, auto-track metric, target value + deadline (cumulative) or rate + period (cadence), group assignment. Quick presets: 6 cumulative + 4 cadence.
 - **Suggested goals**: competencies with level < 2 that don't have a corresponding goal. One-click creation with auto 3-month deadline.
-- **Completed goals section**: archived goals.
+- **Completed goals section**: archived standalone goals (completed children are shown inline in their parent's hierarchy card).
 
 **Auto-sync** (`src/lib/goals/metrics.ts`): on each guidance engine run, active goals with a `metricSource` have their `currentValue` updated from live platform data. 8 supported metrics: ft:projects_validated, ft:level, rootme:challenges_solved, rootme:score, maldev:progress, thm:rooms_completed, htb:owns, htb:points.
 
@@ -256,11 +258,11 @@ Returns all goals and goal groups.
 
 ### `POST /api/goals`
 
-Creates a goal or group. For goals: `{ title, category?, goalType?, targetValue?, cadenceValue?, cadenceUnit?, deadline?, metricSource?, groupId? }`. For groups: `{ _type: "group", title, operator?, parentGroupId? }`. Enforces max nesting depth of 2.
+Creates a goal or group. For goals: `{ title, category?, goalType?, targetValue?, cadenceValue?, cadenceUnit?, deadline?, metricSource?, groupId?, parentGoalId? }`. For groups: `{ _type: "group", title, operator?, parentGroupId? }`. Enforces max nesting depth: 2 for groups, 3 levels for goal hierarchy (epic/issue/task). When `parentGoalId` is set, recomputes parent's targetValue/currentValue from child counts.
 
 ### `PATCH /api/goals`
 
-Updates a goal or group. Body: `{ id, ...fields }`. Goals: status, currentValue, title, description, category, goalType, targetValue, cadenceValue, cadenceUnit, deadline, metricSource, groupId. Groups: `{ _type: "group", id, title?, operator?, parentGroupId? }`.
+Updates a goal or group. Body: `{ id, ...fields }`. Goals: status, currentValue, title, description, category, goalType, targetValue, cadenceValue, cadenceUnit, deadline, metricSource, groupId, parentGoalId. Groups: `{ _type: "group", id, title?, operator?, parentGroupId? }`. Setting `status: "completed"` cascades completion to all descendants and recomputes parent chain. Setting `status: "active"` (reopening) cascades reopen to parent chain.
 
 ### `DELETE /api/goals`
 

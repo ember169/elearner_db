@@ -57,6 +57,16 @@ type CompetencySlim = {
 
 type FocusSlim = { type: string; title: string };
 
+function flattenGoalTree(tree: GoalWithPacing[]): GoalWithPacing[] {
+  const result: GoalWithPacing[] = [];
+  function walk(g: GoalWithPacing) {
+    result.push(g);
+    for (const child of g.children) walk(child);
+  }
+  tree.forEach(walk);
+  return result;
+}
+
 function matchFocusToGoal(goal: GoalWithPacing, focusItems: FocusSlim[]): FocusSlim[] {
   return focusItems.filter((f) => {
     if (goal.category && goal.category !== "general" && f.type === goal.category) return true;
@@ -132,23 +142,29 @@ export function GoalsClient({
   const [metricSource, setMetricSource] = useState("");
   const [groupId, setGroupId] = useState<string>("");
 
+  const [parentGoalId, setParentGoalId] = useState<number | null>(null);
+  const [parentGoalTitle, setParentGoalTitle] = useState("");
+
   const [groupTitle, setGroupTitle] = useState("");
   const [groupOperator, setGroupOperator] = useState<"and" | "or">("and");
   const [groupParentId, setGroupParentId] = useState<string>("");
 
-  const activeGoals = goals.filter((g) => g.status === "active");
-  const completedGoals = goals.filter((g) => g.status === "completed");
+  const allGoalsFlat = flattenGoalTree(goals);
+  const activeGoals = allGoalsFlat.filter((g) => g.status === "active");
+  const completedGoals = allGoalsFlat.filter((g) => g.status === "completed" && !g.parentGoalId);
   const behindGoals = activeGoals.filter(
-    (g) => g.pacing && !g.pacing.onTrack && g.pacing.percentComplete < 100
+    (g) => g.pacing && !g.pacing.onTrack && g.pacing.percentComplete < 100 && g.children.length === 0
   );
   const [adding, setAdding] = useState<string | null>(null);
-  const goalTitles = new Set(goals.map((g) => g.title.toLowerCase()));
+  const goalTitles = new Set(allGoalsFlat.map((g) => g.title.toLowerCase()));
   const suggestedGoals = competencies
     .filter((c) => c.level < 2 && !goalTitles.has(`improve ${c.label}`.toLowerCase()))
     .slice(0, 3);
 
   const topLevelGroups = groups.filter((g) => g.parentGroupId === null);
-  const ungroupedGoals = activeGoals.filter((g) => !g.groupId);
+  const ungroupedRoots = goals.filter((g) => !g.groupId);
+  const epicGoals = ungroupedRoots.filter((g) => g.children.length > 0);
+  const standaloneGoals = ungroupedRoots.filter((g) => g.children.length === 0);
 
   function applyPreset(preset: (typeof GOAL_PRESETS)[number]) {
     setTitle(preset.title);
@@ -177,6 +193,8 @@ export function GoalsClient({
     setDeadline("");
     setMetricSource("");
     setGroupId("");
+    setParentGoalId(null);
+    setParentGoalTitle("");
   }
 
   function openEdit(goal: GoalWithPacing) {
@@ -190,28 +208,51 @@ export function GoalsClient({
     setDeadline(goal.deadline ?? "");
     setMetricSource(goal.metricSource ?? "");
     setGroupId(goal.groupId != null ? String(goal.groupId) : "");
+    setParentGoalId(null);
+    setParentGoalTitle("");
     setDialogOpen(true);
   }
+
+  function openAddChild(parent: GoalWithPacing) {
+    resetForm();
+    setParentGoalId(parent.id);
+    setParentGoalTitle(parent.title);
+    setCategory(parent.category ?? "general");
+    setDialogOpen(true);
+  }
+
+  const isChildForm = parentGoalId !== null && !editingId;
 
   async function submitGoal() {
     if (!title.trim()) return;
     const payload: Record<string, unknown> = {
       title,
       category,
-      goalType,
-      metricSource: metricSource && metricSource !== "manual" ? metricSource : null,
-      groupId: groupId ? parseInt(groupId) : null,
     };
-    if (goalType === "cadence") {
-      payload.cadenceValue = cadenceValue ? parseFloat(cadenceValue) : null;
-      payload.cadenceUnit = cadenceUnit;
-      payload.targetValue = null;
-      payload.deadline = null;
-    } else {
-      payload.targetValue = targetValue ? parseFloat(targetValue) : null;
+    if (isChildForm) {
+      payload.goalType = "cumulative";
+      payload.parentGoalId = parentGoalId;
       payload.deadline = deadline || null;
+      payload.metricSource = null;
+      payload.targetValue = null;
       payload.cadenceValue = null;
       payload.cadenceUnit = null;
+      payload.groupId = null;
+    } else {
+      payload.goalType = goalType;
+      payload.metricSource = metricSource && metricSource !== "manual" ? metricSource : null;
+      payload.groupId = groupId ? parseInt(groupId) : null;
+      if (goalType === "cadence") {
+        payload.cadenceValue = cadenceValue ? parseFloat(cadenceValue) : null;
+        payload.cadenceUnit = cadenceUnit;
+        payload.targetValue = null;
+        payload.deadline = null;
+      } else {
+        payload.targetValue = targetValue ? parseFloat(targetValue) : null;
+        payload.deadline = deadline || null;
+        payload.cadenceValue = null;
+        payload.cadenceUnit = null;
+      }
     }
     try {
       const res = await fetch("/api/goals", {
@@ -319,6 +360,12 @@ export function GoalsClient({
   const cumulativePresets = GOAL_PRESETS.filter((p) => p.goalType === "cumulative");
   const cadencePresets = GOAL_PRESETS.filter((p) => p.goalType === "cadence");
 
+  const childDepthLabel = parentGoalId
+    ? allGoalsFlat.find((g) => g.id === parentGoalId)?.parentGoalId
+      ? "task"
+      : "issue"
+    : null;
+
   return (
     <div className="space-y-5 max-w-[896px]">
       {/* Header */}
@@ -331,7 +378,7 @@ export function GoalsClient({
                 {activeGoals.length} active
                 {behindGoals.length > 0 && (
                   <span style={{ color: "var(--status-danger)" }}>
-                    {" "}· {behindGoals.length} behind pace
+                    {" "}&middot; {behindGoals.length} behind pace
                   </span>
                 )}
               </>
@@ -427,10 +474,16 @@ export function GoalsClient({
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>{editingId ? "Edit goal" : "New goal"}</DialogTitle>
+                <DialogTitle>
+                  {editingId
+                    ? "Edit goal"
+                    : isChildForm
+                      ? `New ${childDepthLabel} in "${parentGoalTitle}"`
+                      : "New goal"}
+                </DialogTitle>
               </DialogHeader>
               <div className="space-y-4 pt-1">
-                {!editingId && (
+                {!editingId && !isChildForm && (
                   <>
                     <div>
                       <p className="section-label mb-2">Quick presets</p>
@@ -469,37 +522,38 @@ export function GoalsClient({
                   </>
                 )}
 
-                {/* Goal type toggle */}
-                <div className="space-y-1.5">
-                  <Label className="text-[13px]">Goal type</Label>
-                  <div className="flex rounded-sm border border-border overflow-hidden">
-                    <button
-                      className="flex-1 text-[13px] py-2 transition-colors"
-                      style={{
-                        background: goalType === "cumulative" ? "var(--accent)" : "transparent",
-                        fontWeight: goalType === "cumulative" ? 600 : 400,
-                      }}
-                      onClick={() => setGoalType("cumulative")}
-                    >
-                      Cumulative
-                    </button>
-                    <button
-                      className="flex-1 text-[13px] py-2 transition-colors border-l border-border"
-                      style={{
-                        background: goalType === "cadence" ? "var(--accent)" : "transparent",
-                        fontWeight: goalType === "cadence" ? 600 : 400,
-                      }}
-                      onClick={() => setGoalType("cadence")}
-                    >
-                      Cadence
-                    </button>
+                {!isChildForm && (
+                  <div className="space-y-1.5">
+                    <Label className="text-[13px]">Goal type</Label>
+                    <div className="flex rounded-sm border border-border overflow-hidden">
+                      <button
+                        className="flex-1 text-[13px] py-2 transition-colors"
+                        style={{
+                          background: goalType === "cumulative" ? "var(--accent)" : "transparent",
+                          fontWeight: goalType === "cumulative" ? 600 : 400,
+                        }}
+                        onClick={() => setGoalType("cumulative")}
+                      >
+                        Cumulative
+                      </button>
+                      <button
+                        className="flex-1 text-[13px] py-2 transition-colors border-l border-border"
+                        style={{
+                          background: goalType === "cadence" ? "var(--accent)" : "transparent",
+                          fontWeight: goalType === "cadence" ? 600 : 400,
+                        }}
+                        onClick={() => setGoalType("cadence")}
+                      >
+                        Cadence
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      {goalType === "cumulative"
+                        ? "Reach a total target by a deadline"
+                        : "Maintain a rate over a rolling window"}
+                    </p>
                   </div>
-                  <p className="text-[11px] text-muted-foreground">
-                    {goalType === "cumulative"
-                      ? "Reach a total target by a deadline"
-                      : "Maintain a rate over a rolling window"}
-                  </p>
-                </div>
+                )}
 
                 <div className="space-y-1.5">
                   <Label className="text-[13px]">Title</Label>
@@ -507,69 +561,76 @@ export function GoalsClient({
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder={
-                      goalType === "cadence"
-                        ? "e.g., >= 2 THM rooms per week"
-                        : "e.g., 50 Root-me challenges by Dec"
+                      isChildForm
+                        ? childDepthLabel === "task"
+                          ? "e.g., Complete ft_printf"
+                          : "e.g., Complete Circle 1"
+                        : goalType === "cadence"
+                          ? "e.g., >= 2 THM rooms per week"
+                          : "e.g., 50 Root-me challenges by Dec"
                     }
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label className="text-[13px]">Platform</Label>
-                    <Select
-                      value={category}
-                      onValueChange={(v) => {
-                        if (!v) return;
-                        setCategory(v);
-                        setMetricSource("");
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {["42", "thm", "htb", "rootme", "maldev", "general"].map(
-                          (c) => (
-                            <SelectItem key={c} value={c}>
-                              {c === "42"
-                                ? "42 Paris"
-                                : c === "thm"
-                                  ? "TryHackMe"
-                                  : c === "htb"
-                                    ? "HackTheBox"
-                                    : c === "rootme"
-                                      ? "Root-me"
-                                      : c === "maldev"
-                                        ? "Maldev"
-                                        : "General"}
-                            </SelectItem>
-                          )
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-[13px]">Auto-track metric</Label>
-                    <Select
-                      value={metricSource}
-                      onValueChange={(v) => v && setMetricSource(v)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Manual tracking" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="manual">Manual tracking</SelectItem>
-                        {metricSourcesForCategory.map(([key, meta]) => (
-                          <SelectItem key={key} value={key}>
-                            {meta.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
 
-                {goalType === "cadence" ? (
+                {!isChildForm && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-[13px]">Platform</Label>
+                      <Select
+                        value={category}
+                        onValueChange={(v) => {
+                          if (!v) return;
+                          setCategory(v);
+                          setMetricSource("");
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {["42", "thm", "htb", "rootme", "maldev", "general"].map(
+                            (c) => (
+                              <SelectItem key={c} value={c}>
+                                {c === "42"
+                                  ? "42 Paris"
+                                  : c === "thm"
+                                    ? "TryHackMe"
+                                    : c === "htb"
+                                      ? "HackTheBox"
+                                      : c === "rootme"
+                                        ? "Root-me"
+                                        : c === "maldev"
+                                          ? "Maldev"
+                                          : "General"}
+                              </SelectItem>
+                            )
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[13px]">Auto-track metric</Label>
+                      <Select
+                        value={metricSource}
+                        onValueChange={(v) => v && setMetricSource(v)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Manual tracking" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="manual">Manual tracking</SelectItem>
+                          {metricSourcesForCategory.map(([key, meta]) => (
+                            <SelectItem key={key} value={key}>
+                              {meta.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
+
+                {!isChildForm && goalType === "cadence" ? (
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
                       <Label className="text-[13px]">{"Rate (>=)"}</Label>
@@ -596,29 +657,33 @@ export function GoalsClient({
                     </div>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <Label className="text-[13px]">Target value</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={targetValue}
-                        onChange={(e) => setTargetValue(e.target.value)}
-                        placeholder="e.g., 50"
-                      />
+                  (!isChildForm || true) && goalType !== "cadence" && (
+                    <div className={isChildForm ? "space-y-1.5" : "grid grid-cols-2 gap-3"}>
+                      {!isChildForm && (
+                        <div className="space-y-1.5">
+                          <Label className="text-[13px]">Target value</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={targetValue}
+                            onChange={(e) => setTargetValue(e.target.value)}
+                            placeholder="e.g., 50"
+                          />
+                        </div>
+                      )}
+                      <div className="space-y-1.5">
+                        <Label className="text-[13px]">Deadline</Label>
+                        <Input
+                          type="date"
+                          value={deadline}
+                          onChange={(e) => setDeadline(e.target.value)}
+                        />
+                      </div>
                     </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-[13px]">Deadline</Label>
-                      <Input
-                        type="date"
-                        value={deadline}
-                        onChange={(e) => setDeadline(e.target.value)}
-                      />
-                    </div>
-                  </div>
+                  )
                 )}
 
-                {groups.length > 0 && (
+                {!isChildForm && groups.length > 0 && (
                   <div className="space-y-1.5">
                     <Label className="text-[13px]">Group</Label>
                     <Select value={groupId} onValueChange={(v) => setGroupId(v ?? "")}>
@@ -638,7 +703,11 @@ export function GoalsClient({
                 )}
 
                 <Button onClick={submitGoal} className="w-full">
-                  {editingId ? "Save changes" : "Create goal"}
+                  {editingId
+                    ? "Save changes"
+                    : isChildForm
+                      ? `Create ${childDepthLabel}`
+                      : "Create goal"}
                   <ArrowRight className="h-3 w-3 ml-1.5" />
                 </Button>
               </div>
@@ -678,19 +747,39 @@ export function GoalsClient({
         <GroupCard
           key={group.id}
           group={group}
-          goals={activeGoals}
+          goals={allGoalsFlat}
           groups={groups}
           onComplete={completeGoal}
           onDelete={deleteGoal}
           onDeleteGroup={deleteGroup}
           onEdit={openEdit}
+          onAddChild={openAddChild}
           onToggleOperator={toggleGroupOperator}
           focusItems={focusItems}
           competencies={competencies}
         />
       ))}
 
-      {/* Ungrouped active goals */}
+      {/* Epics (goals with children) */}
+      {epicGoals.length > 0 && (
+        <div className="space-y-3">
+          {epicGoals.map((goal) => (
+            <HierarchyCard
+              key={goal.id}
+              goal={goal}
+              depth={0}
+              onComplete={completeGoal}
+              onDelete={deleteGoal}
+              onEdit={openEdit}
+              onAddChild={openAddChild}
+              focusItems={focusItems}
+              competencies={competencies}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Standalone active goals (no children, no group) */}
       {activeGoals.length === 0 && completedGoals.length === 0 && groups.length === 0 ? (
         <Card>
           <CardContent className="py-16 text-center">
@@ -702,9 +791,9 @@ export function GoalsClient({
             </p>
           </CardContent>
         </Card>
-      ) : (
+      ) : standaloneGoals.length > 0 ? (
         <div className="space-y-3">
-          {ungroupedGoals.map((goal) => (
+          {standaloneGoals.map((goal) => (
             <GoalCard
               key={goal.id}
               goal={goal}
@@ -716,7 +805,7 @@ export function GoalsClient({
             />
           ))}
         </div>
-      )}
+      ) : null}
 
       {/* Suggested goals from competency gaps */}
       {suggestedGoals.length > 0 && (
@@ -782,7 +871,7 @@ export function GoalsClient({
       {/* Completed */}
       {completedGoals.length > 0 && (
         <div className="space-y-2 pt-2">
-          <p className="section-label">Completed · {completedGoals.length}</p>
+          <p className="section-label">Completed &middot; {completedGoals.length}</p>
           {completedGoals.map((goal) => (
             <Card key={goal.id} className="opacity-50">
               <CardContent className="py-2.5 px-4">
@@ -813,6 +902,167 @@ export function GoalsClient({
   );
 }
 
+function HierarchyCard({
+  goal,
+  depth,
+  onComplete,
+  onDelete,
+  onEdit,
+  onAddChild,
+  focusItems,
+  competencies,
+}: {
+  goal: GoalWithPacing;
+  depth: number;
+  onComplete: (id: number) => void;
+  onDelete: (id: number) => void;
+  onEdit: (goal: GoalWithPacing) => void;
+  onAddChild: (parent: GoalWithPacing) => void;
+  focusItems: FocusSlim[];
+  competencies: CompetencySlim[];
+}) {
+  const [expanded, setExpanded] = useState(true);
+  const hasChildren = goal.children.length > 0;
+  const isLeaf = !hasChildren;
+  const childLabel = depth === 0 ? "issue" : "task";
+  const canAddChildren = depth < 2;
+
+  if (isLeaf) {
+    return (
+      <GoalCard
+        goal={goal}
+        compact={depth > 0}
+        onComplete={onComplete}
+        onDelete={onDelete}
+        onEdit={onEdit}
+        weekItems={matchFocusToGoal(goal, focusItems)}
+        competencyTags={depth === 0 ? getCompetencyTags(goal, competencies) : []}
+      />
+    );
+  }
+
+  const completedChildren = goal.currentValue ?? 0;
+  const totalChildren = goal.targetValue ?? goal.children.length;
+  const color = PLATFORM_COLORS[goal.category ?? "general"] ?? "var(--muted-foreground)";
+  const progress = totalChildren > 0 ? (completedChildren / totalChildren) * 100 : 0;
+  const levelLabel = depth === 0 ? "EPIC" : "ISSUE";
+
+  return (
+    <Card className="overflow-hidden gap-0 py-0">
+      <div className="h-[3px]" style={{ backgroundColor: color }} />
+      <CardContent className={depth > 0 ? "pt-3 pb-3 px-4 space-y-2" : "pt-4 pb-4 px-5 space-y-3"}>
+        {/* Header */}
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
+            >
+              {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            </button>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span
+                  className="text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-sm"
+                  style={{ background: `${color}20`, color }}
+                >
+                  {levelLabel}
+                </span>
+                <h3 className={depth === 0 ? "text-[15px] font-semibold tracking-tight" : "text-[14px] font-semibold"}>
+                  {goal.title}
+                </h3>
+                {goal.pacing && <PaceStatus pacing={goal.pacing} />}
+              </div>
+              {goal.deadline && (
+                <p className="text-[12px] text-muted-foreground mt-0.5 ml-0">
+                  by {goal.deadline}
+                </p>
+              )}
+            </div>
+          </div>
+          <span className="text-[13px] font-medium tabular-nums text-muted-foreground shrink-0">
+            {completedChildren}/{totalChildren}
+          </span>
+        </div>
+
+        {/* Progress bar */}
+        <div className="progress-track" style={{ height: "4px" }}>
+          <div
+            className="progress-fill"
+            style={{
+              width: `${Math.min(progress, 100)}%`,
+              backgroundColor: color,
+              height: "4px",
+            }}
+          />
+        </div>
+
+        {/* Pacing stats */}
+        {goal.pacing && (
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              {goal.pacing.daysRemaining}d left
+            </span>
+            {goal.pacing.requiredPace !== "Complete!" && (
+              <span className="flex items-center gap-1">
+                <Zap className="h-3 w-3" />
+                {goal.pacing.requiredPace}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex gap-0.5">
+          <button onClick={() => onEdit(goal)} className="p-1 hover:text-primary text-muted-foreground transition-colors" title="Edit">
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
+          <button onClick={() => onComplete(goal.id)} className="p-1 hover:text-success text-muted-foreground transition-colors" title="Complete all">
+            <CheckCircle className="h-3.5 w-3.5" />
+          </button>
+          <button onClick={() => onDelete(goal.id)} className="p-1 hover:text-destructive text-muted-foreground transition-colors" title="Delete">
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </CardContent>
+
+      {/* Children */}
+      {expanded && (
+        <div
+          className="px-5 pb-4 space-y-2"
+          style={{ borderTop: "1px solid var(--border)" }}
+        >
+          <div className="ml-2 pl-3 border-l-2 border-border space-y-2 pt-2">
+            {goal.children.map((child) => (
+              <HierarchyCard
+                key={child.id}
+                goal={child}
+                depth={depth + 1}
+                onComplete={onComplete}
+                onDelete={onDelete}
+                onEdit={onEdit}
+                onAddChild={onAddChild}
+                focusItems={focusItems}
+                competencies={competencies}
+              />
+            ))}
+            {canAddChildren && (
+              <button
+                onClick={() => onAddChild(goal)}
+                className="flex items-center gap-1.5 text-[12px] text-muted-foreground hover:text-foreground transition-colors py-1.5"
+              >
+                <Plus className="h-3 w-3" />
+                Add {childLabel}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+}
+
 function GroupCard({
   group,
   goals,
@@ -821,6 +1071,7 @@ function GroupCard({
   onDelete,
   onDeleteGroup,
   onEdit,
+  onAddChild,
   onToggleOperator,
   focusItems,
   competencies,
@@ -832,6 +1083,7 @@ function GroupCard({
   onDelete: (id: number) => void;
   onDeleteGroup: (id: number) => void;
   onEdit: (goal: GoalWithPacing) => void;
+  onAddChild: (parent: GoalWithPacing) => void;
   onToggleOperator: (group: GoalGroup) => void;
   focusItems: FocusSlim[];
   competencies: CompetencySlim[];
@@ -882,22 +1134,37 @@ function GroupCard({
               onDelete={onDelete}
               onDeleteGroup={onDeleteGroup}
               onEdit={onEdit}
+              onAddChild={onAddChild}
               onToggleOperator={onToggleOperator}
               focusItems={focusItems}
               competencies={competencies}
             />
           ))}
-          {childGoals.map((goal) => (
-            <GoalCard
-              key={goal.id}
-              goal={goal}
-              onComplete={onComplete}
-              onDelete={onDelete}
-              onEdit={onEdit}
-              weekItems={matchFocusToGoal(goal, focusItems)}
-              competencyTags={getCompetencyTags(goal, competencies)}
-            />
-          ))}
+          {childGoals.map((goal) =>
+            goal.children.length > 0 ? (
+              <HierarchyCard
+                key={goal.id}
+                goal={goal}
+                depth={0}
+                onComplete={onComplete}
+                onDelete={onDelete}
+                onEdit={onEdit}
+                onAddChild={onAddChild}
+                focusItems={focusItems}
+                competencies={competencies}
+              />
+            ) : (
+              <GoalCard
+                key={goal.id}
+                goal={goal}
+                onComplete={onComplete}
+                onDelete={onDelete}
+                onEdit={onEdit}
+                weekItems={matchFocusToGoal(goal, focusItems)}
+                competencyTags={getCompetencyTags(goal, competencies)}
+              />
+            )
+          )}
         </div>
       )}
     </div>
@@ -906,6 +1173,7 @@ function GroupCard({
 
 function GoalCard({
   goal,
+  compact,
   onComplete,
   onDelete,
   onEdit,
@@ -913,6 +1181,7 @@ function GoalCard({
   competencyTags,
 }: {
   goal: GoalWithPacing;
+  compact?: boolean;
   onComplete: (id: number) => void;
   onDelete: (id: number) => void;
   onEdit: (goal: GoalWithPacing) => void;
@@ -923,6 +1192,58 @@ function GoalCard({
   const progress = goal.pacing?.percentComplete ?? 0;
   const color = PLATFORM_COLORS[goal.category ?? "general"] ?? "var(--muted-foreground)";
   const isBehind = goal.pacing && !goal.pacing.onTrack && goal.pacing.percentComplete < 100;
+
+  const isCompleted = goal.status === "completed";
+
+  if (compact) {
+    return (
+      <div
+        className={`flex items-center gap-3 py-2 px-3 rounded-sm border border-border group ${isCompleted ? "opacity-50" : ""}`}
+        style={isBehind && !isCompleted ? { borderColor: "oklch(0.70 0.18 25 / 0.3)" } : undefined}
+      >
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className={`text-[13px] font-medium truncate ${isCompleted ? "line-through" : ""}`}>{goal.title}</span>
+            {isCadence && (
+              <span className="text-[9px] font-mono px-1 py-0.5 rounded-sm border border-border text-muted-foreground">
+                {goal.cadenceUnit === "per_month" ? "/mo" : "/wk"}
+              </span>
+            )}
+            {goal.pacing && <PaceStatus pacing={goal.pacing} isCadence={isCadence} />}
+          </div>
+          {goal.deadline && (
+            <span className="text-[11px] text-muted-foreground">by {goal.deadline}</span>
+          )}
+        </div>
+        {goal.pacing && (
+          <span
+            className="text-[14px] font-bold tabular-nums shrink-0"
+            style={{ color: isBehind ? "var(--status-danger)" : "var(--foreground)" }}
+          >
+            {Math.round(progress)}%
+          </span>
+        )}
+        {!isCompleted && (
+          <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+            <button onClick={() => onEdit(goal)} className="p-1 hover:text-primary text-muted-foreground transition-colors">
+              <Pencil className="h-3 w-3" />
+            </button>
+            {!isCadence && (
+              <button onClick={() => onComplete(goal.id)} className="p-1 hover:text-success text-muted-foreground transition-colors">
+                <CheckCircle className="h-3 w-3" />
+              </button>
+            )}
+            <button onClick={() => onDelete(goal.id)} className="p-1 hover:text-destructive text-muted-foreground transition-colors">
+              <Trash2 className="h-3 w-3" />
+            </button>
+          </div>
+        )}
+        {isCompleted && (
+          <CheckCircle className="h-3.5 w-3.5 text-success shrink-0" />
+        )}
+      </div>
+    );
+  }
 
   return (
     <Card
@@ -1057,8 +1378,8 @@ function GoalCard({
           >
             <span className="font-semibold text-primary shrink-0">THIS WEEK</span>
             <span className="text-muted-foreground">
-              {weekItems.length}× {weekItems.map((w) => w.title).join(", ").slice(0, 60)}
-              {weekItems.map((w) => w.title).join(", ").length > 60 ? "…" : ""} from mentor plan
+              {weekItems.length}x {weekItems.map((w) => w.title).join(", ").slice(0, 60)}
+              {weekItems.map((w) => w.title).join(", ").length > 60 ? "..." : ""} from mentor plan
             </span>
           </div>
         )}

@@ -454,7 +454,7 @@ export function PlannerClient({
           {goals.length > 0 && (
             <span className="ml-auto">
               Goal coverage:{" "}
-              {goals.map((g, i) => {
+              {goals.filter((g) => !goals.some((o) => o.parentGoalId === g.id)).map((g, i) => {
                 const onTrack = g.pacing?.onTrack ?? true;
                 const label = g.title.length > 20 ? g.title.slice(0, 18) + "…" : g.title;
                 const detail = g.goalType === "cadence" && g.pacing

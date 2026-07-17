@@ -13,7 +13,7 @@ import {
   goals,
   goalMilestones,
 } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, or, and, isNotNull } from "drizzle-orm";
 import {
   FT_COMMON_CORE,
   getAvailableProjects,
@@ -71,9 +71,11 @@ export type GoalWithPacing = {
   metricSource: string | null;
   deadline: string | null;
   groupId: number | null;
+  parentGoalId: number | null;
   status: string | null;
   createdAt: string;
   milestones: (typeof goalMilestones.$inferSelect)[];
+  children: GoalWithPacing[];
   pacing: {
     daysRemaining: number;
     percentComplete: number;
@@ -149,15 +151,22 @@ export function gatherSnapshot(): PlatformSnapshot {
 }
 
 export function analyzeGoals(): GoalWithPacing[] {
-  const allGoals = db.select().from(goals).where(eq(goals.status, "active")).all();
+  const allGoals = db.select().from(goals).where(
+    or(eq(goals.status, "active"), and(eq(goals.status, "completed"), isNotNull(goals.parentGoalId)))
+  ).all();
   const allMilestones = db.select().from(goalMilestones).all();
   const now = new Date();
 
-  return allGoals.map((g) => {
+  const parentIds = new Set(allGoals.filter((g) => g.parentGoalId).map((g) => g.parentGoalId));
+
+  const mapped = allGoals.map((g) => {
     const ms = allMilestones.filter((m) => m.goalId === g.id);
     let pacing: GoalWithPacing["pacing"] = null;
+    const isParent = parentIds.has(g.id);
 
-    if (g.goalType === "cadence" && g.cadenceValue && g.cadenceUnit && g.metricSource) {
+    if (g.status === "completed") {
+      // no pacing needed
+    } else if (!isParent && g.goalType === "cadence" && g.cadenceValue && g.cadenceUnit && g.metricSource) {
       const cp = computeCadencePacing(
         g.metricSource,
         g.cadenceValue,
@@ -237,12 +246,32 @@ export function analyzeGoals(): GoalWithPacing[] {
       metricSource: g.metricSource,
       deadline: g.deadline,
       groupId: g.groupId,
+      parentGoalId: g.parentGoalId,
       status: g.status,
       createdAt: g.createdAt,
       milestones: ms,
+      children: [] as GoalWithPacing[],
       pacing,
     };
   });
+
+  const byId = new Map(mapped.map((g) => [g.id, g]));
+  for (const g of mapped) {
+    if (g.parentGoalId && byId.has(g.parentGoalId)) {
+      byId.get(g.parentGoalId)!.children.push(g);
+    }
+  }
+  return mapped.filter((g) => !g.parentGoalId);
+}
+
+export function flattenGoals(tree: GoalWithPacing[]): GoalWithPacing[] {
+  const result: GoalWithPacing[] = [];
+  function walk(g: GoalWithPacing) {
+    result.push(g);
+    for (const child of g.children) walk(child);
+  }
+  tree.forEach(walk);
+  return result;
 }
 
 function daysSinceCreation(createdAt: string, deadline: string): number {
@@ -668,7 +697,7 @@ export function runGuidanceEngine(): GuidanceResult {
   const recommendations = generateRecommendations(
     snapshot,
     ftProgress,
-    goalsWithPacing,
+    flattenGoals(goalsWithPacing),
     skillProfile
   );
 

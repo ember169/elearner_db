@@ -71,6 +71,13 @@
       "when": 1784724000000,
       "tag": "0009_goal_cadence_groups",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1784810000000,
+      "tag": "0010_goal_hierarchy",
+      "breakpoints": true
     }
   ]
 }

@@ -177,13 +177,18 @@ function buildPrompt(ctx: MentorContext): string {
 
   if (goals.length) {
     L.push("\n## Goals");
-    for (const g of goals) {
-      let line = `- ${g.title}`;
-      if (g.pacing) {
-        line += ` — ${g.pacing.percentComplete.toFixed(0)}%, ${g.pacing.daysRemaining}d left${g.pacing.onTrack ? " (on track)" : " (BEHIND)"}`;
+    function renderGoalTree(items: typeof goals, indent: number) {
+      for (const g of items) {
+        const prefix = "  ".repeat(indent) + "-";
+        let line = `${prefix} ${g.title}`;
+        if (g.pacing) {
+          line += ` — ${g.pacing.percentComplete.toFixed(0)}%, ${g.pacing.daysRemaining}d left${g.pacing.onTrack ? " (on track)" : " (BEHIND)"}`;
+        }
+        L.push(line);
+        if (g.children.length > 0) renderGoalTree(g.children, indent + 1);
       }
-      L.push(line);
     }
+    renderGoalTree(goals, 0);
   }
 
   L.push("\n## Competency signals (deterministic floor — refine these levels; keep 0-5)");

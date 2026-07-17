@@ -60,7 +60,11 @@ export function syncGoalValues() {
     .from(goals)
     .where(eq(goals.status, "active"))
     .all();
+  const parentIds = new Set(
+    activeGoals.filter((g) => g.parentGoalId).map((g) => g.parentGoalId)
+  );
   for (const goal of activeGoals) {
+    if (parentIds.has(goal.id)) continue;
     if (!goal.metricSource) continue;
     const value = resolveMetricValue(goal.metricSource);
     if (value !== null && value !== goal.currentValue) {
