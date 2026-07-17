@@ -17,6 +17,7 @@ export type PlanItemData = {
   blockedReason: string | null;
   blockedSince: string | null;
   completedAt: string | null;
+  goalId?: number | null;
 };
 
 export type WeekPlanData = {

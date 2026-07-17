@@ -11,6 +11,7 @@ import { SideProjectBrief } from "./side-project-brief";
 import { CompetencySpotlight } from "./competency-spotlight";
 import type { PlanItemData, WeekPlanData, GoalSlim, SideProject, CompetencyEntry } from "./types";
 import { assertOk } from "@/lib/utils";
+import { FT_COMMON_CORE } from "@/lib/guidance/ft-project-tree";
 
 interface PinnedTask {
   id: number;
@@ -42,6 +43,40 @@ const STATUS_CYCLE = ["pending", "active", "done"] as const;
 const MONTH_NAMES = ["January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December"];
 
+function buildGoalResolver(goals: GoalSlim[]) {
+  const byTitle = new Map<string, number>();
+  const byCategory = new Map<string, number>();
+  for (const g of goals) {
+    byTitle.set(g.title.toLowerCase(), g.id);
+    if (g.category && !byCategory.has(g.category)) {
+      byCategory.set(g.category, g.id);
+    }
+  }
+
+  const slugToName = new Map<string, string>();
+  for (const p of FT_COMMON_CORE) {
+    slugToName.set(p.slug, p.name);
+  }
+
+  return function resolve(item: PlanItemData): number | null {
+    if (item.ref) {
+      const projectName = slugToName.get(item.ref);
+      if (projectName) {
+        const id = byTitle.get(projectName.toLowerCase());
+        if (id) return id;
+      }
+      const id = byTitle.get(item.ref.toLowerCase());
+      if (id) return id;
+    }
+    if (item.type) return byCategory.get(item.type) ?? null;
+    return null;
+  };
+}
+
+function attachGoalIds(items: PlanItemData[], resolve: (item: PlanItemData) => number | null): PlanItemData[] {
+  return items.map((item) => ({ ...item, goalId: resolve(item) }));
+}
+
 function getTodayStr(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -68,9 +103,10 @@ export function PlannerClient({
   stale,
 }: PlannerClientProps) {
   const router = useRouter();
+  const resolveGoal = buildGoalResolver(goals);
   const [month, setMonth] = useState(initialMonth);
   const [weeks, setWeeks] = useState<MonthWeek[]>(
-    initialMonthPlans.map((mp) => ({ weekStart: mp.weekStart, weekNum: mp.weekNum, items: mp.plan.items }))
+    initialMonthPlans.map((mp) => ({ weekStart: mp.weekStart, weekNum: mp.weekNum, items: attachGoalIds(mp.plan.items, resolveGoal) }))
   );
   const [sideProject, setSideProject] = useState(initialSideProject);
   const [regenerating, setRegenerating] = useState(false);
@@ -121,7 +157,7 @@ export function PlannerClient({
       data.plans.map((p: { weekStart: string; weekNum: number; plan: WeekPlanData }) => ({
         weekStart: p.weekStart,
         weekNum: p.weekNum,
-        items: p.plan.items,
+        items: attachGoalIds(p.plan.items, resolveGoal),
       }))
     );
   }
@@ -291,7 +327,7 @@ export function PlannerClient({
         data.plans.map((p: { weekStart: string; weekNum: number; plan: WeekPlanData }) => ({
           weekStart: p.weekStart,
           weekNum: p.weekNum,
-          items: p.plan.items,
+          items: attachGoalIds(p.plan.items, resolveGoal),
         }))
       );
       setRegenStep("Done");

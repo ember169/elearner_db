@@ -335,7 +335,7 @@ function CompactCard({
         style={{ backgroundColor: platformColor }}
       />
       <a
-        href={item.link ?? "/goals"}
+        href={item.link ?? (item.goalId ? `/goals?goal=${item.goalId}` : "/goals")}
         {...(item.link ? { target: "_blank", rel: "noopener noreferrer" } : {})}
         className="text-[12px] leading-snug line-clamp-2 hover:underline min-w-0"
         title={item.title}
