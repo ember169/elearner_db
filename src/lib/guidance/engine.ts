@@ -25,6 +25,13 @@ import {
 import { THM_ROOM_CATEGORIES, THM_ROOM_CATALOG } from "./thm-room-categories";
 import { HTB_ACADEMY_MODULES } from "@/lib/mentor/htb-academy-catalog";
 import { syncGoalValues } from "@/lib/goals/metrics";
+import { computeCompetencySignals } from "@/lib/mentor/competency-signals";
+import {
+  thmDifficultyFloors,
+  htbTierFloors,
+  isAboveFloor,
+  isAboveHtbFloor,
+} from "@/lib/planning/cross-platform-level";
 
 export type PlatformSnapshot = {
   ft: {
@@ -328,6 +335,12 @@ export function generateRecommendations(
 ): Recommendation[] {
   const recs: Recommendation[] = [];
 
+  // Compute cross-platform skill floors so THM/HTB recommendations
+  // match the student's ACTUAL level, not their platform-specific rank.
+  const signals = computeCompetencySignals(snapshot, ftProgress);
+  const thmFloors = thmDifficultyFloors(signals);
+  const htbFloors = htbTierFloors(signals);
+
   // 1. In-progress 42 projects should be finished first
   for (const slug of ftProgress.inProgressProjects) {
     // A project can be both validated and in-progress (e.g. a redo) — don't
@@ -385,7 +398,7 @@ export function generateRecommendations(
     }
 
     if (goal.category === "thm" && goal.pacing.daysRemaining < 90) {
-      const thmPicks = pickThmRooms(snapshot, skillProfile, 2);
+      const thmPicks = pickThmRooms(snapshot, skillProfile, 2, thmFloors);
       for (const room of thmPicks) {
         recs.push({
           priority: goal.pacing.onTrack ? "medium" : "high",
@@ -400,7 +413,7 @@ export function generateRecommendations(
     }
 
     if (goal.category === "htb" && goal.pacing.daysRemaining < 90) {
-      const htbPicks = pickHtbModules(skillProfile, 2);
+      const htbPicks = pickHtbModules(skillProfile, 2, htbFloors);
       for (const mod of htbPicks) {
         recs.push({
           priority: goal.pacing.onTrack ? "medium" : "high",
@@ -431,7 +444,7 @@ export function generateRecommendations(
       if (level < 1 && isSecurityRelated(skill)) {
         const platformSuggestion = suggestPlatformForSkill(skill);
         if (platformSuggestion === "thm") {
-          const room = pickThmRoomForSkill(snapshot, skill);
+          const room = pickThmRoomForSkill(snapshot, skill, thmFloors);
           if (room) {
             recs.push({
               priority: "low",
@@ -499,10 +512,20 @@ const SKILL_TO_ROOTME_CATEGORY: Record<string, string> = {
 function pickThmRooms(
   snapshot: PlatformSnapshot,
   skillProfile: Record<string, number>,
-  count: number
+  count: number,
+  competencyFloors?: Record<string, string>
 ): typeof THM_ROOM_CATALOG {
   const completedCodes = new Set(snapshot.thm.rooms.map((r) => r.roomCode));
-  const available = THM_ROOM_CATALOG.filter((r) => !completedCodes.has(r.code));
+  const floors = competencyFloors ?? {};
+
+  // Filter out completed rooms AND rooms below the student's cross-platform
+  // skill floor (e.g., skip "Intro to Linux" if they've done Born2beroot at 42)
+  const available = THM_ROOM_CATALOG.filter((r) => {
+    if (completedCodes.has(r.code)) return false;
+    const floor = floors[r.category];
+    if (floor && !isAboveFloor(r.difficulty, floor as "info" | "easy" | "medium" | "hard")) return false;
+    return true;
+  });
 
   const weakSkills = Object.entries(skillProfile)
     .filter(([, v]) => v < 2)
@@ -522,15 +545,25 @@ function pickThmRooms(
 
 function pickHtbModules(
   skillProfile: Record<string, number>,
-  count: number
+  count: number,
+  competencyFloors?: Record<string, string>
 ): typeof HTB_ACADEMY_MODULES {
+  const floors = competencyFloors ?? {};
+
+  // Filter out modules below the student's cross-platform skill floor
+  const available = HTB_ACADEMY_MODULES.filter((m) => {
+    const floor = floors[m.area];
+    if (floor && !isAboveHtbFloor(m.tier, floor)) return false;
+    return true;
+  });
+
   const weakAreas = Object.entries(skillProfile)
     .filter(([, v]) => v < 2)
     .map(([k]) => SKILL_TO_HTB_AREA[k])
     .filter(Boolean);
 
   const tierWeight = { Fundamental: 0, Easy: 1, Medium: 2, Hard: 3 };
-  return [...HTB_ACADEMY_MODULES]
+  return [...available]
     .sort((a, b) => {
       const aMatch = weakAreas.includes(a.area) ? 0 : 1;
       const bMatch = weakAreas.includes(b.area) ? 0 : 1;
@@ -542,14 +575,19 @@ function pickHtbModules(
 
 function pickThmRoomForSkill(
   snapshot: PlatformSnapshot,
-  skill: string
+  skill: string,
+  competencyFloors?: Record<string, string>
 ): (typeof THM_ROOM_CATALOG)[number] | undefined {
   const completedCodes = new Set(snapshot.thm.rooms.map((r) => r.roomCode));
+  const floors = competencyFloors ?? {};
   const category = SKILL_TO_THM_CATEGORY[skill];
   if (!category) return undefined;
-  return THM_ROOM_CATALOG.find(
-    (r) => r.category === category && !completedCodes.has(r.code)
-  );
+  return THM_ROOM_CATALOG.find((r) => {
+    if (r.category !== category || completedCodes.has(r.code)) return false;
+    const floor = floors[r.category];
+    if (floor && !isAboveFloor(r.difficulty, floor as "info" | "easy" | "medium" | "hard")) return false;
+    return true;
+  });
 }
 
 function skillToRootmeCategory(skill: string): string {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { RefreshCw, ChevronLeft, ChevronRight, Plus, X, Square } from "lucide-react";
+import { RefreshCw, ChevronLeft, ChevronRight, Plus, X, Square, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PulseBar, type PlatformStatus } from "./pulse-bar";
@@ -210,9 +210,12 @@ export function PlannerClient({
     }
   }
 
+  const [deadlineWarnings, setDeadlineWarnings] = useState<string[]>([]);
+  const [deadlineUrgency, setDeadlineUrgency] = useState<string>("normal");
+
   async function handleRegenerate() {
     setRegenerating(true);
-    setRegenStep("Asking mentor LLM...");
+    setRegenStep("Running rule engine...");
     try {
       const mentorRes = await fetch("/api/mentor", { method: "POST" });
       const mentorData = await mentorRes.json();
@@ -222,6 +225,12 @@ export function PlannerClient({
       }
       if (mentorData.plan?.side_project) {
         setSideProject(mentorData.plan.side_project);
+      }
+      if (mentorData.warnings) {
+        setDeadlineWarnings(mentorData.warnings);
+      }
+      if (mentorData.deadlinePressure) {
+        setDeadlineUrgency(mentorData.deadlinePressure.urgency);
       }
 
       setRegenStep("Building week schedule...");
@@ -330,7 +339,7 @@ export function PlannerClient({
               className="h-full rounded-full transition-all duration-700 ease-out"
               style={{
                 background: "var(--primary)",
-                width: regenStep === "Asking mentor LLM..." ? "30%" : regenStep === "Building week schedule..." ? "75%" : "100%",
+                width: regenStep === "Running rule engine..." ? "30%" : regenStep === "Building week schedule..." ? "75%" : "100%",
               }}
             />
           </div>
@@ -372,6 +381,48 @@ export function PlannerClient({
           <a href="/settings" className="underline hover:text-foreground transition-colors">add an API key</a>{" "}
           for full mentor guidance
         </p>
+      )}
+
+      {/* ── Deadline warnings ── */}
+      {deadlineWarnings.length > 0 && (
+        <div
+          className="rounded-sm px-4 py-2.5 space-y-1"
+          style={{
+            background: deadlineUrgency === "critical"
+              ? "oklch(0.25 0.06 25 / 0.15)"
+              : deadlineUrgency === "elevated"
+                ? "oklch(0.35 0.08 70 / 0.12)"
+                : "oklch(0.35 0.04 80 / 0.08)",
+            border: `1px solid ${
+              deadlineUrgency === "critical"
+                ? "oklch(0.55 0.15 25 / 0.4)"
+                : deadlineUrgency === "elevated"
+                  ? "oklch(0.6 0.12 70 / 0.35)"
+                  : "oklch(0.5 0.04 80 / 0.2)"
+            }`,
+          }}
+        >
+          <div className="flex items-center gap-2">
+            <AlertTriangle
+              className="h-3.5 w-3.5 shrink-0"
+              style={{
+                color: deadlineUrgency === "critical"
+                  ? "oklch(0.65 0.2 25)"
+                  : deadlineUrgency === "elevated"
+                    ? "oklch(0.7 0.15 70)"
+                    : "oklch(0.6 0.08 80)",
+              }}
+            />
+            <span className="text-[12px] font-medium" style={{ color: "oklch(0.75 0.02 80)" }}>
+              {deadlineUrgency === "critical" ? "Deadline pressure: critical" : deadlineUrgency === "elevated" ? "Deadline pressure: elevated" : "Deadline notes"}
+            </span>
+          </div>
+          {deadlineWarnings.map((w, i) => (
+            <p key={i} className="text-[12px] leading-relaxed pl-5.5" style={{ color: "oklch(0.62 0.01 80)" }}>
+              {w}
+            </p>
+          ))}
+        </div>
       )}
 
       {/* ── Pulse + budget ── */}

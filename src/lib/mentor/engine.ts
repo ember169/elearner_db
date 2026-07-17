@@ -14,7 +14,7 @@ import { getProjectBySlug } from "../guidance/ft-project-tree";
 export const DEFAULT_OBJECTIVE =
   "Red team / malware development, with solid generalist foundations (networking, web, Linux).";
 
-export const PLAN_VERSION = 1;
+export const PLAN_VERSION = 2;
 export const WEEKLY_HOURS_BUDGET = 35;
 
 function clamp(v: number, min: number, max: number): number {
@@ -457,6 +457,235 @@ export async function generateMentorPlan(
     },
     ctx.objective
   );
+}
+
+// ---------------------------------------------------------------------------
+// Hybrid mode: the LLM only generates a narrative briefing + side project.
+// Scheduling and competency assessment are handled by the rule engine.
+// ---------------------------------------------------------------------------
+
+function buildNarrativePrompt(
+  ctx: MentorContext,
+  scheduledItems: MentorFocus[]
+): string {
+  const { objective, guidance } = ctx;
+  const { ftProgress } = guidance;
+
+  const L: string[] = [];
+  L.push(
+    "You are a senior cybersecurity mentor for a 42 Paris student. " +
+    "The weekly schedule has ALREADY been decided by the planning engine — " +
+    "your job is to write a short motivational briefing and suggest ONE creative side project.\n"
+  );
+  L.push(`## Objective\n${objective}\n`);
+
+  L.push("## This week's scheduled items (decided, don't change these)");
+  for (const item of scheduledItems) {
+    L.push(`- [${item.type}] ${item.title} (${item.estimatedTime}, ${item.priority}) — ${item.why}`);
+  }
+
+  L.push(`\n## Student context`);
+  L.push(`42 circle: ${ftProgress.currentCircle}`);
+  L.push(`Completed: ${ftProgress.completedProjects.join(", ") || "none"}`);
+  L.push(`In progress: ${ftProgress.inProgressProjects.join(", ") || "none"}`);
+
+  L.push(
+    "\n## Instructions\n" +
+    "1. Write a 2-3 sentence mentor briefing that explains WHY this week's schedule makes sense given the student's current state and objective. Be specific — reference the actual items. Motivate but stay grounded.\n" +
+    "2. Suggest ONE small side project (4-8 hours total) that ties together what they're learning this week. It should reinforce their objective and use skills from the scheduled items.\n" +
+    "3. Call emit_narrative exactly once."
+  );
+
+  return L.join("\n");
+}
+
+function narrativeToolSchema() {
+  return {
+    name: "emit_narrative",
+    description: "Emit the mentor briefing and side project suggestion.",
+    input_schema: {
+      type: "object",
+      properties: {
+        briefing: {
+          type: "string",
+          description: "2-3 sentence mentor briefing explaining this week's focus.",
+        },
+        collapsed_briefing: {
+          type: "string",
+          description: "One-line summary of the briefing (max 80 chars).",
+        },
+        side_project: {
+          type: "object",
+          properties: {
+            title: { type: "string" },
+            description: { type: "string", description: "2-3 sentence description." },
+            skills: { type: "array", items: { type: "string" } },
+            steps: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  title: { type: "string" },
+                  description: { type: "string" },
+                  estimatedHours: { type: "number" },
+                },
+                required: ["title", "description", "estimatedHours"],
+              },
+            },
+            capstone_connection: { type: "string" },
+          },
+          required: ["title", "description", "skills", "steps"],
+        },
+      },
+      required: ["briefing", "collapsed_briefing", "side_project"],
+    },
+  };
+}
+
+type NarrativeOutput = {
+  briefing: string;
+  collapsed_briefing: string;
+  side_project: SideProject;
+};
+
+async function generateNarrativeViaAnthropic(
+  prompt: string,
+  apiKey: string,
+  model: string
+): Promise<NarrativeOutput> {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 2048,
+      tools: [narrativeToolSchema()],
+      tool_choice: { type: "tool", name: "emit_narrative" },
+      messages: [{ role: "user", content: prompt }],
+    }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Anthropic API error ${res.status}: ${text.slice(0, 400)}`);
+  }
+
+  const data = await res.json();
+  const block = Array.isArray(data.content)
+    ? data.content.find((b: { type?: string }) => b.type === "tool_use")
+    : null;
+  if (!block?.input) throw new Error("Mentor: model did not return a narrative.");
+  return block.input;
+}
+
+function openAINarrativeToolSchema() {
+  const schema = narrativeToolSchema();
+  return {
+    type: "function" as const,
+    function: {
+      name: schema.name,
+      description: schema.description,
+      parameters: schema.input_schema,
+    },
+  };
+}
+
+async function generateNarrativeViaOpenAI(
+  prompt: string,
+  model: string,
+  baseUrl: string,
+  apiKey?: string | null
+): Promise<NarrativeOutput> {
+  const url = `${baseUrl.replace(/\/+$/, "")}/v1/chat/completions`;
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      model,
+      max_tokens: 2048,
+      tools: [openAINarrativeToolSchema()],
+      tool_choice: { type: "function", function: { name: "emit_narrative" } },
+      messages: [{ role: "user", content: prompt }],
+    }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Local LLM error ${res.status}: ${text.slice(0, 400)}`);
+  }
+
+  const data = await res.json();
+  const msg = data.choices?.[0]?.message;
+
+  if (msg?.tool_calls?.[0]?.function?.arguments) {
+    return JSON.parse(msg.tool_calls[0].function.arguments);
+  }
+
+  if (msg?.content) {
+    const jsonMatch = msg.content.match(/\{[\s\S]*\}/);
+    if (jsonMatch) return JSON.parse(jsonMatch[0]);
+  }
+
+  throw new Error("Local LLM did not return a narrative.");
+}
+
+export async function generateNarrative(
+  ctx: MentorContext,
+  config: LLMConfig,
+  scheduledItems: MentorFocus[]
+): Promise<NarrativeOutput> {
+  const prompt = buildNarrativePrompt(ctx, scheduledItems);
+
+  if (config.provider === "local" && config.baseUrl) {
+    return generateNarrativeViaOpenAI(prompt, config.model, config.baseUrl, config.apiKey);
+  } else if (config.apiKey) {
+    return generateNarrativeViaAnthropic(prompt, config.apiKey, config.model);
+  }
+  throw new Error("No LLM configured.");
+}
+
+// Template-based fallback when no LLM is available
+export function generateFallbackNarrative(
+  scheduledItems: MentorFocus[],
+  objective: string
+): NarrativeOutput {
+  const high = scheduledItems.filter((f) => f.priority === "high");
+  const first = high[0]?.title ?? scheduledItems[0]?.title ?? "your tasks";
+  const second = (high[1] ?? scheduledItems.find((f) => f.priority !== "high"))?.title;
+  const platforms = [...new Set(scheduledItems.map((f) => f.type))];
+
+  let briefing = `Focus on ${first} this week — it's your top priority toward ${objective.split(",")[0]?.trim() ?? "your objective"}.`;
+  if (second) briefing += ` Then move to ${second}.`;
+  if (platforms.length > 2) briefing += ` Mix in practice across ${platforms.length} platforms to keep building breadth.`;
+
+  const collapsed = second ? `${first}, then ${second}` : first;
+
+  const focusTypes = scheduledItems.map((f) => f.type);
+  const sideProjectSkills = focusTypes.includes("42")
+    ? ["C", "scripting"]
+    : ["security", "automation"];
+
+  return {
+    briefing,
+    collapsed_briefing: collapsed,
+    side_project: {
+      title: "Build a small tool related to this week's learning",
+      description: `Create a practical tool that reinforces what you're studying. Focus on ${objective.split(",")[0]?.trim() ?? "your objective"}.`,
+      skills: sideProjectSkills,
+      steps: [
+        { title: "Set up project scaffold", description: "Create the project structure.", estimatedHours: 1 },
+        { title: "Implement core logic", description: "Build the main functionality.", estimatedHours: 3 },
+        { title: "Test and document", description: "Verify it works and write usage notes.", estimatedHours: 1 },
+      ],
+      capstone_connection: `Feeds into your long-term ${objective.split(",")[0]?.trim() ?? "objective"} path.`,
+    },
+  };
 }
 
 // ---------------------------------------------------------------------------

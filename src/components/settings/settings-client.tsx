@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,8 @@ import {
   Download,
   History,
   ArrowRight,
+  CalendarClock,
+  AlertTriangle,
 } from "lucide-react";
 import { assertOk } from "@/lib/utils";
 
@@ -119,6 +121,59 @@ export function SettingsClient({
   const [llmModel, setLlmModel] = useState(config.llmModel ?? "claude-sonnet-5");
   const [llmBaseUrl, setLlmBaseUrl] = useState(config.llmBaseUrl ?? "");
   const [objective, setObjective] = useState(config.objective ?? "");
+
+  // Deadline state
+  const [deadlineDate, setDeadlineDate] = useState("");
+  const [deadlineBudget, setDeadlineBudget] = useState("15");
+  const [deadlineSaving, setDeadlineSaving] = useState(false);
+  const [deadlineResult, setDeadlineResult] = useState<{
+    plan?: { weeklyHoursNeeded: number; totalHoursRemaining: number; weeksAvailable: number; warnings: string[]; feasible: boolean; circlePlans: { circle: number; totalHours: number; dueBy: string }[] };
+    deadline?: { id: number; targetDate: string };
+  } | null>(null);
+
+  async function loadDeadlines() {
+    try {
+      const res = await fetch("/api/deadlines");
+      const data = await res.json();
+      if (data.deadlines?.length > 0) {
+        const main = data.deadlines.find((d: { type: string }) => d.type === "common_core");
+        if (main) {
+          setDeadlineDate(main.targetDate);
+          setDeadlineResult({ deadline: main, plan: data.backwardPlan });
+        }
+      }
+    } catch {}
+  }
+
+  async function saveDeadline() {
+    if (!deadlineDate) return;
+    setDeadlineSaving(true);
+    try {
+      const res = await fetch("/api/deadlines", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetDate: deadlineDate, weeklyBudget42: parseInt(deadlineBudget) || 15 }),
+      });
+      const data = await res.json();
+      if (data.error) { alert(data.error); return; }
+      setDeadlineResult(data);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Failed to save deadline.");
+    } finally {
+      setDeadlineSaving(false);
+    }
+  }
+
+  async function deleteDeadlineAction() {
+    if (!deadlineResult?.deadline?.id) return;
+    try {
+      await fetch(`/api/deadlines?id=${deadlineResult.deadline.id}`, { method: "DELETE" });
+      setDeadlineResult(null);
+      setDeadlineDate("");
+    } catch {}
+  }
+
+  useEffect(() => { loadDeadlines(); }, []);
 
   async function saveSettings() {
     setSaving(true);
@@ -268,6 +323,104 @@ export function SettingsClient({
           )}
         </div>
       </PlatformSection>
+
+      {/* Deadline Planning */}
+      <Card>
+        <CardContent className="pt-4 pb-4 px-4 space-y-4">
+          <div className="flex items-center gap-2">
+            <CalendarClock className="h-4 w-4 text-muted-foreground" />
+            <span className="text-[15px] font-semibold tracking-tight">42 Deadline Planner</span>
+            {deadlineResult?.deadline && (
+              <Badge variant="success">Active</Badge>
+            )}
+          </div>
+          <p className="text-[12px] text-muted-foreground">
+            Set your target date for completing the 42 common core. The system will backward-plan circle and project deadlines,
+            compute required weekly hours, and warn you when the pace is unsustainable.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-[13px]">Common core target date</Label>
+              <Input
+                type="date"
+                value={deadlineDate}
+                onChange={(e) => setDeadlineDate(e.target.value)}
+                min={new Date().toISOString().slice(0, 10)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-[13px]">Weekly 42 budget (hours)</Label>
+              <Input
+                type="number"
+                value={deadlineBudget}
+                onChange={(e) => setDeadlineBudget(e.target.value)}
+                min="5"
+                max="40"
+                placeholder="15"
+              />
+            </div>
+            <div className="flex items-end gap-2">
+              <Button onClick={saveDeadline} disabled={deadlineSaving || !deadlineDate} size="sm">
+                {deadlineSaving ? "Computing..." : deadlineResult?.deadline ? "Update deadline" : "Set deadline"}
+              </Button>
+              {deadlineResult?.deadline && (
+                <Button onClick={deleteDeadlineAction} variant="ghost" size="sm" className="text-destructive">
+                  Remove
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {deadlineResult?.plan && (
+            <div className="space-y-3 mt-2">
+              <Separator />
+              <div className="flex items-center gap-6 text-[13px]">
+                <div>
+                  <span className="text-muted-foreground">Hours remaining: </span>
+                  <span className="font-medium">{deadlineResult.plan.totalHoursRemaining}h</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Weeks available: </span>
+                  <span className="font-medium">{deadlineResult.plan.weeksAvailable}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Required pace: </span>
+                  <span className={`font-medium ${deadlineResult.plan.feasible ? "text-success" : "text-destructive"}`}>
+                    {deadlineResult.plan.weeklyHoursNeeded}h/week
+                  </span>
+                </div>
+              </div>
+
+              {deadlineResult.plan.circlePlans.length > 0 && (
+                <div className="space-y-1">
+                  <p className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Circle deadlines</p>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {deadlineResult.plan.circlePlans.map((cp) => (
+                      <div key={cp.circle} className="px-3 py-2 rounded-sm border border-border text-[12px]">
+                        <span className="font-medium">Circle {cp.circle}</span>
+                        <span className="text-muted-foreground"> — {cp.totalHours}h</span>
+                        <p className="text-muted-foreground">Due {cp.dueBy}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {deadlineResult.plan.warnings.length > 0 && (
+                <div className="space-y-1.5">
+                  {deadlineResult.plan.warnings.map((w, i) => (
+                    <div key={i} className="flex items-start gap-2 text-[12px] text-warning">
+                      <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                      <span>{w}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Platform sections */}
       <PlatformSection

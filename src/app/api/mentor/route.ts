@@ -2,13 +2,17 @@ import { NextResponse } from "next/server";
 import {
   buildMentorContext,
   buildFallbackPlan,
-  generateMentorPlan,
+  generateNarrative,
+  generateFallbackNarrative,
+  PLAN_VERSION,
+  type MentorPlan,
 } from "@/lib/mentor/engine";
 import {
   loadCurrentPlan,
   readMentorConfig,
   savePlan,
 } from "@/lib/mentor/store";
+import { runRuleEngine } from "@/lib/planning/rule-engine";
 
 export const dynamic = "force-dynamic";
 
@@ -21,22 +25,56 @@ export async function POST() {
   const canGenerate = config.provider === "local" ? !!config.baseUrl : !!config.apiKey;
   const ctx = buildMentorContext(config.objective);
 
-  if (!canGenerate) {
-    return NextResponse.json({
-      plan: buildFallbackPlan(ctx),
-      stale: false,
-      hasKey: canGenerate,
-    });
+  // Phase 1: Rule engine builds the schedule deterministically
+  const ruleOutput = runRuleEngine(config.objective);
+
+  // Phase 2: LLM generates narrative + side project (or fallback)
+  let briefing: string;
+  let collapsedBriefing: string;
+  let sideProject: MentorPlan["side_project"] = undefined;
+
+  if (canGenerate) {
+    try {
+      const narrative = await generateNarrative(ctx, config, ruleOutput.focus);
+      briefing = narrative.briefing;
+      collapsedBriefing = narrative.collapsed_briefing;
+      sideProject = narrative.side_project;
+    } catch (e) {
+      // LLM failed — use template-based fallback for narrative
+      const fallback = generateFallbackNarrative(ruleOutput.focus, config.objective);
+      briefing = fallback.briefing;
+      collapsedBriefing = fallback.collapsed_briefing;
+      sideProject = fallback.side_project;
+    }
+  } else {
+    const fallback = generateFallbackNarrative(ruleOutput.focus, config.objective);
+    briefing = fallback.briefing;
+    collapsedBriefing = fallback.collapsed_briefing;
+    sideProject = fallback.side_project;
   }
 
-  try {
-    const plan = await generateMentorPlan(ctx, config);
-    savePlan(plan, config.objective);
-    return NextResponse.json({ plan, stale: false, hasKey: canGenerate });
-  } catch (e) {
-    return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Mentor generation failed." },
-      { status: 500 }
-    );
-  }
+  // Phase 3: Assemble the plan
+  const plan: MentorPlan = {
+    version: PLAN_VERSION,
+    generatedAt: new Date().toISOString(),
+    objectiveEcho: config.objective,
+    headline: collapsedBriefing,
+    focus: ruleOutput.focus,
+    competencies: ruleOutput.competencies,
+    side_project: sideProject,
+    fallback: !canGenerate,
+  };
+
+  savePlan(plan, config.objective);
+
+  return NextResponse.json({
+    plan,
+    stale: false,
+    hasKey: canGenerate,
+    briefing,
+    collapsedBriefing,
+    deadlinePressure: ruleOutput.deadlinePressure,
+    weeklyBudget: ruleOutput.weeklyBudget,
+    warnings: ruleOutput.warnings,
+  });
 }
