@@ -46,6 +46,7 @@ export type GoalSlim = {
     percentComplete: number;
     requiredPace: string;
     currentPace: string;
+    daysRemaining: number;
   } | null;
 };
 
