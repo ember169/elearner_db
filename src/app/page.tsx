@@ -64,8 +64,12 @@ export default function HomePage() {
       id: g.id,
       title: g.title,
       category: g.category,
+      goalType: g.goalType,
       currentValue: g.currentValue,
       targetValue: g.targetValue,
+      cadenceValue: g.cadenceValue,
+      cadenceUnit: g.cadenceUnit,
+      groupId: g.groupId,
       pacing: g.pacing,
     }));
 

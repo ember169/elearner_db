@@ -456,11 +456,15 @@ export function PlannerClient({
               Goal coverage:{" "}
               {goals.map((g, i) => {
                 const onTrack = g.pacing?.onTrack ?? true;
+                const label = g.title.length > 20 ? g.title.slice(0, 18) + "…" : g.title;
+                const detail = g.goalType === "cadence" && g.pacing
+                  ? ` ${g.pacing.currentPace}`
+                  : "";
                 return (
                   <span key={g.id}>
                     {i > 0 && " · "}
                     <span style={{ color: onTrack ? "var(--status-success)" : "var(--status-warning)" }}>
-                      {g.title.length > 15 ? g.title.slice(0, 13) + "…" : g.title} {onTrack ? "✓" : "⚠"}
+                      {label}{detail} {onTrack ? "✓" : "⚠"}
                     </span>
                   </span>
                 );

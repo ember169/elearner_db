@@ -64,6 +64,13 @@
       "when": 1784638000000,
       "tag": "0008_deadlines",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1784724000000,
+      "tag": "0009_goal_cadence_groups",
+      "breakpoints": true
     }
   ]
 }

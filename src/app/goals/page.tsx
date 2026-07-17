@@ -1,3 +1,5 @@
+import { db } from "@/lib/db";
+import { goalGroups } from "@/lib/db/schema";
 import { runGuidanceEngine } from "@/lib/guidance/engine";
 import { computeCompetencySignals } from "@/lib/mentor/competency-signals";
 import { COMPETENCIES } from "@/lib/mentor/competency-map";
@@ -27,9 +29,12 @@ export default function GoalsPage() {
     title: f.title,
   }));
 
+  const groups = db.select().from(goalGroups).all();
+
   return (
     <GoalsClient
       goals={guidance.goals}
+      groups={groups}
       competencies={competencies}
       focusItems={focusItems}
     />

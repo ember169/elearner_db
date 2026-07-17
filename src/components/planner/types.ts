@@ -32,8 +32,12 @@ export type GoalSlim = {
   id: number;
   title: string;
   category: string | null;
+  goalType: string;
   currentValue: number | null;
   targetValue: number | null;
+  cadenceValue: number | null;
+  cadenceUnit: string | null;
+  groupId: number | null;
   pacing: {
     onTrack: boolean;
     percentComplete: number;

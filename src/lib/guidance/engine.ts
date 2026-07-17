@@ -24,7 +24,7 @@ import {
 } from "./ft-project-tree";
 import { THM_ROOM_CATEGORIES, THM_ROOM_CATALOG } from "./thm-room-categories";
 import { HTB_ACADEMY_MODULES } from "@/lib/mentor/htb-academy-catalog";
-import { syncGoalValues } from "@/lib/goals/metrics";
+import { syncGoalValues, computeCadencePacing } from "@/lib/goals/metrics";
 import { computeCompetencySignals } from "@/lib/mentor/competency-signals";
 import {
   thmDifficultyFloors,
@@ -63,10 +63,14 @@ export type GoalWithPacing = {
   title: string;
   description: string | null;
   category: string | null;
+  goalType: string;
   targetValue: number | null;
   currentValue: number | null;
+  cadenceValue: number | null;
+  cadenceUnit: string | null;
   metricSource: string | null;
   deadline: string | null;
+  groupId: number | null;
   status: string | null;
   createdAt: string;
   milestones: (typeof goalMilestones.$inferSelect)[];
@@ -153,7 +157,21 @@ export function analyzeGoals(): GoalWithPacing[] {
     const ms = allMilestones.filter((m) => m.goalId === g.id);
     let pacing: GoalWithPacing["pacing"] = null;
 
-    if (g.deadline && g.targetValue) {
+    if (g.goalType === "cadence" && g.cadenceValue && g.cadenceUnit && g.metricSource) {
+      const cp = computeCadencePacing(
+        g.metricSource,
+        g.cadenceValue,
+        g.cadenceUnit as "per_week" | "per_month",
+        g.currentValue ?? 0
+      );
+      pacing = {
+        daysRemaining: cp.daysLeftInPeriod,
+        percentComplete: cp.target > 0 ? Math.min(100, (cp.achieved / cp.target) * 100) : 0,
+        onTrack: cp.onTrack,
+        requiredPace: cp.requiredPace,
+        currentPace: cp.currentPace,
+      };
+    } else if (g.deadline && g.targetValue) {
       const deadlineDate = new Date(g.deadline);
       const daysRemaining = Math.max(
         0,
@@ -211,10 +229,14 @@ export function analyzeGoals(): GoalWithPacing[] {
       title: g.title,
       description: g.description,
       category: g.category,
+      goalType: g.goalType,
       targetValue: g.targetValue,
       currentValue: g.currentValue,
+      cadenceValue: g.cadenceValue,
+      cadenceUnit: g.cadenceUnit,
       metricSource: g.metricSource,
       deadline: g.deadline,
+      groupId: g.groupId,
       status: g.status,
       createdAt: g.createdAt,
       milestones: ms,

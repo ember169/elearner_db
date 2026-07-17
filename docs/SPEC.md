@@ -15,7 +15,7 @@ The core value proposition is **intelligent weekly scheduling**: a deterministic
 ```
 Platform APIs          Sync Engine            SQLite DB
   42 Intra  ──┐                             ┌─────────────┐
-  THM API   ──┤    ┌──────────────┐         │  27 tables   │
+  THM API   ──┤    ┌──────────────┐         │  28 tables   │
   HTB API   ──┼───>│  runSync()   │────────>│  (Drizzle)   │
   Root-me   ──┤    └──────────────┘         └──────┬───────┘
   Maldev DB ──┘                                    │
@@ -131,7 +131,8 @@ Platform APIs          Sync Engine            SQLite DB
 
 | Table | Purpose |
 |-------|---------|
-| `goals` | Trackable goals: title, description, category (platform), target/current value, metric source key, deadline, status (active/completed). |
+| `goals` | Trackable goals with two types. **Cumulative**: reach targetValue by deadline. **Cadence**: maintain cadenceValue per cadenceUnit (per_week/per_month) over a rolling window. Fields: title, description, category, goalType, targetValue, currentValue, cadenceValue, cadenceUnit, metricSource, deadline, groupId (FK to goalGroups), status. |
+| `goalGroups` | Compound logic groups. Operator is AND (all children must be on track) or OR (any child). One nesting level: a group can contain goals or sub-groups, but sub-groups can only contain goals (max depth 2). Fields: title, operator, parentGroupId. |
 | `goalMilestones` | Milestones (FK to goals, cascade delete): title, target value threshold, reached-at timestamp. |
 
 ### Other
@@ -187,19 +188,23 @@ Multi-view progress dashboard.
 
 ### Goals (`/goals`)
 
-Goal management with auto-tracking and pacing analysis.
+Goal management with two goal types, compound logic groups, and auto-tracking.
 
-**Server component** (`src/app/goals/page.tsx`): runs guidance engine, computes competency signals, loads mentor plan focus items.
+**Server component** (`src/app/goals/page.tsx`): runs guidance engine, computes competency signals, loads mentor plan focus items, loads goal groups.
 
 **Client features** (`src/components/goals/goals-client.tsx`):
 
-- **Goal cards**: progress bar with milestone markers, pacing badge (on track / behind / overdue), days remaining, required/current pace, competency area tags, "this week" connection showing which focus items feed into the goal.
-- **Behind-pace alert**: banner listing all goals that are behind schedule.
-- **Create/edit dialog**: title, platform category selector, auto-track metric source, target value, deadline. Quick presets (6 predefined goals).
+- **Two goal types**: **Cumulative** (reach X by deadline) and **Cadence** (maintain >= X per week/month over a rolling window).
+- **Goal cards**: progress bar with milestone markers, pacing badge (on track / behind / overdue), days remaining, required/current pace, competency area tags, "this week" connection showing which focus items feed into the goal. Cadence cards show rolling-window progress ("0 this week — target: 2/wk").
+- **Goal groups**: collapsible container cards with AND/OR operator toggle and combined status badge ("0/1 met"). Groups can nest one level deep. Goals are assigned to groups via the edit dialog.
+- **Behind-pace alert**: banner listing all goals that are behind schedule, with cadence-aware phrasing.
+- **Create/edit dialog**: goal type toggle (Cumulative/Cadence), title, platform category, auto-track metric, target value + deadline (cumulative) or rate + period (cadence), group assignment. Quick presets: 6 cumulative + 4 cadence.
 - **Suggested goals**: competencies with level < 2 that don't have a corresponding goal. One-click creation with auto 3-month deadline.
 - **Completed goals section**: archived goals.
 
 **Auto-sync** (`src/lib/goals/metrics.ts`): on each guidance engine run, active goals with a `metricSource` have their `currentValue` updated from live platform data. 8 supported metrics: ft:projects_validated, ft:level, rootme:challenges_solved, rootme:score, maldev:progress, thm:rooms_completed, htb:owns, htb:points.
+
+**Cadence pacing** (`computeCadencePacing()`): for cadence goals, loads the daily snapshot from N days ago (7 for per_week, 30 for per_month), diffs the metric value, and computes achieved/target/onTrack. No new data collection needed -- reuses existing `dailySnapshots` table.
 
 ### Settings (`/settings`)
 
@@ -245,17 +250,21 @@ Updates a single plan item. Body: `{ id, dayIndex?, status?, sortOrder?, deferre
 
 Action endpoint. Body: `{ action: "reroll", week? }`. Deletes and recreates the week plan from current mentor output.
 
+### `GET /api/goals`
+
+Returns all goals and goal groups.
+
 ### `POST /api/goals`
 
-Creates a goal. Body: `{ title, description?, category?, targetValue?, currentValue?, deadline?, metricSource? }`.
+Creates a goal or group. For goals: `{ title, category?, goalType?, targetValue?, cadenceValue?, cadenceUnit?, deadline?, metricSource?, groupId? }`. For groups: `{ _type: "group", title, operator?, parentGroupId? }`. Enforces max nesting depth of 2.
 
 ### `PATCH /api/goals`
 
-Updates a goal. Body: `{ id, ...fields }` (status, currentValue, title, description, category, targetValue, deadline, metricSource).
+Updates a goal or group. Body: `{ id, ...fields }`. Goals: status, currentValue, title, description, category, goalType, targetValue, cadenceValue, cadenceUnit, deadline, metricSource, groupId. Groups: `{ _type: "group", id, title?, operator?, parentGroupId? }`.
 
 ### `DELETE /api/goals`
 
-Deletes a goal. Body: `{ id }`.
+Deletes a goal or group. Body: `{ id }` or `{ _type: "group", id }`. Deleting a group unlinks its children (sets groupId/parentGroupId to null).
 
 ### `GET /api/deadlines`
 
@@ -302,7 +311,7 @@ Orchestrates all platform data into actionable recommendations.
 **`runGuidanceEngine()`** pipeline:
 1. `syncGoalValues()` -- auto-update goal metrics from live data
 2. `gatherSnapshot()` -- query all platform profiles/data from DB
-3. `analyzeGoals()` -- compute pacing for each active goal
+3. `analyzeGoals()` -- compute pacing for each active goal (cumulative: deadline-based pace; cadence: rolling window via `computeCadencePacing()`)
 4. `analyzeFtProgress()` -- determine 42 circle, completed/available projects
 5. `buildSkillProfile()` -- aggregate cross-platform skills
 6. `generateRecommendations()` -- produce prioritized items using:
