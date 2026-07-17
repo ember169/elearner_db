@@ -99,14 +99,40 @@ function TreeItem({
           {goal.title}
         </span>
 
-        {isBehind && depth > 0 && (
+        {isBehind && depth > 0 && !hasChildren && (
           <AlertTriangle className="h-3 w-3 text-red-400 flex-shrink-0" />
         )}
 
-        {progress !== null && depth === 0 && (
+        {(() => {
+          if (hasChildren && depth > 0) {
+            const behindCount = goal.children.filter(
+              (c) => c.status === "active" && c.pacing && !c.pacing.onTrack && c.pacing.percentComplete < 100
+            ).length;
+            if (behindCount > 0) {
+              return (
+                <span className="flex-shrink-0 min-w-[16px] h-[16px] rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
+                  {behindCount}
+                </span>
+              );
+            }
+          }
+          return null;
+        })()}
+
+        {progress !== null && depth === 0 && !hasChildren && (
           <span className="text-[10px] text-muted-foreground flex-shrink-0">
             {progress}%
           </span>
+        )}
+
+        {goal.pacing && depth === 0 && hasChildren && (
+          <span className="text-[10px] text-muted-foreground flex-shrink-0">
+            {Math.round(goal.pacing.percentComplete)}%
+          </span>
+        )}
+
+        {goal.goalType === "cadence" && goal.pacing && goal.pacing.onTrack && !isCompleted && (
+          <CheckCircle2 className="h-3 w-3 text-green-500 flex-shrink-0" />
         )}
 
         {hasChildren && depth > 0 && (

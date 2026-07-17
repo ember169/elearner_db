@@ -89,6 +89,17 @@ function flattenAll(tree: GoalWithPacing[]): GoalWithPacing[] {
   return r;
 }
 
+function fmtDate(iso: string): string {
+  const d = new Date(iso + "T00:00:00");
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function fmtMonth(iso: string): string {
+  const [y, m] = iso.split("-");
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return `${months[parseInt(m) - 1]} '${y.slice(2)}`;
+}
+
 function MetadataRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="grid grid-cols-[80px_1fr] items-start gap-x-3 py-1.5">
@@ -145,9 +156,12 @@ function ChildRowContent({
         <span className="h-3.5 w-3.5 border border-muted-foreground/40 rounded-sm flex-shrink-0" />
       )}
       <Badge
-        variant="outline"
-        className="text-[8px] font-bold uppercase px-1 py-0"
-        style={{ borderColor: platformColor, color: platformColor }}
+        className="text-[8px] font-bold uppercase px-1.5 py-0"
+        style={{
+          backgroundColor: isCompleted ? "transparent" : platformColor,
+          color: isCompleted ? platformColor : "#fff",
+          border: isCompleted ? `1px solid ${platformColor}40` : "none",
+        }}
       >
         {childLabel}
       </Badge>
@@ -181,7 +195,7 @@ function ChildRowContent({
           }`}
         >
           {parentDeadline && child.deadline > parentDeadline && "⚠ "}
-          {child.deadline.slice(0, 7).replace("-", " ").replace(" ", " '")}
+          {fmtMonth(child.deadline)}
         </span>
       )}
       {child.children.length > 0 && (
@@ -450,20 +464,25 @@ export function DetailPane({
         )}
 
         {/* Header */}
-        <div className="flex items-center gap-2 mb-0.5">
+        <div className="flex items-center gap-2 mb-1">
           {isCadence ? (
             <span className="text-[11px] font-mono border border-border rounded-sm px-1.5 py-0.5">/wk</span>
           ) : (
             <Badge
-              variant="outline"
-              className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0"
-              style={{ borderColor: platformColor, color: platformColor }}
+              className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5"
+              style={{
+                backgroundColor: isEpic ? platformColor : "transparent",
+                color: isEpic ? "#fff" : platformColor,
+                border: isEpic ? "none" : `1px solid ${platformColor}`,
+              }}
             >
               {depthLabel}
             </Badge>
           )}
           {platformLabel !== "GEN" && !parentChain.length && (
-            <span className="text-[10px] text-muted-foreground">{platformLabel}</span>
+            <Badge variant="outline" className="text-[9px] font-bold px-1.5 py-0" style={{ borderColor: platformColor, color: platformColor }}>
+              {platformLabel}
+            </Badge>
           )}
           {isIssue && parentChain.length > 0 && (
             <span className="text-[10px] text-muted-foreground">
@@ -490,13 +509,13 @@ export function DetailPane({
 
         <div className="flex items-center gap-2 mb-4">
           {isCompleted ? (
-            <Badge variant="outline" className="text-[10px] text-green-400 border-green-400/30">Completed</Badge>
+            <Badge className="text-[9px] font-bold uppercase tracking-wider bg-green-500/15 text-green-400 border border-green-500/30 px-2 py-0.5">Completed</Badge>
           ) : isBehind ? (
-            <Badge variant="outline" className="text-[10px] text-red-400 border-red-400/30">
+            <Badge className="text-[9px] font-bold uppercase tracking-wider bg-red-500/15 text-red-400 border border-red-500/30 px-2 py-0.5">
               {isCadence ? "Behind" : "Behind pace"}
             </Badge>
           ) : goal.pacing ? (
-            <Badge variant="outline" className="text-[10px] text-green-400 border-green-400/30">
+            <Badge className="text-[9px] font-bold uppercase tracking-wider bg-green-500/15 text-green-400 border border-green-500/30 px-2 py-0.5">
               {isCadence ? "On pace" : "On track"}
             </Badge>
           ) : null}
@@ -505,7 +524,7 @@ export function DetailPane({
           )}
           {goal.deadline && !isCadence && (
             <span className="text-[12px] text-muted-foreground">
-              by {goal.deadline}
+              by {fmtDate(goal.deadline)}
               {goal.pacing && <span> &middot; {goal.pacing.daysRemaining}d left</span>}
             </span>
           )}
@@ -537,7 +556,7 @@ export function DetailPane({
             )}
             {goal.deadline && (
               <MetadataRow label="Deadline">
-                {goal.deadline}
+                {fmtDate(goal.deadline)}
                 {goal.pacing && <span className="text-muted-foreground"> &middot; {goal.pacing.daysRemaining}d left</span>}
               </MetadataRow>
             )}
@@ -554,29 +573,29 @@ export function DetailPane({
 
         {/* ISSUE: 3-column stat cards */}
         {isIssue && childTotal > 0 && (
-          <div className="grid grid-cols-3 gap-2 mb-4">
-            <div className="rounded-sm border border-border p-3 text-center">
+          <div className="grid grid-cols-3 gap-2.5 mb-4">
+            <div className="rounded-sm border border-border p-3.5 text-center">
               <div className="flex items-baseline justify-center gap-0.5">
-                <span className="text-[22px] font-bold">{childCompleted}</span>
-                <span className="text-[12px] text-muted-foreground">/{childTotal}</span>
+                <span className="text-[24px] font-bold">{childCompleted}</span>
+                <span className="text-[13px] text-muted-foreground">/{childTotal}</span>
               </div>
-              <p className="text-[10px] text-muted-foreground">Tasks</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">Tasks</p>
             </div>
-            <div className={`rounded-sm border p-3 text-center ${isBehind ? "border-red-500/30" : "border-border"}`}>
+            <div className={`rounded-sm border p-3.5 text-center ${isBehind ? "border-red-500/30 bg-red-500/5" : "border-border"}`}>
               <div className="flex items-baseline justify-center gap-0.5">
-                <span className={`text-[22px] font-bold ${isBehind ? "text-red-400" : ""}`}>
+                <span className={`text-[24px] font-bold ${isBehind ? "text-red-400" : ""}`}>
                   {goal.pacing?.daysRemaining ?? "—"}
                 </span>
-                <span className="text-[12px] text-muted-foreground">d</span>
+                <span className={`text-[13px] ${isBehind ? "text-red-400" : "text-muted-foreground"}`}>d</span>
               </div>
-              <p className="text-[10px] text-muted-foreground">Left</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">Left</p>
             </div>
-            <div className="rounded-sm border border-border p-3 text-center">
+            <div className="rounded-sm border border-border p-3.5 text-center">
               <div className="flex items-baseline justify-center gap-0.5">
-                <span className="text-[22px] font-bold">~{Math.round(childTotal * 20)}</span>
-                <span className="text-[12px] text-muted-foreground">h</span>
+                <span className="text-[24px] font-bold">~{Math.round(childTotal * 20)}</span>
+                <span className="text-[13px] text-muted-foreground">h</span>
               </div>
-              <p className="text-[10px] text-muted-foreground">Est. effort</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">Est. effort</p>
             </div>
           </div>
         )}
@@ -586,24 +605,24 @@ export function DetailPane({
           <div className="grid grid-cols-2 gap-2.5 mb-4">
             <div className="rounded-sm border border-border p-3">
               <div className="flex items-baseline gap-1">
-                <span className="text-[22px] font-bold">{goal.currentValue ?? 0}</span>
-                <span className="text-[12px] text-muted-foreground">
-                  /{goal.targetValue} {metricLabel ? metricLabel.split(" ").pop() : "total"}
+                <span className="text-[24px] font-bold">{goal.currentValue ?? 0}</span>
+                <span className="text-[13px] text-muted-foreground">
+                  /{goal.targetValue} {goal.metricSource?.includes("projects") ? "projects" : metricLabel ? metricLabel.split(" ").pop() : "total"}
                 </span>
               </div>
               {metricLabel && (
-                <p className="text-[10px] text-muted-foreground mt-0.5">Auto: {goal.metricSource}</p>
+                <p className="text-[10px] text-muted-foreground mt-1">Auto: {goal.metricSource}</p>
               )}
-              <Progress value={progressPercent} className="h-[4px] mt-2" style={{ "--progress-foreground": platformColor } as React.CSSProperties} />
+              <Progress value={progressPercent} className="h-[5px] mt-2.5" style={{ "--progress-foreground": platformColor } as React.CSSProperties} />
             </div>
             {childTotal > 0 && (
               <div className="rounded-sm border border-border p-3">
                 <div className="flex items-baseline gap-1">
-                  <span className="text-[22px] font-bold">{childCompleted}</span>
-                  <span className="text-[12px] text-muted-foreground">/{childTotal} milestones</span>
+                  <span className="text-[24px] font-bold">{childCompleted}</span>
+                  <span className="text-[13px] text-muted-foreground">/{childTotal} milestones</span>
                 </div>
-                <p className="text-[10px] text-muted-foreground mt-0.5">Child completion rollup</p>
-                <Progress value={childTotal > 0 ? (childCompleted / childTotal) * 100 : 0} className="h-[4px] mt-2" style={{ "--progress-foreground": "oklch(0.82 0.055 80)" } as React.CSSProperties} />
+                <p className="text-[10px] text-muted-foreground mt-1">Child completion rollup</p>
+                <Progress value={childTotal > 0 ? (childCompleted / childTotal) * 100 : 0} className="h-[5px] mt-2.5" style={{ "--progress-foreground": "oklch(0.82 0.055 80)" } as React.CSSProperties} />
               </div>
             )}
           </div>
@@ -712,38 +731,33 @@ export function DetailPane({
         )}
 
         {/* Actions bar */}
-        <div className="flex items-center gap-2 pt-3 border-t border-border">
+        <div className="flex items-center gap-2 pt-4 border-t border-border">
           {isCompleted ? (
-            <Button variant="ghost" size="sm" className="text-[12px]" onClick={() => patchGoal(goal.id, { status: "active" }).catch(() => {})}>
+            <Button variant="outline" size="sm" className="text-[12px]" onClick={() => patchGoal(goal.id, { status: "active" }).catch(() => {})}>
               <RotateCcw className="h-3 w-3 mr-1" />
               Reopen
             </Button>
           ) : isTask ? (
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
-              className="text-[12px] text-green-400 hover:text-green-300"
+              className="text-[12px] text-green-400 border-green-500/30 hover:bg-green-500/10"
               onClick={() => patchGoal(goal.id, { status: "completed" }).catch(() => {})}
             >
               <Check className="h-3 w-3 mr-1" />
               Mark complete
             </Button>
-          ) : (
-            <Button variant="ghost" size="sm" className="text-[12px]" onClick={() => patchGoal(goal.id, { status: "completed" }).catch(() => {})}>
-              <CheckCircle2 className="h-3 w-3 mr-1" />
-              Mark complete
-            </Button>
-          )}
-          <Button variant="ghost" size="sm" className="text-[12px]" onClick={() => onEdit(goal)}>
+          ) : null}
+          <Button variant="outline" size="sm" className="text-[12px]" onClick={() => onEdit(goal)}>
             <Pencil className="h-3 w-3 mr-1" />
             Edit
           </Button>
           <MoveToSelect goal={goal} allGoals={allGoals} />
           <div className="flex-1" />
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
-            className="text-[12px] text-red-400 hover:text-red-300"
+            className="text-[12px] text-red-400 border-red-500/30 hover:bg-red-500/10"
             onClick={() => onDelete(goal.id)}
           >
             <Trash2 className="h-3 w-3 mr-1" />

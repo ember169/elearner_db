@@ -17,6 +17,17 @@ import { PLATFORM_COLORS, PLATFORM_LABELS } from "@/lib/platform-colors";
 import type { GoalWithPacing } from "@/lib/guidance/engine";
 import { assertOk } from "@/lib/utils";
 
+function fmtDate(iso: string): string {
+  const d = new Date(iso + "T00:00:00");
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function fmtMonth(iso: string): string {
+  const [y, m] = iso.split("-");
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return `${months[parseInt(m) - 1]} '${y.slice(2)}`;
+}
+
 type NavState =
   | { view: "list" }
   | { view: "detail"; goalId: number };
@@ -107,7 +118,7 @@ function GoalCard({
             )}
             {!isCadence && !isEpic && goal.deadline && (
               <p className="text-[10px] text-muted-foreground">
-                by {goal.deadline.slice(0, 7).replace("-", " '")} · {goal.metricSource ? "Auto" : "Manual"}
+                by {fmtMonth(goal.deadline)} · {goal.metricSource ? "Auto" : "Manual"}
               </p>
             )}
             {isEpic && (
@@ -306,7 +317,7 @@ function MobileEpicView({
           </Badge>
           {goal.deadline && (
             <span className="text-[11px] text-muted-foreground">
-              by {goal.deadline.slice(0, 7).replace("-", " '")}
+              by {fmtMonth(goal.deadline)}
             </span>
           )}
         </div>
@@ -420,7 +431,7 @@ function MobileIssueView({
         </div>
         <h1 className="text-[20px] font-bold">{goal.title.replace("Complete ", "")}</h1>
         <p className="text-[11px] text-muted-foreground mt-0.5">
-          {goal.deadline && <>by {goal.deadline} · </>}
+          {goal.deadline && <>by {fmtDate(goal.deadline)} · </>}
           {daysLeft !== null && <>{daysLeft}d left · </>}
           {doneCount}/{goal.children.length} tasks
         </p>
@@ -468,29 +479,7 @@ function MobileIssueView({
                     }`}
                   >
                     {taskDeadlineWarning && "⚠ "}
-                    {task.deadline.slice(5, 7) === "01"
-                      ? "Jan"
-                      : task.deadline.slice(5, 7) === "02"
-                      ? "Feb"
-                      : task.deadline.slice(5, 7) === "03"
-                      ? "Mar"
-                      : task.deadline.slice(5, 7) === "04"
-                      ? "Apr"
-                      : task.deadline.slice(5, 7) === "05"
-                      ? "May"
-                      : task.deadline.slice(5, 7) === "06"
-                      ? "Jun"
-                      : task.deadline.slice(5, 7) === "07"
-                      ? "Jul"
-                      : task.deadline.slice(5, 7) === "08"
-                      ? "Aug"
-                      : task.deadline.slice(5, 7) === "09"
-                      ? "Sep"
-                      : task.deadline.slice(5, 7) === "10"
-                      ? "Oct"
-                      : task.deadline.slice(5, 7) === "11"
-                      ? "Nov"
-                      : "Dec"}
+                    {fmtMonth(task.deadline)}
                   </span>
                 )}
                 {!done && <ChevronRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />}
@@ -596,7 +585,7 @@ function MobileTaskView({
           {goal.deadline && (
             <MetaRow label="Deadline">
               <span className="text-[13px]">
-                {goal.deadline}
+                {fmtDate(goal.deadline)}
                 {daysLeft !== null && (
                   <span className="text-muted-foreground"> · {daysLeft}d</span>
                 )}
@@ -758,7 +747,7 @@ function MobileStandaloneView({
           )}
           {goal.deadline && (
             <MetaRow label="Deadline">
-              <span className="text-[13px]">{goal.deadline}</span>
+              <span className="text-[13px]">{fmtDate(goal.deadline)}</span>
             </MetaRow>
           )}
         </div>

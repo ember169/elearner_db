@@ -198,11 +198,11 @@ export const FT_COMMON_CORE: FtProject[] = [
     estimatedHours: 15,
   },
 
-  // --- Circle 5 ---
+  // --- Circle 4 (continued: CPP 00-04) ---
   {
     slug: "cpp00",
     name: "CPP Module 00",
-    circle: 5,
+    circle: 4,
     prerequisites: ["netpractice"],
     skills: ["cpp", "oop", "namespaces", "classes", "member-functions"],
     description:
@@ -212,7 +212,7 @@ export const FT_COMMON_CORE: FtProject[] = [
   {
     slug: "cpp01",
     name: "CPP Module 01",
-    circle: 5,
+    circle: 4,
     prerequisites: ["cpp00"],
     skills: ["cpp", "memory-allocation", "pointers", "references", "filestreams"],
     description:
@@ -222,7 +222,7 @@ export const FT_COMMON_CORE: FtProject[] = [
   {
     slug: "cpp02",
     name: "CPP Module 02",
-    circle: 5,
+    circle: 4,
     prerequisites: ["cpp01"],
     skills: ["cpp", "operator-overloading", "orthodox-canonical-form", "fixed-point"],
     description:
@@ -232,7 +232,7 @@ export const FT_COMMON_CORE: FtProject[] = [
   {
     slug: "cpp03",
     name: "CPP Module 03",
-    circle: 5,
+    circle: 4,
     prerequisites: ["cpp02"],
     skills: ["cpp", "inheritance", "diamond-problem"],
     description: "Inheritance in C++.",
@@ -241,13 +241,15 @@ export const FT_COMMON_CORE: FtProject[] = [
   {
     slug: "cpp04",
     name: "CPP Module 04",
-    circle: 5,
+    circle: 4,
     prerequisites: ["cpp03"],
     skills: ["cpp", "polymorphism", "abstract-classes", "interfaces"],
     description:
       "Subtype polymorphism, abstract classes, interfaces.",
     estimatedHours: 15,
   },
+
+  // --- Circle 5 ---
   {
     slug: "cpp05",
     name: "CPP Module 05",
