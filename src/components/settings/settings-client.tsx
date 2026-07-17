@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { formatRelative } from "@/lib/format";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,6 +69,7 @@ export function SettingsClient({
   recentSyncs: SyncLogEntry[];
   platformSyncs?: Record<string, string | null>;
 }) {
+  const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -200,7 +203,7 @@ export function SettingsClient({
         }),
       });
       await assertOk(res);
-      window.location.reload();
+      router.refresh();
     } catch (e) {
       alert(e instanceof Error ? e.message : "Failed to save settings.");
       setSaving(false);
@@ -212,7 +215,7 @@ export function SettingsClient({
     try {
       const res = await fetch("/api/sync", { method: "POST" });
       await assertOk(res);
-      window.location.reload();
+      router.refresh();
     } catch (e) {
       alert(e instanceof Error ? e.message : "Sync failed.");
       setSyncing(false);
@@ -631,16 +634,6 @@ function PlatformSection({
   );
 }
 
-function formatRelative(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-}
 
 function Field({
   label,

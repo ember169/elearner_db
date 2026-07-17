@@ -176,10 +176,21 @@ export function GoalsTree({
   onSuggest?: () => void;
   on42Plan?: () => void;
 }) {
-  const [expanded, setExpanded] = useState<Record<number, boolean>>({});
+  const [expanded, setExpanded] = useState<Record<number, boolean>>(() => {
+    try {
+      const stored = localStorage.getItem("learnerdb-goals-expanded");
+      return stored ? JSON.parse(stored) : {};
+    } catch {
+      return {};
+    }
+  });
 
   function toggleExpand(id: number) {
-    setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
+    setExpanded((prev) => {
+      const next = { ...prev, [id]: !prev[id] };
+      try { localStorage.setItem("learnerdb-goals-expanded", JSON.stringify(next)); } catch {}
+      return next;
+    });
   }
 
   function flatCount(tree: GoalWithPacing[]): { active: number; behind: number } {

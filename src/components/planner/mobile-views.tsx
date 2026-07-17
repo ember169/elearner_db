@@ -8,12 +8,12 @@ import type { PlanItemData, SideProject } from "./types";
 const DAY_NAMES = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 
 function getStatusIcon(status: string, sourceWeek?: string | null) {
-  if (sourceWeek) return { Icon: CornerDownRight, color: "oklch(0.78 0.14 60)" };
+  if (sourceWeek) return { Icon: CornerDownRight, color: "var(--status-blocked)" };
   switch (status) {
-    case "done": return { Icon: Check, color: "oklch(0.72 0.14 152)" };
-    case "active": return { Icon: ArrowRight, color: "oklch(0.82 0.055 80)" };
-    case "blocked": return { Icon: Pause, color: "oklch(0.78 0.14 60)" };
-    case "stuck": return { Icon: AlertTriangle, color: "oklch(0.70 0.18 25)" };
+    case "done": return { Icon: Check, color: "var(--status-done)" };
+    case "active": return { Icon: ArrowRight, color: "var(--primary)" };
+    case "blocked": return { Icon: Pause, color: "var(--status-blocked)" };
+    case "stuck": return { Icon: AlertTriangle, color: "var(--status-stuck)" };
     default: return { Icon: Circle, color: "var(--muted-foreground)" };
   }
 }
@@ -70,7 +70,7 @@ export function TodayView({
 
   return (
     <div className="space-y-4">
-      <p className="text-[12px] font-bold" style={{ color: "oklch(0.82 0.055 80)" }}>
+      <p className="text-[12px] font-bold" style={{ color: "var(--primary)" }}>
         {dayStr}
       </p>
 
@@ -106,7 +106,7 @@ export function TodayView({
       {sideProject && (
         <div
           className="mt-4 px-3 py-2.5 rounded-sm"
-          style={{ borderLeft: "3px solid var(--primary)", background: "oklch(0.19 0.006 75 / 0.4)" }}
+          style={{ borderLeft: "3px solid var(--primary)", background: "color-mix(in oklch, var(--muted) 40%, transparent)" }}
         >
           <p className="text-[11px] font-semibold">Weekend: {sideProject.title}</p>
           <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -148,8 +148,8 @@ function MobileTodayCard({
     <div
       className="px-[14px] py-[14px] rounded-sm"
       style={{
-        border: `1px solid ${isActive ? "oklch(0.82 0.055 80 / 0.3)" : isDone ? "oklch(0.72 0.14 152 / 0.2)" : "oklch(0.25 0.007 70)"}`,
-        background: isActive ? "oklch(0.82 0.055 80 / 0.06)" : isDone ? "oklch(0.72 0.14 152 / 0.04)" : "oklch(0.19 0.006 75 / 0.4)",
+        border: `1px solid ${isActive ? "color-mix(in oklch, var(--primary) 30%, transparent)" : isDone ? "color-mix(in oklch, var(--status-done) 20%, transparent)" : "var(--border)"}`,
+        background: isActive ? "color-mix(in oklch, var(--primary) 6%, transparent)" : isDone ? "color-mix(in oklch, var(--status-done) 4%, transparent)" : "color-mix(in oklch, var(--muted) 40%, transparent)",
       }}
     >
       <div className="flex items-center gap-2 mb-1.5">
@@ -174,14 +174,14 @@ function MobileTodayCard({
             <button
               onClick={() => onStatusChange(item.id, "done")}
               className="text-[11px] px-2.5 py-1 rounded-sm font-medium"
-              style={{ background: "oklch(0.72 0.14 152)", color: "oklch(0.135 0.004 75)" }}
+              style={{ background: "var(--status-done)", color: "var(--primary-foreground)" }}
             >
               Done ✓
             </button>
             <button
               onClick={() => onStatusChange(item.id, "stuck")}
               className="text-[11px] px-2.5 py-1 rounded-sm border text-muted-foreground"
-              style={{ borderColor: "oklch(0.25 0.007 70)" }}
+              style={{ borderColor: "var(--border)" }}
             >
               Stuck
             </button>
@@ -238,14 +238,14 @@ export function FullWeekView({
       {/* Budget bar */}
       <div
         className="flex items-center gap-2 px-3 py-2 rounded-sm mb-3"
-        style={{ background: "oklch(0.16 0.005 75)" }}
+        style={{ background: "var(--muted)" }}
       >
         <span className="text-[11px] font-semibold tabular-nums">{doneHours.toFixed(0)}h / {budgetTotal}h</span>
         <div
           className="flex-1 h-1 rounded-[1px] overflow-hidden"
-          style={{ background: "oklch(0.21 0.006 75)" }}
+          style={{ background: "var(--secondary)" }}
         >
-          <div className="h-full" style={{ width: `${Math.min(100, pct)}%`, background: "oklch(0.72 0.14 152)" }} />
+          <div className="h-full" style={{ width: `${Math.min(100, pct)}%`, background: "var(--status-done)" }} />
         </div>
         <span className="text-[10px] text-muted-foreground tabular-nums">{pct.toFixed(0)}%</span>
       </div>
@@ -267,9 +267,9 @@ export function FullWeekView({
           })();
 
           const labelColor = allDone || isPast
-            ? "oklch(0.72 0.14 152)"
+            ? "var(--status-done)"
             : isToday
-              ? "oklch(0.82 0.055 80)"
+              ? "var(--primary)"
               : "var(--muted-foreground)";
 
           return (
@@ -277,8 +277,8 @@ export function FullWeekView({
               key={group.label}
               className="px-3 py-2.5 rounded-sm"
               style={{
-                background: isToday ? "oklch(0.82 0.055 80 / 0.04)" : allDone ? "oklch(0.72 0.14 152 / 0.03)" : undefined,
-                border: isToday ? "1px solid oklch(0.82 0.055 80 / 0.15)" : undefined,
+                background: isToday ? "color-mix(in oklch, var(--primary) 4%, transparent)" : allDone ? "color-mix(in oklch, var(--status-done) 3%, transparent)" : undefined,
+                border: isToday ? "1px solid color-mix(in oklch, var(--primary) 15%, transparent)" : undefined,
               }}
             >
               <p className="text-[11px] font-bold mb-1.5" style={{ color: labelColor }}>
@@ -296,7 +296,7 @@ export function FullWeekView({
                       <PlatformBadge type={item.type} />
                       <span className="flex-1 min-w-0 truncate" style={{
                         fontWeight: isToday && item.status === "active" ? 500 : 400,
-                        color: item.status === "blocked" ? "oklch(0.78 0.14 60)" : undefined,
+                        color: item.status === "blocked" ? "var(--status-blocked)" : undefined,
                       }}>
                         {item.title}
                       </span>
@@ -403,7 +403,7 @@ function BacklogCard({
         <button
           onClick={() => setShowPicker(!showPicker)}
           className="text-[11px] px-2.5 py-1 rounded-sm font-medium"
-          style={{ background: "var(--primary)", color: "oklch(0.135 0.004 75)" }}
+          style={{ background: "var(--primary)", color: "var(--primary-foreground)" }}
         >
           Schedule →
         </button>
@@ -411,7 +411,7 @@ function BacklogCard({
           <button
             onClick={() => onStatusChange(item.id, "pending")}
             className="text-[11px] px-2.5 py-1 rounded-sm border text-muted-foreground"
-            style={{ borderColor: "oklch(0.25 0.007 70)" }}
+            style={{ borderColor: "var(--border)" }}
           >
             Retry
           </button>
@@ -471,10 +471,10 @@ export function ViewToggle({
           onClick={() => onChange(tab.key)}
           className="flex-1 py-1.5 text-[11px] font-medium transition-colors"
           style={{
-            background: active === tab.key ? "oklch(0.82 0.055 80 / 0.1)" : "transparent",
-            color: active === tab.key ? "oklch(0.82 0.055 80)" : "oklch(0.55 0.01 80)",
+            background: active === tab.key ? "color-mix(in oklch, var(--primary) 10%, transparent)" : "transparent",
+            color: active === tab.key ? "var(--primary)" : "var(--muted-foreground)",
             fontWeight: active === tab.key ? 600 : 500,
-            borderLeft: i > 0 ? "1px solid oklch(0.25 0.007 70)" : undefined,
+            borderLeft: i > 0 ? "1px solid var(--border)" : undefined,
           }}
         >
           {tab.label}

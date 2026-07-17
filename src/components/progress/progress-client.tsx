@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { formatRelative } from "@/lib/format";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -72,9 +73,7 @@ interface ProgressClientProps {
     position: number | null;
     challengesSolved: number | null;
   } | null;
-  skills: Skill[];
   activity: ActivityItem[];
-  snapshots: Snapshot[];
   ftProgress: {
     currentCircle: number;
     circleBreakdown: Record<number, { total: number; done: number }>;
@@ -96,9 +95,7 @@ export function ProgressClient({
   htb,
   maldev,
   rootme,
-  skills: _skills,
   activity,
-  snapshots: _snapshots,
   ftProgress,
   competencies,
   lastSync,
@@ -113,7 +110,7 @@ export function ProgressClient({
   const nextLabel = nextProjects.map((p) => p.name).join(", ");
 
   return (
-    <div className="space-y-6 max-w-[896px]">
+    <div className="space-y-5">
       {/* Header + period toggle */}
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -129,7 +126,7 @@ export function ProgressClient({
               onClick={() => setPeriod(p)}
               className="px-3 py-1.5 text-[12px] font-medium transition-colors"
               style={{
-                background: period === p ? "oklch(0.82 0.055 80 / 0.1)" : "transparent",
+                background: period === p ? "color-mix(in oklch, var(--primary) 10%, transparent)" : "transparent",
                 color: period === p ? "var(--primary)" : "var(--muted-foreground)",
               }}
             >
@@ -143,7 +140,7 @@ export function ProgressClient({
       {period !== "all" && (
         <div
           className="rounded-sm border border-border px-5 py-4"
-          style={{ background: "oklch(0.17 0.005 75)" }}
+          style={{ background: "var(--card)" }}
         >
           <p className="text-[12px] font-semibold uppercase tracking-wider text-primary mb-2">
             {period === "week" ? currentWeekLabel() : currentMonthLabel()}
@@ -476,37 +473,20 @@ export function ProgressClient({
         </CardContent>
       </Card>
 
-      {/* Monthly snapshots archive teaser */}
-      <div className="rounded-sm border border-dashed border-border px-5 py-4 flex items-center gap-3">
-        <span className="text-[20px]">&#x1F4CA;</span>
-        <div className="flex-1">
-          <p className="text-[13px] font-medium">Monthly snapshots</p>
-          <p className="text-[12px] text-muted-foreground">
-            Saved automatically every month. Compare your competency map, platform stats,
-            and activity across time periods.
-          </p>
-        </div>
-        <span className="text-[12px] text-muted-foreground">Coming soon</span>
-      </div>
     </div>
   );
 }
 
 /* ─── Delta stats ─── */
 
-function DeltaStat({ label, value, delta }: { label: string; value: string; delta?: string }) {
+function DeltaStat({ label, value }: { label: string; value: string }) {
   return (
     <div
       className="rounded-sm border border-border text-center px-3 py-2.5"
-      style={{ background: "oklch(0.17 0.005 75)" }}
+      style={{ background: "var(--card)" }}
     >
       <p className="text-[11px] text-muted-foreground">{label}</p>
       <p className="text-[18px] font-bold tabular-nums mt-0.5">{value}</p>
-      {delta && (
-        <p className="text-[11px] mt-0.5" style={{ color: "var(--status-success)" }}>
-          {delta}
-        </p>
-      )}
     </div>
   );
 }
@@ -566,14 +546,14 @@ function PlatformActivityBars({ activity, period }: { activity: ActivityItem[]; 
             </span>
             <div
               className="flex-1 h-2 rounded-[1px]"
-              style={{ background: "oklch(0.21 0.006 75)" }}
+              style={{ background: "var(--muted)" }}
             >
               {count > 0 && (
                 <div
                   className="h-full rounded-[1px] transition-all"
                   style={{
                     width: `${Math.max(pct, 3)}%`,
-                    background: `color-mix(in oklch, ${PLATFORM_COLORS[p.key]} 50%, transparent)`,
+                    background: `color-mix(in oklch, ${PLATFORM_COLORS[p.key]} 75%, transparent)`,
                   }}
                 />
               )}
@@ -648,13 +628,3 @@ function formatShortDate(d: Date): string {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-function formatRelative(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-}

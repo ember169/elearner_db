@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { formatRelative } from "@/lib/format";
 import { RefreshCw, ChevronLeft, ChevronRight, Plus, X, Square, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,17 +64,6 @@ function formatDate(d: Date): string {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-function formatRelative(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-}
-
 export function PlannerClient({
   initialPlan,
   initialWeek,
@@ -86,6 +77,7 @@ export function PlannerClient({
   hasKey,
   stale,
 }: PlannerClientProps) {
+  const router = useRouter();
   const [currentWeek, setCurrentWeek] = useState(initialWeek);
   const [plan, setPlan] = useState(initialPlan);
   const [items, setItems] = useState<PlanItemData[]>(initialPlan.items);
@@ -203,7 +195,7 @@ export function PlannerClient({
     try {
       const res = await fetch("/api/sync", { method: "POST" });
       await assertOk(res);
-      window.location.reload();
+      router.refresh();
     } catch (e) {
       alert(e instanceof Error ? e.message : "Sync failed.");
       setSyncing(false);
@@ -303,7 +295,7 @@ export function PlannerClient({
   const nextWeekNum = getISOWeekNumber((() => { const d = new Date(currentWeek + "T12:00:00"); d.setDate(d.getDate() + 7); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; })());
 
   return (
-    <div className="max-w-[1060px] space-y-4">
+    <div className="space-y-5">
       {/* ── Header ── */}
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <div className="min-w-0">
@@ -331,10 +323,10 @@ export function PlannerClient({
       </div>
 
       {regenStep && (
-        <div className="flex items-center gap-3 px-4 py-2.5 rounded-sm border border-primary/30" style={{ background: "oklch(0.82 0.055 80 / 0.04)" }}>
+        <div className="flex items-center gap-3 px-4 py-2.5 rounded-sm border border-primary/30" style={{ background: "color-mix(in oklch, var(--primary) 4%, transparent)" }}>
           <RefreshCw className="h-3.5 w-3.5 text-primary animate-spin shrink-0" />
           <span className="text-[13px] text-primary font-medium">{regenStep}</span>
-          <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: "oklch(0.82 0.055 80 / 0.1)" }}>
+          <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: "color-mix(in oklch, var(--primary) 10%, transparent)" }}>
             <div
               className="h-full rounded-full transition-all duration-700 ease-out"
               style={{
@@ -351,18 +343,18 @@ export function PlannerClient({
         <div
           className="rounded-sm px-4 py-3"
           style={{
-            background: "oklch(0.17 0.005 75)",
-            border: "1px solid oklch(0.25 0.007 70)",
+            background: "var(--card)",
+            border: "1px solid var(--border)",
           }}
         >
           <div className="flex items-start gap-3">
             <div
               className="h-5 w-5 rounded-full flex items-center justify-center shrink-0 mt-0.5"
-              style={{ background: "oklch(0.82 0.055 80)" }}
+              style={{ background: "var(--primary)" }}
             >
-              <span className="text-[9px] font-bold" style={{ color: "oklch(0.135 0.004 75)" }}>M</span>
+              <span className="text-[9px] font-bold" style={{ color: "var(--primary-foreground)" }}>M</span>
             </div>
-            <p className="text-[13px] leading-relaxed flex-1 min-w-0" style={{ color: "oklch(0.72 0.01 80)" }}>
+            <p className="text-[13px] leading-relaxed flex-1 min-w-0" style={{ color: "var(--muted-foreground)" }}>
               {briefingCollapsed ? plan.collapsedBriefing ?? plan.mentorBriefing : plan.mentorBriefing}
             </p>
             <button
@@ -389,16 +381,16 @@ export function PlannerClient({
           className="rounded-sm px-4 py-2.5 space-y-1"
           style={{
             background: deadlineUrgency === "critical"
-              ? "oklch(0.25 0.06 25 / 0.15)"
+              ? "color-mix(in oklch, var(--status-danger) 15%, transparent)"
               : deadlineUrgency === "elevated"
-                ? "oklch(0.35 0.08 70 / 0.12)"
-                : "oklch(0.35 0.04 80 / 0.08)",
+                ? "color-mix(in oklch, var(--status-warning) 12%, transparent)"
+                : "color-mix(in oklch, var(--muted-foreground) 8%, transparent)",
             border: `1px solid ${
               deadlineUrgency === "critical"
-                ? "oklch(0.55 0.15 25 / 0.4)"
+                ? "color-mix(in oklch, var(--status-danger) 40%, transparent)"
                 : deadlineUrgency === "elevated"
-                  ? "oklch(0.6 0.12 70 / 0.35)"
-                  : "oklch(0.5 0.04 80 / 0.2)"
+                  ? "color-mix(in oklch, var(--status-warning) 35%, transparent)"
+                  : "color-mix(in oklch, var(--muted-foreground) 20%, transparent)"
             }`,
           }}
         >
@@ -407,18 +399,18 @@ export function PlannerClient({
               className="h-3.5 w-3.5 shrink-0"
               style={{
                 color: deadlineUrgency === "critical"
-                  ? "oklch(0.65 0.2 25)"
+                  ? "var(--status-danger)"
                   : deadlineUrgency === "elevated"
-                    ? "oklch(0.7 0.15 70)"
-                    : "oklch(0.6 0.08 80)",
+                    ? "var(--status-warning)"
+                    : "var(--muted-foreground)",
               }}
             />
-            <span className="text-[12px] font-medium" style={{ color: "oklch(0.75 0.02 80)" }}>
+            <span className="text-[12px] font-medium" style={{ color: "var(--foreground)" }}>
               {deadlineUrgency === "critical" ? "Deadline pressure: critical" : deadlineUrgency === "elevated" ? "Deadline pressure: elevated" : "Deadline notes"}
             </span>
           </div>
           {deadlineWarnings.map((w, i) => (
-            <p key={i} className="text-[12px] leading-relaxed pl-5.5" style={{ color: "oklch(0.62 0.01 80)" }}>
+            <p key={i} className="text-[12px] leading-relaxed pl-5.5" style={{ color: "var(--muted-foreground)" }}>
               {w}
             </p>
           ))}
@@ -447,7 +439,7 @@ export function PlannerClient({
         />
 
         {/* Hints bar */}
-        <div className="flex items-center gap-4 flex-wrap mt-3 text-[11px]" style={{ color: "oklch(0.45 0.01 80)" }}>
+        <div className="flex items-center gap-4 flex-wrap mt-3 text-[11px]" style={{ color: "var(--muted-foreground)" }}>
           <span>⇄ Drag cards between days</span>
           <span>Click card → mark done / stuck / blocked</span>
           <span>Drop on Backlog to unschedule</span>
@@ -520,16 +512,24 @@ export function PlannerClient({
         </div>
       </div>
 
-      {/* ── Side project + Competency (desktop only, side by side) ── */}
-      <div className={`hidden md:grid gap-3 ${sideProject ? "grid-cols-2" : "grid-cols-1"}`}>
-        {sideProject && (
-          <SideProjectBrief project={sideProject} weekLabel={`· WK${weekNum}`} />
-        )}
-        <CompetencySpotlight competencies={competencies} />
-      </div>
-
-      {/* ── Pinned tasks (desktop) ── */}
-      <div className="hidden md:block">
+      {/* ── Secondary section (desktop) ── */}
+      <div className="hidden md:block space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          {sideProject ? (
+            <SideProjectBrief project={sideProject} weekLabel={`· WK${weekNum}`} />
+          ) : (
+            <div
+              className="rounded-sm border border-border px-4 py-4 flex items-center justify-center"
+              style={{ background: "var(--card)" }}
+            >
+              <p className="text-[12px] text-muted-foreground">
+                <a href="/settings" className="underline hover:text-foreground transition-colors">Configure an LLM</a>{" "}
+                for side-project suggestions
+              </p>
+            </div>
+          )}
+          <CompetencySpotlight competencies={competencies} />
+        </div>
         <div className="flex items-center gap-3 flex-wrap px-4 py-2.5 rounded-sm border border-border">
           <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Pinned</span>
           {pinned.map((task) => (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -105,8 +106,8 @@ function GoalCard({
                   variant="outline"
                   className="text-[8px] px-1 py-0"
                   style={{
-                    borderColor: goal.pacing.onTrack ? "#22c55e" : "#ef4444",
-                    color: goal.pacing.onTrack ? "#22c55e" : "#ef4444",
+                    borderColor: goal.pacing.onTrack ? "var(--status-success)" : "var(--status-danger)",
+                    color: goal.pacing.onTrack ? "var(--status-success)" : "var(--status-danger)",
                   }}
                 >
                   {goal.pacing.onTrack ? "ON PACE" : "BEHIND"}
@@ -169,7 +170,7 @@ function GoalCard({
             value={progress}
             className="h-[3px]"
             style={
-              { "--progress-foreground": isBehind ? "#ef4444" : platformColor } as React.CSSProperties
+              { "--progress-foreground": isBehind ? "var(--status-danger)" : platformColor } as React.CSSProperties
             }
           />
         )}
@@ -232,7 +233,7 @@ function MobileGoalsList({
           </button>
           <button
             className="h-8 w-8 rounded-full flex items-center justify-center text-background"
-            style={{ backgroundColor: "oklch(0.82 0.055 80)" }}
+            style={{ backgroundColor: "var(--primary)" }}
             onClick={onNewGoal}
           >
             <Plus className="h-4 w-4" />
@@ -309,8 +310,8 @@ function MobileEpicView({
             variant="outline"
             className="text-[8px] px-1 py-0"
             style={{
-              borderColor: isBehind ? "#ef4444" : "#22c55e",
-              color: isBehind ? "#ef4444" : "#22c55e",
+              borderColor: isBehind ? "var(--status-danger)" : "var(--status-success)",
+              color: isBehind ? "var(--status-danger)" : "var(--status-success)",
             }}
           >
             {isBehind ? "BEHIND" : "ON TRACK"}
@@ -439,7 +440,7 @@ function MobileIssueView({
           value={progress}
           className="h-[3px] mt-2"
           style={
-            { "--progress-foreground": isBehind ? "#ef4444" : platformColor } as React.CSSProperties
+            { "--progress-foreground": isBehind ? "var(--status-danger)" : platformColor } as React.CSSProperties
           }
         />
       </div>
@@ -511,6 +512,7 @@ function MobileTaskView({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const router = useRouter();
   const [completing, setCompleting] = useState(false);
   const isCompleted = goal.status === "completed";
 
@@ -526,7 +528,7 @@ function MobileTaskView({
         }),
       });
       await assertOk(res);
-      window.location.reload();
+      router.refresh();
     } catch (e) {
       alert(e instanceof Error ? e.message : "Failed.");
       setCompleting(false);
@@ -570,8 +572,8 @@ function MobileTaskView({
                 className="h-2 w-2 rounded-full"
                 style={{
                   backgroundColor: isCompleted
-                    ? "#22c55e"
-                    : "oklch(0.82 0.055 80)",
+                    ? "var(--status-success)"
+                    : "var(--primary)",
                 }}
               />
               {isCompleted ? "Completed" : "In progress"}
@@ -603,7 +605,7 @@ function MobileTaskView({
           <Button
             className="w-full"
             variant="default"
-            style={{ backgroundColor: "#16a34a" }}
+            style={{ backgroundColor: "var(--status-success)" }}
             onClick={handleComplete}
             disabled={completing}
           >
@@ -645,6 +647,7 @@ function MobileStandaloneView({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const router = useRouter();
   const [completing, setCompleting] = useState(false);
   const platformColor = PLATFORM_COLORS[goal.category ?? "general"];
   const isCompleted = goal.status === "completed";
@@ -666,7 +669,7 @@ function MobileStandaloneView({
         }),
       });
       await assertOk(res);
-      window.location.reload();
+      router.refresh();
     } catch (e) {
       alert(e instanceof Error ? e.message : "Failed.");
       setCompleting(false);
@@ -755,7 +758,7 @@ function MobileStandaloneView({
         {!isCompleted && !isCadence && (
           <Button
             className="w-full"
-            style={{ backgroundColor: "#16a34a" }}
+            style={{ backgroundColor: "var(--status-success)" }}
             onClick={handleToggle}
             disabled={completing}
           >

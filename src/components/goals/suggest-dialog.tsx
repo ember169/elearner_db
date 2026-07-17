@@ -70,67 +70,28 @@ export function SuggestDialog({
     if (!suggestion) return;
     setApplying(true);
     try {
-      const epicRes = await fetch("/api/goals", {
+      const payload = {
+        epic: suggestion.epic,
+        issues: suggestion.issues
+          .filter((_, idx) => selectedIssues.has(idx))
+          .map((issue, idx) => ({
+            title: issue.title,
+            deadline: issue.deadline ?? null,
+            sortOrder: idx,
+            tasks: issue.tasks.map((task, tIdx) => ({
+              title: task.title,
+              ftSlug: task.ftSlug ?? null,
+              sortOrder: tIdx,
+            })),
+          })),
+      };
+
+      const res = await fetch("/api/goals/batch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: suggestion.epic.title,
-          category: suggestion.epic.platform,
-          goalType: "cumulative",
-          targetValue: suggestion.epic.targetValue ?? null,
-          metricSource: suggestion.epic.metricSource ?? null,
-          deadline: suggestion.epic.deadline ?? null,
-        }),
+        body: JSON.stringify(payload),
       });
-      await assertOk(epicRes);
-
-      const allGoals = await fetch("/api/goals").then((r) => r.json());
-      const epicGoal = allGoals
-        .filter((g: { title: string }) => g.title === suggestion.epic.title)
-        .pop();
-      if (!epicGoal) throw new Error("Could not find created epic.");
-      const epicId = epicGoal.id;
-
-      for (const [idx, issue] of suggestion.issues.entries()) {
-        if (!selectedIssues.has(idx)) continue;
-        const issueRes = await fetch("/api/goals", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            title: issue.title,
-            category: suggestion.epic.platform,
-            goalType: "cumulative",
-            deadline: issue.deadline ?? null,
-            parentGoalId: epicId,
-            sortOrder: idx,
-          }),
-        });
-        await assertOk(issueRes);
-
-        const updatedGoals = await fetch("/api/goals").then((r) => r.json());
-        const issueGoal = updatedGoals
-          .filter((g: { title: string; parentGoalId: number | null }) =>
-            g.title === issue.title && g.parentGoalId === epicId
-          )
-          .pop();
-        if (!issueGoal) continue;
-
-        for (const [tIdx, task] of issue.tasks.entries()) {
-          await fetch("/api/goals", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              title: task.title,
-              category: suggestion.epic.platform,
-              goalType: "cumulative",
-              ftSlug: task.ftSlug ?? null,
-              parentGoalId: issueGoal.id,
-              sortOrder: tIdx,
-            }),
-          });
-        }
-      }
-
+      await assertOk(res);
       onDone();
     } catch (e) {
       alert(e instanceof Error ? e.message : "Failed to create goals.");
@@ -144,7 +105,7 @@ export function SuggestDialog({
       <DialogContent className="max-w-[520px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-[15px]">
-            <Zap className="h-4 w-4" style={{ color: "oklch(0.82 0.055 80)" }} />
+            <Zap className="h-4 w-4" style={{ color: "var(--primary)" }} />
             LLM Goal Suggestion
           </DialogTitle>
         </DialogHeader>
@@ -188,7 +149,7 @@ export function SuggestDialog({
                 <Badge
                   variant="outline"
                   className="text-[8px] px-1 py-0"
-                  style={{ borderColor: "oklch(0.82 0.055 80)", color: "oklch(0.82 0.055 80)" }}
+                  style={{ borderColor: "var(--primary)", color: "var(--primary)" }}
                 >
                   EPIC
                 </Badge>

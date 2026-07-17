@@ -78,12 +78,12 @@ export function PulseBar({
     <div className="flex items-center gap-1 flex-wrap">
       <div
         className="flex items-center rounded-sm px-3 py-2 flex-1 min-w-0"
-        style={{ background: "oklch(0.16 0.005 75)" }}
+        style={{ background: "var(--muted)" }}
       >
         {items.map((item, i) => (
           <div key={item.label} className="flex items-center">
             {i > 0 && (
-              <div className="h-3 w-px shrink-0 mx-1" style={{ background: "oklch(0.25 0.007 70)" }} />
+              <div className="h-3 w-px shrink-0 mx-1" style={{ background: "var(--border)" }} />
             )}
             <div className="flex items-center gap-1.5 px-2">
               <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
@@ -106,7 +106,7 @@ export function PulseBar({
       {budgetTotal != null && (
         <div
           className="flex items-center gap-2 rounded-sm px-3 py-2 shrink-0"
-          style={{ background: "oklch(0.16 0.005 75)" }}
+          style={{ background: "var(--muted)" }}
         >
           <span className="text-[11px] font-semibold tabular-nums">
             Budget
@@ -116,7 +116,7 @@ export function PulseBar({
           </span>
           <div
             className="w-[60px] h-1 rounded-[1px] overflow-hidden"
-            style={{ background: "oklch(0.22 0.005 75)" }}
+            style={{ background: "var(--accent)" }}
           >
             <div
               className="h-full rounded-[1px]"

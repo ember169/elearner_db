@@ -23,6 +23,7 @@ import {
   GripVertical,
 } from "lucide-react";
 import { useState, useId } from "react";
+import { useRouter } from "next/navigation";
 import {
   DndContext,
   DragOverlay,
@@ -109,14 +110,14 @@ function MetadataRow({ label, children }: { label: string; children: React.React
   );
 }
 
-async function patchGoal(id: number, data: Record<string, unknown>) {
+async function patchGoal(id: number, data: Record<string, unknown>, onDone?: () => void) {
   const res = await fetch("/api/goals", {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id, ...data }),
   });
   await assertOk(res);
-  window.location.reload();
+  onDone?.();
 }
 
 function ChildRowContent({
@@ -126,6 +127,7 @@ function ChildRowContent({
   onSelect,
   dragHandleProps,
   parentDeadline,
+  onRefresh,
 }: {
   child: GoalWithPacing;
   childLabel: string;
@@ -133,6 +135,7 @@ function ChildRowContent({
   onSelect: (id: number) => void;
   dragHandleProps?: Record<string, unknown>;
   parentDeadline?: string | null;
+  onRefresh?: () => void;
 }) {
   const isBehind = child.pacing && !child.pacing.onTrack && child.pacing.percentComplete < 100;
   const isCompleted = child.status === "completed";
@@ -179,7 +182,7 @@ function ChildRowContent({
           className="text-muted-foreground hover:text-foreground"
           onClick={async (e) => {
             e.stopPropagation();
-            try { await patchGoal(child.id, { status: "active" }); } catch {}
+            try { await patchGoal(child.id, { status: "active" }, onRefresh); } catch {}
           }}
           title="Reopen"
         >
@@ -213,12 +216,14 @@ function SortableChildRow({
   platformColor,
   onSelect,
   parentDeadline,
+  onRefresh,
 }: {
   child: GoalWithPacing;
   childLabel: string;
   platformColor: string;
   onSelect: (id: number) => void;
   parentDeadline?: string | null;
+  onRefresh: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: `child-${child.id}` });
@@ -238,6 +243,7 @@ function SortableChildRow({
         onSelect={onSelect}
         dragHandleProps={{ ...attributes, ...listeners }}
         parentDeadline={parentDeadline}
+        onRefresh={onRefresh}
       />
     </div>
   );
@@ -250,6 +256,7 @@ function SortableChildrenList({
   onSelect,
   parentId,
   parentDeadline,
+  onRefresh,
 }: {
   children: GoalWithPacing[];
   childLabel: string;
@@ -257,6 +264,7 @@ function SortableChildrenList({
   onSelect: (id: number) => void;
   parentId: number;
   parentDeadline?: string | null;
+  onRefresh: () => void;
 }) {
   const dndId = useId();
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -295,7 +303,7 @@ function SortableChildrenList({
         })
       )
     );
-    window.location.reload();
+    onRefresh();
   }
 
   return (
@@ -317,6 +325,7 @@ function SortableChildrenList({
               child={child}
               childLabel={childLabel}
               platformColor={platformColor}
+              onRefresh={onRefresh}
               onSelect={onSelect}
               parentDeadline={parentDeadline}
             />
@@ -340,9 +349,11 @@ function SortableChildrenList({
 function MoveToSelect({
   goal,
   allGoals,
+  onRefresh,
 }: {
   goal: GoalWithPacing;
   allGoals: GoalWithPacing[];
+  onRefresh: () => void;
 }) {
   const [moving, setMoving] = useState(false);
   const flat = flattenAll(allGoals);
@@ -370,7 +381,7 @@ function MoveToSelect({
       onValueChange={async (v) => {
         const newParent = !v || v === "none" ? null : parseInt(v);
         try {
-          await patchGoal(goal.id, { parentGoalId: newParent });
+          await patchGoal(goal.id, { parentGoalId: newParent }, onRefresh);
         } catch (e) {
           alert(e instanceof Error ? e.message : "Failed to move goal.");
           setMoving(false);
@@ -405,6 +416,9 @@ export function DetailPane({
   onDelete: (goalId: number) => void;
   onSelect: (id: number) => void;
 }) {
+  const router = useRouter();
+  const refresh = () => router.refresh();
+
   if (!goal) {
     return (
       <div className="flex-1 flex items-center justify-center text-muted-foreground text-[13px]">
@@ -498,7 +512,7 @@ export function DetailPane({
                 isCompleted ? "bg-green-500 border-green-500" : "border-muted-foreground/40 hover:border-foreground"
               }`}
               onClick={async () => {
-                try { await patchGoal(goal.id, { status: isCompleted ? "active" : "completed" }); } catch {}
+                try { await patchGoal(goal.id, { status: isCompleted ? "active" : "completed" }, refresh); } catch {}
               }}
             >
               {isCompleted && <Check className="h-3 w-3 text-white" />}
@@ -720,6 +734,7 @@ export function DetailPane({
               platformColor={platformColor}
               onSelect={onSelect}
               parentDeadline={goal.deadline}
+              onRefresh={refresh}
             >
               {goal.children}
             </SortableChildrenList>
@@ -733,7 +748,7 @@ export function DetailPane({
         {/* Actions bar */}
         <div className="flex items-center gap-2 pt-4 border-t border-border">
           {isCompleted ? (
-            <Button variant="outline" size="sm" className="text-[12px]" onClick={() => patchGoal(goal.id, { status: "active" }).catch(() => {})}>
+            <Button variant="outline" size="sm" className="text-[12px]" onClick={() => patchGoal(goal.id, { status: "active" }, refresh).catch(() => {})}>
               <RotateCcw className="h-3 w-3 mr-1" />
               Reopen
             </Button>
@@ -742,7 +757,7 @@ export function DetailPane({
               variant="outline"
               size="sm"
               className="text-[12px] text-green-400 border-green-500/30 hover:bg-green-500/10"
-              onClick={() => patchGoal(goal.id, { status: "completed" }).catch(() => {})}
+              onClick={() => patchGoal(goal.id, { status: "completed" }, refresh).catch(() => {})}
             >
               <Check className="h-3 w-3 mr-1" />
               Mark complete
@@ -752,7 +767,7 @@ export function DetailPane({
             <Pencil className="h-3 w-3 mr-1" />
             Edit
           </Button>
-          <MoveToSelect goal={goal} allGoals={allGoals} />
+          <MoveToSelect goal={goal} allGoals={allGoals} onRefresh={refresh} />
           <div className="flex-1" />
           <Button
             variant="outline"

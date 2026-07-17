@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -44,6 +45,7 @@ export function GoalsClient({
   competencies: CompetencySlim[];
   focusItems?: FocusSlim[];
 }) {
+  const router = useRouter();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [rightPane, setRightPane] = useState<RightPane>({ mode: "detail" });
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
@@ -75,7 +77,7 @@ export function GoalsClient({
 
   function handleFormDone() {
     setRightPane({ mode: "detail" });
-    window.location.reload();
+    router.refresh();
   }
 
   function handleFormCancel() {
@@ -96,7 +98,7 @@ export function GoalsClient({
       });
       await assertOk(res);
       if (selectedId === goalId) setSelectedId(null);
-      window.location.reload();
+      router.refresh();
     } catch (e) {
       alert(e instanceof Error ? e.message : "Failed to delete goal.");
     }
@@ -113,7 +115,7 @@ export function GoalsClient({
       await assertOk(res);
       if (selectedId === deleteConfirmId) setSelectedId(null);
       setDeleteConfirmId(null);
-      window.location.reload();
+      router.refresh();
     } catch (e) {
       alert(e instanceof Error ? e.message : "Failed to delete goal.");
     }
@@ -208,12 +210,12 @@ export function GoalsClient({
       <Generate42Dialog
         open={show42Dialog}
         onOpenChange={setShow42Dialog}
-        onDone={() => { setShow42Dialog(false); window.location.reload(); }}
+        onDone={() => { setShow42Dialog(false); router.refresh(); }}
       />
       <SuggestDialog
         open={showSuggestDialog}
         onOpenChange={setShowSuggestDialog}
-        onDone={() => { setShowSuggestDialog(false); window.location.reload(); }}
+        onDone={() => { setShowSuggestDialog(false); router.refresh(); }}
       />
 
       {/* Delete Confirmation Dialog (D7) */}

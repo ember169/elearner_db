@@ -5,9 +5,7 @@ import {
   htbProfile,
   maldevProfile,
   rootmeProfile,
-  ftSkills,
   activityFeed,
-  dailySnapshots,
   syncLog,
 } from "@/lib/db/schema";
 import { desc } from "drizzle-orm";
@@ -24,14 +22,12 @@ export default function ProgressPage() {
   const htb = db.select().from(htbProfile).limit(1).all()[0] ?? null;
   const maldev = db.select().from(maldevProfile).limit(1).all()[0] ?? null;
   const rootme = db.select().from(rootmeProfile).limit(1).all()[0] ?? null;
-  const skills = db.select().from(ftSkills).all();
   const activity = db
     .select()
     .from(activityFeed)
     .orderBy(desc(activityFeed.timestamp))
     .limit(500)
     .all();
-  const snapshots = db.select().from(dailySnapshots).all();
 
   const lastSync =
     db
@@ -63,9 +59,7 @@ export default function ProgressPage() {
       htb={htb}
       maldev={maldev}
       rootme={rootme}
-      skills={skills}
       activity={activity}
-      snapshots={snapshots}
       ftProgress={guidance.ftProgress}
       competencies={competencies}
       lastSync={lastSync?.startedAt ?? null}

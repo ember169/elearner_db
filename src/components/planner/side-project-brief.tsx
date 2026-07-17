@@ -66,7 +66,7 @@ export function SideProjectBrief({ project, weekLabel }: { project: SideProject;
           </p>
 
           {project.prerequisites && project.prerequisites.length > 0 && (
-            <div className="rounded-sm px-4 py-3" style={{ background: "oklch(0.16 0.005 75)" }}>
+            <div className="rounded-sm px-4 py-3" style={{ background: "var(--muted)" }}>
               <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
                 Prerequisites
               </p>
@@ -112,7 +112,7 @@ export function SideProjectBrief({ project, weekLabel }: { project: SideProject;
           {project.capstone_connection && (
             <div
               className="rounded-sm px-4 py-3 text-[12px] text-muted-foreground leading-relaxed"
-              style={{ background: "oklch(0.82 0.055 80 / 0.06)" }}
+              style={{ background: "color-mix(in oklch, var(--primary) 6%, transparent)" }}
             >
               <span className="font-semibold text-primary">Capstone:</span> {project.capstone_connection}
             </div>

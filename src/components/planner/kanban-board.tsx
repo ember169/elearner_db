@@ -37,33 +37,33 @@ type StatusMeta = { icon: typeof Check; color: string; borderColor: string; bg: 
 const STATUS_STYLES: Record<string, StatusMeta> = {
   done: {
     icon: Check,
-    color: "oklch(0.72 0.14 152)",
-    borderColor: "oklch(0.72 0.14 152 / 0.2)",
-    bg: "oklch(0.72 0.14 152 / 0.04)",
+    color: "var(--status-done)",
+    borderColor: "color-mix(in oklch, var(--status-done) 20%, transparent)",
+    bg: "color-mix(in oklch, var(--status-done) 4%, transparent)",
   },
   active: {
     icon: ArrowRight,
-    color: "oklch(0.82 0.055 80)",
-    borderColor: "oklch(0.82 0.055 80 / 0.3)",
-    bg: "oklch(0.82 0.055 80 / 0.06)",
+    color: "var(--primary)",
+    borderColor: "color-mix(in oklch, var(--primary) 30%, transparent)",
+    bg: "color-mix(in oklch, var(--primary) 6%, transparent)",
   },
   pending: {
     icon: Circle,
     color: "var(--muted-foreground)",
-    borderColor: "oklch(0.25 0.007 70)",
-    bg: "oklch(0.19 0.006 75 / 0.4)",
+    borderColor: "var(--border)",
+    bg: "color-mix(in oklch, var(--muted) 40%, transparent)",
   },
   blocked: {
     icon: Pause,
-    color: "oklch(0.78 0.14 60)",
-    borderColor: "oklch(0.78 0.14 60 / 0.3)",
-    bg: "oklch(0.78 0.14 60 / 0.03)",
+    color: "var(--status-blocked)",
+    borderColor: "color-mix(in oklch, var(--status-blocked) 30%, transparent)",
+    bg: "color-mix(in oklch, var(--status-blocked) 3%, transparent)",
   },
   stuck: {
     icon: AlertTriangle,
-    color: "oklch(0.70 0.18 25)",
-    borderColor: "oklch(0.70 0.18 25 / 0.3)",
-    bg: "oklch(0.70 0.18 25 / 0.03)",
+    color: "var(--status-stuck)",
+    borderColor: "color-mix(in oklch, var(--status-stuck) 30%, transparent)",
+    bg: "color-mix(in oklch, var(--status-stuck) 3%, transparent)",
   },
 };
 
@@ -71,9 +71,9 @@ function getStatusStyle(status: string, sourceWeek?: string | null): StatusMeta 
   if (sourceWeek) {
     return {
       icon: CornerDownRight,
-      color: "oklch(0.78 0.14 60)",
-      borderColor: "oklch(0.78 0.14 60 / 0.3)",
-      bg: "oklch(0.78 0.14 60 / 0.03)",
+      color: "var(--status-blocked)",
+      borderColor: "color-mix(in oklch, var(--status-blocked) 30%, transparent)",
+      bg: "color-mix(in oklch, var(--status-blocked) 3%, transparent)",
       dashed: true,
     };
   }
@@ -238,10 +238,10 @@ function KanbanColumn({
   const hours = items.reduce((s, i) => s + (i.estimatedHours ?? 2), 0);
 
   const borderColor = isPast
-    ? "oklch(0.72 0.14 152 / 0.5)"
+    ? "color-mix(in oklch, var(--status-done) 50%, transparent)"
     : isToday
-      ? "oklch(0.82 0.055 80)"
-      : "oklch(0.25 0.007 70)";
+      ? "var(--primary)"
+      : "var(--border)";
 
   return (
     <div
@@ -249,9 +249,9 @@ function KanbanColumn({
       className="flex flex-col rounded-sm"
       style={{
         background: isOver
-          ? "oklch(0.82 0.055 80 / 0.06)"
+          ? "color-mix(in oklch, var(--primary) 6%, transparent)"
           : isToday
-            ? "oklch(0.82 0.055 80 / 0.03)"
+            ? "color-mix(in oklch, var(--primary) 3%, transparent)"
             : undefined,
         margin: isToday ? "-4px" : undefined,
         padding: isToday ? "4px" : undefined,
@@ -267,7 +267,7 @@ function KanbanColumn({
       >
         <span
           className="text-[10px] font-semibold uppercase tracking-wider"
-          style={{ color: isToday ? "oklch(0.82 0.055 80)" : isPast ? "oklch(0.72 0.14 152 / 0.7)" : "var(--muted-foreground)" }}
+          style={{ color: isToday ? "var(--primary)" : isPast ? "color-mix(in oklch, var(--status-done) 70%, transparent)" : "var(--muted-foreground)" }}
         >
           {label}
         </span>
@@ -415,17 +415,17 @@ export function TaskCard({
             : `${(item.estimatedHours ?? 2).toFixed(0)}h`}
         </span>
         {item.status === "blocked" && item.blockedReason && (
-          <span className="text-[9px] ml-1" style={{ color: "oklch(0.78 0.14 60)" }}>
+          <span className="text-[9px] ml-1" style={{ color: "var(--status-blocked)" }}>
             {item.blockedReason}
           </span>
         )}
         {item.status === "stuck" && (item.attemptCount ?? 0) > 0 && (
-          <span className="text-[9px] ml-1" style={{ color: "oklch(0.70 0.18 25)" }}>
+          <span className="text-[9px] ml-1" style={{ color: "var(--status-stuck)" }}>
             {item.attemptCount} attempts
           </span>
         )}
         {item.sourceWeek && (
-          <span className="text-[9px] ml-1" style={{ color: "oklch(0.78 0.14 60)" }}>
+          <span className="text-[9px] ml-1" style={{ color: "var(--status-blocked)" }}>
             ↪ wk{new Date(item.sourceWeek + "T00:00:00").getDate()}
           </span>
         )}
@@ -437,7 +437,7 @@ export function TaskCard({
           <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
           <div
             className="absolute right-0 top-full z-50 mt-1 rounded-sm border border-border py-1 min-w-[120px]"
-            style={{ background: "oklch(0.15 0.005 75)" }}
+            style={{ background: "var(--popover)" }}
           >
             {(["blocked", "stuck", "deferred", "pending"] as const).map((s) => (
               <button
