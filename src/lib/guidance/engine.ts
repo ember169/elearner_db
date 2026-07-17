@@ -73,6 +73,7 @@ export type GoalWithPacing = {
   parentGoalId: number | null;
   sortOrder: number | null;
   ftSlug: string | null;
+  estimatedHours: number | null;
   originalTarget: number | null;
   status: string | null;
   createdAt: string;
@@ -250,6 +251,7 @@ export function analyzeGoals(): GoalWithPacing[] {
       parentGoalId: g.parentGoalId,
       sortOrder: g.sortOrder,
       ftSlug: g.ftSlug,
+      estimatedHours: g.estimatedHours,
       originalTarget: g.originalTarget,
       status: g.status,
       createdAt: g.createdAt,

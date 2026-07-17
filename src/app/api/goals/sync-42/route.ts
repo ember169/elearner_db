@@ -130,6 +130,7 @@ export async function PATCH(req: NextRequest) {
           targetValue: 1,
           currentValue: 0,
           ftSlug: project.slug,
+          estimatedHours: project.estimatedHours,
           parentGoalId: issue.id,
           sortOrder: existingTasks.length,
         })

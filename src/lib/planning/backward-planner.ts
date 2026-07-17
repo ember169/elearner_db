@@ -283,6 +283,7 @@ export function upsertCommonCoreDeadline(
       type: "common_core",
       label: "42 Common Core",
       targetDate,
+      weeklyBudget: weeklyBudget42,
       weeklyHoursNeeded: plan.weeklyHoursNeeded === Infinity ? null : plan.weeklyHoursNeeded,
       warning: plan.warnings.length > 0 ? plan.warnings[0] : null,
     })

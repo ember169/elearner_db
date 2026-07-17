@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import { goals } from "@/lib/db/schema";
 import { NextRequest, NextResponse } from "next/server";
 
-type BatchTask = { title: string; ftSlug?: string | null; sortOrder?: number };
+type BatchTask = { title: string; ftSlug?: string | null; estimatedHours?: number | null; sortOrder?: number };
 type BatchIssue = {
   title: string;
   deadline?: string | null;
@@ -66,6 +66,7 @@ export async function POST(req: NextRequest) {
             category: body.epic.platform || "general",
             goalType: "cumulative",
             ftSlug: task.ftSlug ?? null,
+            estimatedHours: task.estimatedHours ?? null,
             parentGoalId: issueId,
             sortOrder: task.sortOrder ?? tIdx,
             currentValue: 0,

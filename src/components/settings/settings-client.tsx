@@ -142,6 +142,7 @@ export function SettingsClient({
         const main = data.deadlines.find((d: { type: string }) => d.type === "common_core");
         if (main) {
           setDeadlineDate(main.targetDate);
+          if (main.weeklyBudget != null) setDeadlineBudget(String(main.weeklyBudget));
           setDeadlineResult({ deadline: main, plan: data.backwardPlan });
         }
       }

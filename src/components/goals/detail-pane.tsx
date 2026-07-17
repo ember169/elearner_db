@@ -606,7 +606,7 @@ export function DetailPane({
             </div>
             <div className="rounded-sm border border-border p-3.5 text-center">
               <div className="flex items-baseline justify-center gap-0.5">
-                <span className="text-[24px] font-bold">~{Math.round(childTotal * 20)}</span>
+                <span className="text-[24px] font-bold">~{Math.round(goal.children.reduce((s, c) => s + (c.estimatedHours ?? 2), 0))}</span>
                 <span className="text-[13px] text-muted-foreground">h</span>
               </div>
               <p className="text-[10px] text-muted-foreground mt-0.5">Est. effort</p>

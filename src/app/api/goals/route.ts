@@ -94,6 +94,7 @@ export async function POST(req: NextRequest) {
       parentGoalId: body.parentGoalId ?? null,
       sortOrder: body.sortOrder ?? 0,
       ftSlug: body.ftSlug || null,
+      estimatedHours: body.estimatedHours ?? null,
       originalTarget: body.originalTarget ?? null,
     })
     .run();
@@ -132,6 +133,7 @@ export async function PATCH(req: NextRequest) {
   if (body.parentGoalId !== undefined) updates.parentGoalId = body.parentGoalId;
   if (body.sortOrder !== undefined) updates.sortOrder = body.sortOrder;
   if (body.ftSlug !== undefined) updates.ftSlug = body.ftSlug;
+  if (body.estimatedHours !== undefined) updates.estimatedHours = body.estimatedHours;
   if (body.originalTarget !== undefined) updates.originalTarget = body.originalTarget;
 
   db.update(goals).set(updates).where(eq(goals.id, body.id)).run();

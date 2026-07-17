@@ -92,6 +92,7 @@ export async function POST(req: NextRequest) {
           targetValue: 1,
           currentValue: isDone ? 1 : 0,
           ftSlug: p.slug,
+          estimatedHours: p.estimatedHours,
           parentGoalId: issueId,
           sortOrder: taskOrder++,
           status: isDone ? "completed" : "active",
