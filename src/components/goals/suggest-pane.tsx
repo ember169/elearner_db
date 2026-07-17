@@ -159,7 +159,7 @@ export function SuggestPane({
           <div className="py-12 text-center">
             <RefreshCw className="h-5 w-5 animate-spin mx-auto mb-3" style={{ color: "var(--primary)" }} />
             <p className="text-[13px] text-muted-foreground">Analyzing your progress and gaps...</p>
-            <p className="text-[11px] text-muted-foreground mt-1">You can browse goals while this loads</p>
+            <p className="text-[11px] text-muted-foreground mt-1">This can take 1-2 min with a local LLM. Browse goals while it loads.</p>
           </div>
         )}
 

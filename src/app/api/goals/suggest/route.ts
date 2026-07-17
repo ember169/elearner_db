@@ -72,6 +72,7 @@ async function suggestViaAnthropic(
 ): Promise<GoalSuggestionTree> {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
+    signal: AbortSignal.timeout(120_000),
     headers: {
       "Content-Type": "application/json",
       "x-api-key": apiKey,
@@ -116,16 +117,17 @@ async function suggestViaOpenAI(
 
   const res = await fetch(url, {
     method: "POST",
+    signal: AbortSignal.timeout(180_000),
     headers: {
       "Content-Type": "application/json",
       ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
     },
     body: JSON.stringify({
       model,
-      max_tokens: 4096,
+      max_tokens: 2048,
       messages: [
         { role: "system", content: "You are a cybersecurity learning advisor. Always respond with a single valid JSON object, no markdown fences, no extra text." },
-        { role: "user", content: `${prompt}\n\nRespond with ONLY a JSON object matching this schema (no markdown, no explanation outside the JSON):\n${jsonSchema}` },
+        { role: "user", content: `${prompt}\n\nRespond with ONLY a JSON object matching this schema (no markdown, no explanation outside the JSON):\n${jsonSchema}\n\nKeep it focused: 1 epic, 2-3 issues, 2-4 tasks per issue.` },
       ],
       temperature: 0.7,
     }),
