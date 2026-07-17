@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const plan = computeBackwardPlan(targetDate, completedSlugs);
+  const plan = computeBackwardPlan(targetDate, completedSlugs, deadline?.weeklyBudget ?? 15);
 
   const epicRow = db
     .insert(goals)
@@ -117,7 +117,7 @@ export async function GET() {
   const deadline = getMainDeadline();
   const targetDate = deadline?.targetDate ?? null;
 
-  const plan = targetDate ? computeBackwardPlan(targetDate, completedSlugs) : null;
+  const plan = targetDate ? computeBackwardPlan(targetDate, completedSlugs, deadline?.weeklyBudget ?? 15) : null;
 
   const existing = db
     .select()

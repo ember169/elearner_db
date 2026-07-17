@@ -69,16 +69,19 @@ export function runRuleEngine(objective: string): RuleEngineOutput {
   const warnings: string[] = [];
 
   // 1. Check deadline pressure for 42
+  const mainDeadline = getMainDeadline();
+  const savedBudget = mainDeadline?.weeklyBudget ?? 15;
+
   const { hoursThisWeek: ft42Hours, urgency, reason } =
-    deadline42Pressure(ftProgress.completedProjects);
+    deadline42Pressure(ftProgress.completedProjects, savedBudget);
 
   // Compute backward plan if deadline exists
   let backwardPlan: BackwardPlan | null = null;
-  const mainDeadline = getMainDeadline();
   if (mainDeadline) {
     backwardPlan = computeBackwardPlan(
       mainDeadline.targetDate,
-      ftProgress.completedProjects
+      ftProgress.completedProjects,
+      savedBudget
     );
     warnings.push(...backwardPlan.warnings);
   }

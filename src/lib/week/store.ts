@@ -148,17 +148,22 @@ export function createWeekPlanFromMentor(weekStart: string): WeekPlanWithItems {
     items.push(item);
   }
 
-  autoDistribute(items);
+  autoDistribute(items, weekStart);
 
   return { ...result, items };
 }
 
-function autoDistribute(items: PlanItem[]) {
+function autoDistribute(items: PlanItem[], weekStart: string) {
+  const now = new Date();
+  const start = new Date(weekStart + "T00:00:00");
+  const rawIdx = Math.floor((now.getTime() - start.getTime()) / 86400000);
+  const firstDay = (rawIdx >= 0 && rawIdx <= 6) ? rawIdx : 0;
+
   const dayLoad = [0, 0, 0, 0, 0, 0, 0];
   for (const item of items) {
-    let bestDay = 0;
+    let bestDay = firstDay;
     let minLoad = Infinity;
-    for (let d = 0; d < 7; d++) {
+    for (let d = firstDay; d < 7; d++) {
       if (dayLoad[d] < minLoad) {
         minLoad = dayLoad[d];
         bestDay = d;
@@ -216,6 +221,37 @@ export function updatePlanItem(
 
   db.update(planItems).set(data).where(eq(planItems.id, id)).run();
   return db.select().from(planItems).where(eq(planItems.id, id)).get();
+}
+
+export function getMonthWeekStarts(date?: Date): string[] {
+  const d = date ?? new Date();
+  const year = d.getFullYear();
+  const month = d.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const dow = firstDay.getDay();
+  const mondayOffset = dow === 0 ? -6 : 1 - dow;
+  const firstMonday = new Date(year, month, 1 + mondayOffset);
+  const weekStarts: string[] = [];
+  const cursor = new Date(firstMonday);
+  while (cursor <= lastDay) {
+    weekStarts.push(toLocalISODate(cursor));
+    cursor.setDate(cursor.getDate() + 7);
+  }
+  return weekStarts;
+}
+
+export function movePlanItem(
+  itemId: number,
+  targetWeekStart: string,
+  targetDayIndex: number
+): PlanItem | undefined {
+  const targetPlan = getOrCreateWeekPlan(targetWeekStart);
+  db.update(planItems)
+    .set({ weeklyPlanId: targetPlan.id, dayIndex: targetDayIndex })
+    .where(eq(planItems.id, itemId))
+    .run();
+  return db.select().from(planItems).where(eq(planItems.id, itemId)).get();
 }
 
 export function rerollWeekPlan(weekStart: string): WeekPlanWithItems {

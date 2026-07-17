@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
   const deadlineShifts: { circle: number; issueId: number; oldDate: string; newDate: string }[] = [];
 
   if (targetDate) {
-    const plan = computeBackwardPlan(targetDate, completedSlugs);
+    const plan = computeBackwardPlan(targetDate, completedSlugs, deadline?.weeklyBudget ?? 15);
     const issues = descendants.filter((g) => g.parentGoalId === epicId);
     for (const issue of issues) {
       const circleMatch = issue.title.match(/Circle (\d+)/);
@@ -144,7 +144,7 @@ export async function PATCH(req: NextRequest) {
     const deadline = getMainDeadline();
     const targetDate = deadline?.targetDate ?? epic.deadline;
     if (targetDate) {
-      const plan = computeBackwardPlan(targetDate, completedSlugs);
+      const plan = computeBackwardPlan(targetDate, completedSlugs, deadline?.weeklyBudget ?? 15);
       const issues = descendants.filter((g) => g.parentGoalId === epicId);
       for (const issue of issues) {
         const circleMatch = issue.title.match(/Circle (\d+)/);

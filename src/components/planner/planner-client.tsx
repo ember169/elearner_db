@@ -2,12 +2,10 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { formatRelative } from "@/lib/format";
 import { RefreshCw, ChevronLeft, ChevronRight, Plus, X, Square, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PulseBar, type PlatformStatus } from "./pulse-bar";
-import { KanbanBoard } from "./kanban-board";
+import { MonthBoard, type MonthWeek } from "./month-board";
 import { TodayView, FullWeekView, BacklogView, ViewToggle } from "./mobile-views";
 import { SideProjectBrief } from "./side-project-brief";
 import { CompetencySpotlight } from "./competency-spotlight";
@@ -21,12 +19,17 @@ interface PinnedTask {
   isCompleted: boolean | null;
 }
 
+export interface MonthPlanEntry {
+  weekStart: string;
+  weekNum: number;
+  plan: WeekPlanData;
+}
+
 interface PlannerClientProps {
-  initialPlan: WeekPlanData;
-  initialWeek: string;
+  monthPlans: MonthPlanEntry[];
+  currentMonth: { year: number; month: number };
+  todayWeek: string;
   objective: string;
-  platforms: PlatformStatus;
-  lastSync: string | null;
   competencies: CompetencyEntry[];
   goals: GoalSlim[];
   pinnedTasks: PinnedTask[];
@@ -36,20 +39,12 @@ interface PlannerClientProps {
 }
 
 const STATUS_CYCLE = ["pending", "active", "done"] as const;
+const MONTH_NAMES = ["January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"];
 
-function getWeekDates(weekStart: string) {
-  const start = new Date(weekStart + "T00:00:00");
-  const end = new Date(start);
-  end.setDate(start.getDate() + 6);
-  return { start, end };
-}
-
-function getISOWeekNumber(weekStart: string): number {
-  const d = new Date(weekStart + "T12:00:00");
-  const dayNum = d.getDay() || 7;
-  d.setDate(d.getDate() + 4 - dayNum);
-  const yearStart = new Date(d.getFullYear(), 0, 1);
-  return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+function getTodayStr(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 function getTodayIdx(weekStart: string): number {
@@ -60,16 +55,11 @@ function getTodayIdx(weekStart: string): number {
   return diff;
 }
 
-function formatDate(d: Date): string {
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
-
 export function PlannerClient({
-  initialPlan,
-  initialWeek,
+  monthPlans: initialMonthPlans,
+  currentMonth: initialMonth,
+  todayWeek,
   objective,
-  platforms,
-  lastSync,
   competencies,
   goals,
   pinnedTasks: initialPinned,
@@ -78,61 +68,80 @@ export function PlannerClient({
   stale,
 }: PlannerClientProps) {
   const router = useRouter();
-  const [currentWeek, setCurrentWeek] = useState(initialWeek);
-  const [plan, setPlan] = useState(initialPlan);
-  const [items, setItems] = useState<PlanItemData[]>(initialPlan.items);
+  const [month, setMonth] = useState(initialMonth);
+  const [weeks, setWeeks] = useState<MonthWeek[]>(
+    initialMonthPlans.map((mp) => ({ weekStart: mp.weekStart, weekNum: mp.weekNum, items: mp.plan.items }))
+  );
   const [sideProject, setSideProject] = useState(initialSideProject);
-  const [syncing, setSyncing] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [regenStep, setRegenStep] = useState<string | null>(null);
+  const [pinned, setPinned] = useState(initialPinned);
+  const [newTask, setNewTask] = useState("");
+  const [showAddTask, setShowAddTask] = useState(false);
+  const [deadlineWarnings, setDeadlineWarnings] = useState<string[]>([]);
+  const [deadlineUrgency, setDeadlineUrgency] = useState<string>("normal");
+  const [mobileView, setMobileView] = useState<"today" | "week" | "backlog">("today");
+
   const [briefingCollapsed, setBriefingCollapsed] = useState(() => {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("planner-briefing-collapsed") === "true";
   });
-  const [mobileView, setMobileView] = useState<"today" | "week" | "backlog">("today");
-  const [pinned, setPinned] = useState(initialPinned);
-  const [newTask, setNewTask] = useState("");
-  const [showAddTask, setShowAddTask] = useState(false);
-
-  const { start, end } = getWeekDates(currentWeek);
-  const weekNum = getISOWeekNumber(currentWeek);
-  const todayIdx = getTodayIdx(currentWeek);
-  const isCurrentWeek = currentWeek === initialWeek;
-  const readOnly = !isCurrentWeek;
-
-  const visibleItems = items.filter((i) => i.status !== "deferred");
-  const totalHours = visibleItems.reduce((s, i) => s + (i.estimatedHours ?? 2), 0);
-  const doneHours = visibleItems.filter((i) => i.status === "done").reduce((s, i) => s + (i.estimatedHours ?? 2), 0);
-  const backlogCount = visibleItems.filter((i) => i.dayIndex === null).length;
 
   useEffect(() => {
     localStorage.setItem("planner-briefing-collapsed", String(briefingCollapsed));
   }, [briefingCollapsed]);
 
-  const navigateWeek = useCallback(async (delta: number) => {
-    const d = new Date(currentWeek + "T12:00:00");
-    d.setDate(d.getDate() + delta * 7);
-    const newWeek = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    setCurrentWeek(newWeek);
-    const res = await fetch(`/api/week?week=${newWeek}`);
+  const currentWeekData = initialMonthPlans.find((mp) => mp.weekStart === todayWeek);
+  const briefing = currentWeekData?.plan.mentorBriefing ?? initialMonthPlans[0]?.plan.mentorBriefing ?? null;
+  const collapsedBriefing = currentWeekData?.plan.collapsedBriefing ?? initialMonthPlans[0]?.plan.collapsedBriefing ?? null;
+
+  const isCurrentMonth = month.year === initialMonth.year && month.month === initialMonth.month;
+  const monthLabel = `${MONTH_NAMES[month.month]} ${month.year}`;
+  const todayStr = getTodayStr();
+
+  const allVisibleItems = weeks.flatMap((w) => w.items).filter((i) => i.status !== "deferred");
+  const totalMonthHours = allVisibleItems.reduce((s, i) => s + (i.estimatedHours ?? 2), 0);
+  const doneMonthHours = allVisibleItems.filter((i) => i.status === "done").reduce((s, i) => s + (i.estimatedHours ?? 2), 0);
+
+  // Mobile: current week items
+  const mobileWeek = weeks.find((w) => w.weekStart === todayWeek) ?? weeks[0];
+  const mobileItems = mobileWeek?.items ?? [];
+  const mobileTodayIdx = mobileWeek ? getTodayIdx(mobileWeek.weekStart) : 0;
+  const mobileBacklogCount = mobileItems.filter((i) => i.dayIndex === null && i.status !== "deferred").length;
+
+  async function navigateMonth(delta: number) {
+    let newMonth = month.month + delta;
+    let newYear = month.year;
+    if (newMonth < 0) { newMonth = 11; newYear--; }
+    if (newMonth > 11) { newMonth = 0; newYear++; }
+    setMonth({ year: newYear, month: newMonth });
+    const res = await fetch(`/api/week?month=${newYear}-${String(newMonth + 1).padStart(2, "0")}`);
     const data = await res.json();
-    setPlan(data);
-    setItems(data.items);
-  }, [currentWeek]);
+    setWeeks(
+      data.plans.map((p: { weekStart: string; weekNum: number; plan: WeekPlanData }) => ({
+        weekStart: p.weekStart,
+        weekNum: p.weekNum,
+        items: p.plan.items,
+      }))
+    );
+  }
 
   const cycleStatus = useCallback((id: number) => {
-    setItems((prev) =>
-      prev.map((item) => {
-        if (item.id !== id) return item;
-        const idx = STATUS_CYCLE.indexOf(item.status as (typeof STATUS_CYCLE)[number]);
-        const next = STATUS_CYCLE[(idx + 1) % STATUS_CYCLE.length];
-        fetch("/api/week", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id, status: next }),
-        });
-        return { ...item, status: next, completedAt: next === "done" ? new Date().toISOString() : null };
-      })
+    setWeeks((prev) =>
+      prev.map((w) => ({
+        ...w,
+        items: w.items.map((item) => {
+          if (item.id !== id) return item;
+          const idx = STATUS_CYCLE.indexOf(item.status as (typeof STATUS_CYCLE)[number]);
+          const next = STATUS_CYCLE[(idx + 1) % STATUS_CYCLE.length];
+          fetch("/api/week", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id, status: next }),
+          });
+          return { ...item, status: next, completedAt: next === "done" ? new Date().toISOString() : null };
+        }),
+      }))
     );
   }, []);
 
@@ -146,14 +155,59 @@ export function PlannerClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, status: "deferred", deferredTo }),
       });
-      setItems((prev) => prev.map((item) => item.id === id ? { ...item, status: "deferred", deferredTo } : item));
+      setWeeks((prev) =>
+        prev.map((w) => ({
+          ...w,
+          items: w.items.map((item) => item.id === id ? { ...item, status: "deferred", deferredTo } : item),
+        }))
+      );
     } else {
       fetch("/api/week", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, status: action }),
       });
-      setItems((prev) => prev.map((item) => item.id === id ? { ...item, status: action } : item));
+      setWeeks((prev) =>
+        prev.map((w) => ({
+          ...w,
+          items: w.items.map((item) => item.id === id ? { ...item, status: action } : item),
+        }))
+      );
+    }
+  }, []);
+
+  const handleMoveItem = useCallback((id: number, sourceWeek: string, targetWeek: string, targetDay: number) => {
+    if (sourceWeek === targetWeek) {
+      setWeeks((prev) =>
+        prev.map((w) => ({
+          ...w,
+          items: w.items.map((item) => item.id === id ? { ...item, dayIndex: targetDay } : item),
+        }))
+      );
+      fetch("/api/week", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, dayIndex: targetDay }),
+      });
+    } else {
+      setWeeks((prev) => {
+        const item = prev.flatMap((w) => w.items).find((i) => i.id === id);
+        if (!item) return prev;
+        return prev.map((w) => {
+          if (w.weekStart === sourceWeek) {
+            return { ...w, items: w.items.filter((i) => i.id !== id) };
+          }
+          if (w.weekStart === targetWeek) {
+            return { ...w, items: [...w.items, { ...item, dayIndex: targetDay }] };
+          }
+          return w;
+        });
+      });
+      fetch("/api/week", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "move-item", itemId: id, targetWeek, targetDayIndex: targetDay }),
+      });
     }
   }, []);
 
@@ -163,9 +217,14 @@ export function PlannerClient({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, status }),
     });
-    setItems((prev) => prev.map((item) =>
-      item.id === id ? { ...item, status, completedAt: status === "done" ? new Date().toISOString() : null } : item
-    ));
+    setWeeks((prev) =>
+      prev.map((w) => ({
+        ...w,
+        items: w.items.map((item) =>
+          item.id === id ? { ...item, status, completedAt: status === "done" ? new Date().toISOString() : null } : item
+        ),
+      }))
+    );
   }, []);
 
   const handleSchedule = useCallback((id: number, dayIndex: number) => {
@@ -174,9 +233,14 @@ export function PlannerClient({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, dayIndex, status: "pending" }),
     });
-    setItems((prev) => prev.map((item) =>
-      item.id === id ? { ...item, dayIndex, status: "pending" } : item
-    ));
+    setWeeks((prev) =>
+      prev.map((w) => ({
+        ...w,
+        items: w.items.map((item) =>
+          item.id === id ? { ...item, dayIndex, status: "pending" } : item
+        ),
+      }))
+    );
   }, []);
 
   const handleDrop = useCallback((id: number) => {
@@ -185,25 +249,15 @@ export function PlannerClient({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, status: "deferred", deferredTo: "9999-12-31" }),
     });
-    setItems((prev) => prev.map((item) =>
-      item.id === id ? { ...item, status: "deferred", deferredTo: "9999-12-31" } : item
-    ));
+    setWeeks((prev) =>
+      prev.map((w) => ({
+        ...w,
+        items: w.items.map((item) =>
+          item.id === id ? { ...item, status: "deferred", deferredTo: "9999-12-31" } : item
+        ),
+      }))
+    );
   }, []);
-
-  async function handleSync() {
-    setSyncing(true);
-    try {
-      const res = await fetch("/api/sync", { method: "POST" });
-      await assertOk(res);
-      router.refresh();
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "Sync failed.");
-      setSyncing(false);
-    }
-  }
-
-  const [deadlineWarnings, setDeadlineWarnings] = useState<string[]>([]);
-  const [deadlineUrgency, setDeadlineUrgency] = useState<string>("normal");
 
   async function handleRegenerate() {
     setRegenerating(true);
@@ -225,15 +279,21 @@ export function PlannerClient({
         setDeadlineUrgency(mentorData.deadlinePressure.urgency);
       }
 
-      setRegenStep("Building week schedule...");
+      setRegenStep("Building month schedule...");
+      const weekStarts = weeks.map((w) => w.weekStart);
       const res = await fetch("/api/week", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "reroll", week: currentWeek }),
+        body: JSON.stringify({ action: "reroll-month", weekStarts }),
       });
       const data = await res.json();
-      setPlan(data);
-      setItems(data.items);
+      setWeeks(
+        data.plans.map((p: { weekStart: string; weekNum: number; plan: WeekPlanData }) => ({
+          weekStart: p.weekStart,
+          weekNum: p.weekNum,
+          items: p.plan.items,
+        }))
+      );
       setRegenStep("Done");
     } catch (e) {
       alert(e instanceof Error ? e.message : "Regeneration failed.");
@@ -273,7 +333,7 @@ export function PlannerClient({
       await assertOk(res);
       setPinned((prev) => prev.filter((t) => t.id !== id));
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Failed to complete task.");
+      alert(e instanceof Error ? e.message : "Failed.");
     }
   }
 
@@ -291,9 +351,6 @@ export function PlannerClient({
     }
   }
 
-  const prevWeekNum = getISOWeekNumber((() => { const d = new Date(currentWeek + "T12:00:00"); d.setDate(d.getDate() - 7); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; })());
-  const nextWeekNum = getISOWeekNumber((() => { const d = new Date(currentWeek + "T12:00:00"); d.setDate(d.getDate() + 7); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; })());
-
   return (
     <div className="space-y-5">
       {/* ── Header ── */}
@@ -301,27 +358,44 @@ export function PlannerClient({
         <div className="min-w-0">
           <h1 className="text-[28px] font-bold tracking-tight leading-tight">Planner</h1>
           <p className="text-[13px] text-muted-foreground mt-0.5 truncate">
-            Week {weekNum} · {formatDate(start)}–{formatDate(end)} · {objective}
+            {monthLabel} · {objective}
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0 pt-2">
-          <button onClick={() => navigateWeek(-1)} className="text-muted-foreground hover:text-foreground transition-colors p-1">
+          <button onClick={() => navigateMonth(-1)} className="text-muted-foreground hover:text-foreground transition-colors p-1">
             <ChevronLeft className="h-4 w-4" />
           </button>
-          <span className="text-[11px] text-muted-foreground tabular-nums">Wk {prevWeekNum}</span>
-          <span className="text-[12px] font-semibold text-primary tabular-nums">Wk {weekNum}</span>
-          <span className="text-[11px] text-muted-foreground tabular-nums">Wk {nextWeekNum}</span>
-          <button onClick={() => navigateWeek(1)} className="text-muted-foreground hover:text-foreground transition-colors p-1">
+          <span className="text-[12px] font-semibold text-primary tabular-nums">
+            {MONTH_NAMES[month.month].slice(0, 3)} {month.year}
+          </span>
+          <button onClick={() => navigateMonth(1)} className="text-muted-foreground hover:text-foreground transition-colors p-1">
             <ChevronRight className="h-4 w-4" />
           </button>
 
-          <Button variant="outline" size="xs" onClick={handleRegenerate} disabled={regenerating} className="ml-2">
+          <div
+            className="flex items-center gap-1.5 rounded-sm px-2.5 py-1 ml-1"
+            style={{ background: "var(--muted)" }}
+          >
+            <span className="text-[11px] font-semibold tabular-nums">{totalMonthHours.toFixed(0)}h</span>
+            <div className="w-[40px] h-1 rounded-[1px] overflow-hidden" style={{ background: "var(--accent)" }}>
+              <div
+                className="h-full rounded-[1px]"
+                style={{
+                  width: `${Math.min(100, (doneMonthHours / Math.max(totalMonthHours, 1)) * 100)}%`,
+                  background: "var(--primary)",
+                }}
+              />
+            </div>
+          </div>
+
+          <Button variant="outline" size="xs" onClick={handleRegenerate} disabled={regenerating} className="ml-1">
             <RefreshCw className={`h-3 w-3 mr-1 ${regenerating ? "animate-spin" : ""}`} />
             {regenerating ? "..." : "Regenerate"}
           </Button>
         </div>
       </div>
 
+      {/* ── Regen progress ── */}
       {regenStep && (
         <div className="flex items-center gap-3 px-4 py-2.5 rounded-sm border border-primary/30" style={{ background: "color-mix(in oklch, var(--primary) 4%, transparent)" }}>
           <RefreshCw className="h-3.5 w-3.5 text-primary animate-spin shrink-0" />
@@ -331,21 +405,18 @@ export function PlannerClient({
               className="h-full rounded-full transition-all duration-700 ease-out"
               style={{
                 background: "var(--primary)",
-                width: regenStep === "Running rule engine..." ? "30%" : regenStep === "Building week schedule..." ? "75%" : "100%",
+                width: regenStep === "Running rule engine..." ? "30%" : regenStep === "Building month schedule..." ? "75%" : "100%",
               }}
             />
           </div>
         </div>
       )}
 
-      {/* ── Mentor briefing (collapsible) ── */}
-      {plan.mentorBriefing && (
+      {/* ── Mentor briefing + Side project (2-col on desktop) ── */}
+      <div className="hidden md:grid md:grid-cols-2 gap-3">
         <div
           className="rounded-sm px-4 py-3"
-          style={{
-            background: "var(--card)",
-            border: "1px solid var(--border)",
-          }}
+          style={{ background: "var(--card)", border: "1px solid var(--border)" }}
         >
           <div className="flex items-start gap-3">
             <div
@@ -355,25 +426,62 @@ export function PlannerClient({
               <span className="text-[9px] font-bold" style={{ color: "var(--primary-foreground)" }}>M</span>
             </div>
             <p className="text-[13px] leading-relaxed flex-1 min-w-0" style={{ color: "var(--muted-foreground)" }}>
-              {briefingCollapsed ? plan.collapsedBriefing ?? plan.mentorBriefing : plan.mentorBriefing}
+              {briefingCollapsed ? collapsedBriefing ?? briefing : briefing}
             </p>
-            <button
-              onClick={() => setBriefingCollapsed(!briefingCollapsed)}
-              className="text-[11px] text-muted-foreground hover:text-foreground transition-colors shrink-0"
-            >
-              {briefingCollapsed ? "Expand ↓" : "Collapse ↑"}
-            </button>
+            {briefing && (
+              <button
+                onClick={() => setBriefingCollapsed(!briefingCollapsed)}
+                className="text-[11px] text-muted-foreground hover:text-foreground transition-colors shrink-0"
+              >
+                {briefingCollapsed ? "More" : "Less"}
+              </button>
+            )}
           </div>
+          {!hasKey && (
+            <p className="text-[11px] text-muted-foreground mt-2 pl-8">
+              Rule-based plan —{" "}
+              <a href="/settings" className="underline hover:text-foreground transition-colors">add an API key</a>{" "}
+              for full guidance
+            </p>
+          )}
         </div>
-      )}
 
-      {!hasKey && (
-        <p className="text-[12px] text-muted-foreground -mt-2">
-          Rule-based plan —{" "}
-          <a href="/settings" className="underline hover:text-foreground transition-colors">add an API key</a>{" "}
-          for full mentor guidance
-        </p>
-      )}
+        {sideProject ? (
+          <SideProjectBrief project={sideProject} />
+        ) : (
+          <div
+            className="rounded-sm border border-border px-4 py-4 flex items-center justify-center"
+            style={{ background: "var(--card)" }}
+          >
+            <p className="text-[12px] text-muted-foreground">
+              <a href="/settings" className="underline hover:text-foreground transition-colors">Configure an LLM</a>{" "}
+              for side-project suggestions
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Mobile: briefing only */}
+      <div className="md:hidden">
+        {briefing && (
+          <div
+            className="rounded-sm px-4 py-3"
+            style={{ background: "var(--card)", border: "1px solid var(--border)" }}
+          >
+            <div className="flex items-start gap-3">
+              <div
+                className="h-5 w-5 rounded-full flex items-center justify-center shrink-0 mt-0.5"
+                style={{ background: "var(--primary)" }}
+              >
+                <span className="text-[9px] font-bold" style={{ color: "var(--primary-foreground)" }}>M</span>
+              </div>
+              <p className="text-[12px] leading-relaxed flex-1 min-w-0" style={{ color: "var(--muted-foreground)" }}>
+                {collapsedBriefing ?? briefing}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* ── Deadline warnings ── */}
       {deadlineWarnings.length > 0 && (
@@ -417,68 +525,27 @@ export function PlannerClient({
         </div>
       )}
 
-      {/* ── Pulse + budget ── */}
-      <PulseBar
-        platforms={platforms}
-        syncing={syncing}
-        onSync={handleSync}
-        budgetUsed={totalHours}
-        budgetTotal={35}
-      />
-
-      {/* ── Desktop: Kanban Board ── */}
+      {/* ── Desktop: Month Board ── */}
       <div className="hidden md:block">
-        <KanbanBoard
-          items={items}
-          weekStart={currentWeek}
-          todayIdx={todayIdx}
-          readOnly={readOnly}
-          onItemsChange={setItems}
+        <MonthBoard
+          weeks={weeks}
+          todayStr={todayStr}
+          monthNum={month.month}
           onStatusToggle={cycleStatus}
           onMenuAction={handleMenuAction}
+          onMoveItem={handleMoveItem}
         />
-
-        {/* Hints bar */}
-        <div className="flex items-center gap-4 flex-wrap mt-3 text-[11px]" style={{ color: "var(--muted-foreground)" }}>
-          <span>⇄ Drag cards between days</span>
-          <span>Click card → mark done / stuck / blocked</span>
-          <span>Drop on Backlog to unschedule</span>
-          {goals.length > 0 && (
-            <span className="ml-auto">
-              Goal coverage:{" "}
-              {goals.filter((g) => !goals.some((o) => o.parentGoalId === g.id)).map((g, i) => {
-                const onTrack = g.pacing?.onTrack ?? true;
-                const label = g.title.length > 20 ? g.title.slice(0, 18) + "…" : g.title;
-                const detail = g.goalType === "cadence" && g.pacing
-                  ? ` ${g.pacing.currentPace}`
-                  : "";
-                return (
-                  <span key={g.id}>
-                    {i > 0 && " · "}
-                    <a
-                      href={`/goals?goal=${g.id}`}
-                      className="hover:underline transition-colors"
-                      style={{ color: onTrack ? "var(--status-success)" : "var(--status-warning)" }}
-                    >
-                      {label}{detail} {onTrack ? "✓" : "⚠"}
-                    </a>
-                  </span>
-                );
-              })}
-            </span>
-          )}
-        </div>
       </div>
 
-      {/* ── Mobile: View Toggle + Views ── */}
+      {/* ── Mobile: weekly views ── */}
       <div className="md:hidden">
-        <ViewToggle active={mobileView} backlogCount={backlogCount} onChange={setMobileView} />
+        <ViewToggle active={mobileView} backlogCount={mobileBacklogCount} onChange={setMobileView} />
         <div className="mt-3">
           {mobileView === "today" && (
             <TodayView
-              items={items}
-              weekStart={currentWeek}
-              todayIdx={todayIdx >= 0 ? todayIdx : 0}
+              items={mobileItems}
+              weekStart={mobileWeek?.weekStart ?? todayWeek}
+              todayIdx={mobileTodayIdx >= 0 ? mobileTodayIdx : 0}
               sideProject={sideProject}
               pinnedTasks={pinned.map((t) => ({ id: t.id, title: t.title }))}
               onStatusChange={handleStatusChange}
@@ -496,18 +563,18 @@ export function PlannerClient({
           )}
           {mobileView === "week" && (
             <FullWeekView
-              items={items}
-              weekStart={currentWeek}
-              todayIdx={todayIdx >= 0 ? todayIdx : 0}
-              totalHours={totalHours}
+              items={mobileItems}
+              weekStart={mobileWeek?.weekStart ?? todayWeek}
+              todayIdx={mobileTodayIdx >= 0 ? mobileTodayIdx : 0}
+              totalHours={mobileItems.filter((i) => i.status !== "deferred").reduce((s, i) => s + (i.estimatedHours ?? 2), 0)}
               budgetTotal={35}
-              onWeekSwipe={navigateWeek}
+              onWeekSwipe={() => {}}
             />
           )}
           {mobileView === "backlog" && (
             <BacklogView
-              items={items}
-              weekStart={currentWeek}
+              items={mobileItems}
+              weekStart={mobileWeek?.weekStart ?? todayWeek}
               onSchedule={handleSchedule}
               onStatusChange={handleStatusChange}
               onDrop={handleDrop}
@@ -519,52 +586,39 @@ export function PlannerClient({
       {/* ── Secondary section (desktop) ── */}
       <div className="hidden md:block space-y-3">
         <div className="grid grid-cols-2 gap-3">
-          {sideProject ? (
-            <SideProjectBrief project={sideProject} weekLabel={`· WK${weekNum}`} />
-          ) : (
-            <div
-              className="rounded-sm border border-border px-4 py-4 flex items-center justify-center"
-              style={{ background: "var(--card)" }}
-            >
-              <p className="text-[12px] text-muted-foreground">
-                <a href="/settings" className="underline hover:text-foreground transition-colors">Configure an LLM</a>{" "}
-                for side-project suggestions
-              </p>
-            </div>
-          )}
           <CompetencySpotlight competencies={competencies} />
-        </div>
-        <div className="flex items-center gap-3 flex-wrap px-4 py-2.5 rounded-sm border border-border">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Pinned</span>
-          {pinned.map((task) => (
-            <div key={task.id} className="flex items-center gap-1.5 group">
-              <button onClick={() => completePinnedTask(task.id)} className="text-muted-foreground hover:text-success transition-colors">
-                <Square className="h-3 w-3" />
+          <div className="flex items-center gap-3 flex-wrap px-4 py-2.5 rounded-sm border border-border">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Pinned</span>
+            {pinned.map((task) => (
+              <div key={task.id} className="flex items-center gap-1.5 group">
+                <button onClick={() => completePinnedTask(task.id)} className="text-muted-foreground hover:text-success transition-colors">
+                  <Square className="h-3 w-3" />
+                </button>
+                <span className="text-[12px]">{task.title}</span>
+                <button onClick={() => deletePinnedTask(task.id)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-danger transition-all">
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+            {showAddTask ? (
+              <div className="flex gap-1.5 items-center">
+                <Input
+                  value={newTask}
+                  onChange={(e) => setNewTask(e.target.value)}
+                  placeholder="Task..."
+                  className="h-6 text-[12px] w-40"
+                  onKeyDown={(e) => e.key === "Enter" && addPinnedTask()}
+                  autoFocus
+                />
+                <Button size="xs" onClick={addPinnedTask} className="h-6 text-[10px]">Add</Button>
+                <button onClick={() => { setShowAddTask(false); setNewTask(""); }} className="text-muted-foreground"><X className="h-3 w-3" /></button>
+              </div>
+            ) : (
+              <button onClick={() => setShowAddTask(true)} className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors">
+                <Plus className="h-3 w-3" /> Add
               </button>
-              <span className="text-[12px]">{task.title}</span>
-              <button onClick={() => deletePinnedTask(task.id)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-danger transition-all">
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          ))}
-          {showAddTask ? (
-            <div className="flex gap-1.5 items-center">
-              <Input
-                value={newTask}
-                onChange={(e) => setNewTask(e.target.value)}
-                placeholder="Task..."
-                className="h-6 text-[12px] w-40"
-                onKeyDown={(e) => e.key === "Enter" && addPinnedTask()}
-                autoFocus
-              />
-              <Button size="xs" onClick={addPinnedTask} className="h-6 text-[10px]">Add</Button>
-              <button onClick={() => { setShowAddTask(false); setNewTask(""); }} className="text-muted-foreground"><X className="h-3 w-3" /></button>
-            </div>
-          ) : (
-            <button onClick={() => setShowAddTask(true)} className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors">
-              <Plus className="h-3 w-3" /> Add
-            </button>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>

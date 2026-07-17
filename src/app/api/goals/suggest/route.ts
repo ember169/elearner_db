@@ -117,7 +117,7 @@ async function suggestViaOpenAI(
 
   const res = await fetch(url, {
     method: "POST",
-    signal: AbortSignal.timeout(300_000),
+    signal: AbortSignal.timeout(420_000),
     headers: {
       "Content-Type": "application/json",
       ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),

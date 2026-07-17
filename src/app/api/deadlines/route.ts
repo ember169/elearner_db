@@ -19,7 +19,7 @@ export async function GET() {
   const mainDeadline = deadlineRows.find((d) => d.type === "common_core");
   let backwardPlan = null;
   if (mainDeadline) {
-    backwardPlan = computeBackwardPlan(mainDeadline.targetDate, completedSlugs);
+    backwardPlan = computeBackwardPlan(mainDeadline.targetDate, completedSlugs, mainDeadline.weeklyBudget ?? 15);
   }
 
   return NextResponse.json({ deadlines: deadlineRows, backwardPlan });

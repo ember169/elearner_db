@@ -697,8 +697,8 @@ function MobileStandaloneView({
             variant="outline"
             className="text-[8px] px-1 py-0 mt-1"
             style={{
-              borderColor: goal.pacing.onTrack ? "#22c55e" : "#ef4444",
-              color: goal.pacing.onTrack ? "#22c55e" : "#ef4444",
+              borderColor: goal.pacing.onTrack ? "var(--status-success)" : "var(--status-danger)",
+              color: goal.pacing.onTrack ? "var(--status-success)" : "var(--status-danger)",
             }}
           >
             {goal.pacing.onTrack ? "ON TRACK" : "BEHIND"}

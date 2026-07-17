@@ -2,12 +2,29 @@ import { NextResponse } from "next/server";
 import {
   getWeekStart,
   getOrCreateWeekPlan,
+  getISOWeekNumber,
+  getMonthWeekStarts,
   updatePlanItem,
   rerollWeekPlan,
+  movePlanItem,
 } from "@/lib/week/store";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
+
+  const month = searchParams.get("month");
+  if (month) {
+    const [yearStr, monthStr] = month.split("-");
+    const date = new Date(parseInt(yearStr), parseInt(monthStr) - 1, 1);
+    const weekStarts = getMonthWeekStarts(date);
+    const plans = weekStarts.map((ws) => ({
+      weekStart: ws,
+      weekNum: getISOWeekNumber(ws),
+      plan: getOrCreateWeekPlan(ws),
+    }));
+    return NextResponse.json({ plans });
+  }
+
   const week = searchParams.get("week") ?? getWeekStart();
   const plan = getOrCreateWeekPlan(week);
   return NextResponse.json(plan);
@@ -35,10 +52,28 @@ export async function PATCH(request: Request) {
 
 export async function POST(request: Request) {
   const body = await request.json();
+
   if (body.action === "reroll") {
     const week = body.week ?? getWeekStart();
     const plan = rerollWeekPlan(week);
     return NextResponse.json(plan);
   }
+
+  if (body.action === "reroll-month") {
+    const weekStarts = body.weekStarts as string[];
+    const plans = weekStarts.map((ws) => ({
+      weekStart: ws,
+      weekNum: getISOWeekNumber(ws),
+      plan: rerollWeekPlan(ws),
+    }));
+    return NextResponse.json({ plans });
+  }
+
+  if (body.action === "move-item") {
+    const { itemId, targetWeek, targetDayIndex } = body;
+    const item = movePlanItem(itemId, targetWeek, targetDayIndex);
+    return NextResponse.json(item);
+  }
+
   return NextResponse.json({ error: "unknown action" }, { status: 400 });
 }
