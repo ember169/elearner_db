@@ -334,32 +334,21 @@ function CompactCard({
         className="h-1.5 w-1.5 rounded-full shrink-0"
         style={{ backgroundColor: platformColor }}
       />
-      {item.link ? (
-        <a
-          href={item.link}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-[12px] leading-tight truncate hover:underline"
-          style={{
-            color: "var(--primary)",
-            textDecoration: item.status === "done" ? "line-through" : undefined,
-            opacity: item.status === "done" ? 0.7 : 1,
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {item.title}
-        </a>
-      ) : (
-        <span
-          className="text-[12px] leading-tight truncate"
-          style={{
-            textDecoration: item.status === "done" ? "line-through" : undefined,
-            opacity: item.status === "done" ? 0.7 : 1,
-          }}
-        >
-          {item.title}
-        </span>
-      )}
+      <a
+        href={item.link ?? "/goals"}
+        {...(item.link ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+        className="text-[12px] leading-snug line-clamp-2 hover:underline min-w-0"
+        title={item.title}
+        style={{
+          color: "var(--primary)",
+          textDecoration: item.status === "done" ? "line-through" : undefined,
+          opacity: item.status === "done" ? 0.7 : 1,
+        }}
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {item.title}
+      </a>
 
       {onMenuAction && (
         <DropdownMenu>
