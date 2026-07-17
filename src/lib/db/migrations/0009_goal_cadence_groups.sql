@@ -5,8 +5,11 @@ CREATE TABLE `goal_groups` (
 	`parent_group_id` integer,
 	`created_at` text DEFAULT (datetime('now')) NOT NULL
 );
-
+--> statement-breakpoint
 ALTER TABLE `goals` ADD `goal_type` text DEFAULT 'cumulative' NOT NULL;
+--> statement-breakpoint
 ALTER TABLE `goals` ADD `cadence_value` real;
+--> statement-breakpoint
 ALTER TABLE `goals` ADD `cadence_unit` text;
+--> statement-breakpoint
 ALTER TABLE `goals` ADD `group_id` integer;
