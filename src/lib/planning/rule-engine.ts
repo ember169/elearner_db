@@ -94,25 +94,49 @@ export function runRuleEngine(objective: string): RuleEngineOutput {
   );
 
   const remaining = WEEKLY_HOURS_BUDGET - ft42Budget;
-  const cybersecBudget = remaining * 0.55;
-  const maldevBudget = remaining * 0.20;
+  let cybersecBudget = remaining * 0.55;
+  let maldevBudget = remaining * 0.20;
   const sideProjectBudget = remaining * 0.25;
 
-  // 3. Select focus items from recommendations (already sorted by priority)
+  // 2b. Goal-aware budget shift: boost platforms with urgent goal deadlines
+  const goalPressure = computeGoalPressure(goals);
+  if (goalPressure.maldevBoost > 0) {
+    const shift = Math.min(goalPressure.maldevBoost * cybersecBudget, cybersecBudget * 0.3);
+    maldevBudget += shift;
+    cybersecBudget -= shift;
+  }
+
+  // 3. Select focus items from recommendations
   const focus: MentorFocus[] = [];
   let totalAllocated = 0;
 
-  // Sort recommendations by priority, with deadline-sensitive items first
+  // Sort by priority, then boost items tied to goals with close deadlines
   const priorityOrder = { high: 0, medium: 1, low: 2 };
-  const sorted = [...recommendations].sort(
-    (a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]
-  );
+  const sorted = [...recommendations].sort((a, b) => {
+    const pa = priorityOrder[a.priority] - goalDeadlineBoost(a, goals);
+    const pb = priorityOrder[b.priority] - goalDeadlineBoost(b, goals);
+    return pa - pb;
+  });
+
+  // Apply goal-driven platform budget redistribution within cybersec
+  const cybersecShares = { thm: 0.4, htb: 0.35, rootme: 0.25 };
+  if (goalPressure.platformBoosts) {
+    for (const [plat, boost] of Object.entries(goalPressure.platformBoosts)) {
+      if (plat in cybersecShares) {
+        (cybersecShares as Record<string, number>)[plat] += boost;
+      }
+    }
+    const total = cybersecShares.thm + cybersecShares.htb + cybersecShares.rootme;
+    cybersecShares.thm /= total;
+    cybersecShares.htb /= total;
+    cybersecShares.rootme /= total;
+  }
 
   const platformBudgets: Record<string, number> = {
     "42": ft42Budget,
-    thm: cybersecBudget * 0.4,
-    htb: cybersecBudget * 0.35,
-    rootme: cybersecBudget * 0.25,
+    thm: cybersecBudget * cybersecShares.thm,
+    htb: cybersecBudget * cybersecShares.htb,
+    rootme: cybersecBudget * cybersecShares.rootme,
     maldev: maldevBudget,
   };
 
@@ -233,4 +257,44 @@ function computeNextStep(
   if (signal.autoLevel < 3) return "Continue practicing — aim for more hands-on exercises.";
   if (signal.autoLevel < 5) return "Deepen with harder challenges and real-world scenarios.";
   return "Maintain mastery — mentor others or tackle edge cases.";
+}
+
+type GoalPressureResult = {
+  platformBoosts: Record<string, number>;
+  maldevBoost: number;
+};
+
+function computeGoalPressure(goals: GoalWithPacing[]): GoalPressureResult {
+  const platformBoosts: Record<string, number> = {};
+  let maldevBoost = 0;
+
+  for (const g of goals) {
+    if (!g.pacing || g.pacing.onTrack || !g.category) continue;
+    const days = g.pacing.daysRemaining;
+    if (days <= 0 || days > 90) continue;
+
+    // Boost scales inversely with days remaining: 30d → 0.3, 60d → 0.15, 90d → 0.1
+    const boost = clamp(30 / days, 0.1, 0.5);
+
+    if (g.category === "maldev") {
+      maldevBoost = Math.max(maldevBoost, boost);
+    } else {
+      platformBoosts[g.category] = Math.max(platformBoosts[g.category] ?? 0, boost);
+    }
+  }
+
+  return { platformBoosts, maldevBoost };
+}
+
+function goalDeadlineBoost(rec: Recommendation, goals: GoalWithPacing[]): number {
+  for (const g of goals) {
+    if (!g.pacing || g.pacing.onTrack || !g.category) continue;
+    if (g.category !== rec.platform) continue;
+    const days = g.pacing.daysRemaining;
+    if (days <= 0 || days > 90) continue;
+    // Return a fractional priority boost: closer deadline → bigger boost
+    // 30 days → 1.0 (full priority tier jump), 60 days → 0.5, 90 days → 0.33
+    return clamp(30 / days, 0.1, 1.0);
+  }
+  return 0;
 }
