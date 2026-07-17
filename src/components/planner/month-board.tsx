@@ -110,16 +110,16 @@ export function MonthBoard({
       <div
         className="grid gap-px rounded-sm overflow-hidden"
         style={{
-          gridTemplateColumns: "46px repeat(7, 1fr)",
+          gridTemplateColumns: "56px repeat(7, 1fr)",
           background: "var(--border)",
         }}
       >
         {/* Header row */}
-        <div className="py-1.5" style={{ background: "var(--card)" }} />
+        <div className="py-2" style={{ background: "var(--card)" }} />
         {DAY_NAMES.map((name) => (
           <div
             key={name}
-            className="text-center py-1.5 text-[10px] font-semibold uppercase tracking-wider"
+            className="text-center py-2 text-[12px] font-semibold uppercase tracking-wider"
             style={{ background: "var(--card)", color: "var(--muted-foreground)" }}
           >
             {name}
@@ -167,10 +167,10 @@ function WeekRow({
         className="flex flex-col items-center justify-start py-2 gap-0.5"
         style={{ background: "var(--card)" }}
       >
-        <span className="text-[10px] font-bold" style={{ color: "var(--primary)" }}>
+        <span className="text-[12px] font-bold" style={{ color: "var(--primary)" }}>
           W{week.weekNum}
         </span>
-        <span className="text-[9px] tabular-nums text-muted-foreground">
+        <span className="text-[11px] tabular-nums text-muted-foreground">
           {weekHours.toFixed(0)}h
         </span>
       </div>
@@ -226,7 +226,7 @@ function DayCell({
   return (
     <div
       ref={setNodeRef}
-      className="min-h-[72px] p-1"
+      className="min-h-[88px] p-1.5"
       style={{
         background: isOver
           ? "color-mix(in oklch, var(--primary) 8%, transparent)"
@@ -238,7 +238,7 @@ function DayCell({
     >
       <div className="flex items-center justify-between mb-0.5">
         <span
-          className={`text-[11px] tabular-nums ${isToday ? "font-bold" : ""}`}
+          className={`text-[13px] tabular-nums ${isToday ? "font-bold" : ""}`}
           style={{
             color: isToday
               ? "var(--primary)"
@@ -252,13 +252,13 @@ function DayCell({
           {dateNum}
         </span>
         {items.length > 0 && (
-          <span className="text-[8px] tabular-nums text-muted-foreground">
+          <span className="text-[10px] tabular-nums text-muted-foreground">
             {hours.toFixed(0)}h
           </span>
         )}
       </div>
 
-      <div className="space-y-[2px]">
+      <div className="space-y-1">
         {items.map((item) => (
           <DraggableCard
             key={item.id}
@@ -315,7 +315,7 @@ function CompactCard({
 
   return (
     <div
-      className="flex items-center gap-1 px-1.5 py-[3px] rounded-[2px] group"
+      className="flex items-center gap-1.5 px-2 py-1 rounded-[3px] group"
       style={{
         background: s.bg,
         border: `1px solid ${s.border}`,
@@ -327,11 +327,11 @@ function CompactCard({
           onClick={(e) => { e.stopPropagation(); onStatusToggle(); }}
           className="shrink-0"
         >
-          <StatusIcon className="h-[10px] w-[10px]" style={{ color: s.color }} />
+          <StatusIcon className="h-3 w-3" style={{ color: s.color }} />
         </button>
       )}
       <span
-        className="h-[5px] w-[5px] rounded-full shrink-0"
+        className="h-1.5 w-1.5 rounded-full shrink-0"
         style={{ backgroundColor: platformColor }}
       />
       {item.link ? (
@@ -339,7 +339,7 @@ function CompactCard({
           href={item.link}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-[10px] leading-tight truncate hover:underline"
+          className="text-[12px] leading-tight truncate hover:underline"
           style={{
             color: "var(--primary)",
             textDecoration: item.status === "done" ? "line-through" : undefined,
@@ -351,7 +351,7 @@ function CompactCard({
         </a>
       ) : (
         <span
-          className="text-[10px] leading-tight truncate"
+          className="text-[12px] leading-tight truncate"
           style={{
             textDecoration: item.status === "done" ? "line-through" : undefined,
             opacity: item.status === "done" ? 0.7 : 1,
@@ -364,7 +364,7 @@ function CompactCard({
       {onMenuAction && (
         <DropdownMenu>
           <DropdownMenuTrigger
-            className="ml-auto text-[9px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shrink-0"
+            className="ml-auto text-[11px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shrink-0"
             render={<button />}
             onClick={(e) => e.stopPropagation()}
           >

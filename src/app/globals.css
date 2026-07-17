@@ -160,7 +160,7 @@ a:focus-visible,
 
 /* Grid background pattern — faint dot grid, not graph paper */
 .grid-bg {
-  background-image: radial-gradient(oklch(1 0 0 / 0.06) 1px, transparent 1px);
+  background-image: radial-gradient(oklch(1 0 0 / 0.03) 1px, transparent 1px);
   background-size: 32px 32px;
 }
 
