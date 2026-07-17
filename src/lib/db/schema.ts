@@ -242,16 +242,6 @@ export const tasks = sqliteTable("tasks", {
     .default(sql`(datetime('now'))`),
 });
 
-export const goalGroups = sqliteTable("goal_groups", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  title: text("title").notNull(),
-  operator: text("operator").notNull().default("and"),
-  parentGroupId: integer("parent_group_id"),
-  createdAt: text("created_at")
-    .notNull()
-    .default(sql`(datetime('now'))`),
-});
-
 export const goals = sqliteTable("goals", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   title: text("title").notNull(),
@@ -264,8 +254,10 @@ export const goals = sqliteTable("goals", {
   cadenceUnit: text("cadence_unit"),
   metricSource: text("metric_source"),
   deadline: text("deadline"),
-  groupId: integer("group_id"),
   parentGoalId: integer("parent_goal_id"),
+  sortOrder: integer("sort_order").default(0),
+  ftSlug: text("ft_slug"),
+  originalTarget: real("original_target"),
   status: text("status").default("active"),
   createdAt: text("created_at")
     .notNull()

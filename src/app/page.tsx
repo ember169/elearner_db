@@ -69,7 +69,6 @@ export default function HomePage() {
       targetValue: g.targetValue,
       cadenceValue: g.cadenceValue,
       cadenceUnit: g.cadenceUnit,
-      groupId: g.groupId,
       parentGoalId: g.parentGoalId,
       pacing: g.pacing,
     }));

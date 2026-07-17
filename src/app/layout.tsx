@@ -26,7 +26,7 @@ export default function RootLayout({
         <TooltipProvider>
           <div className="grid-bg fixed inset-0 pointer-events-none" />
           <Sidebar />
-          <main className="md:pl-56 min-h-screen relative">
+          <main className="md:pl-12 min-h-screen relative">
             <div className="px-5 pt-16 pb-6 md:px-8 md:py-8 max-w-5xl">{children}</div>
           </main>
         </TooltipProvider>

@@ -37,7 +37,6 @@ export type GoalSlim = {
   targetValue: number | null;
   cadenceValue: number | null;
   cadenceUnit: string | null;
-  groupId: number | null;
   parentGoalId: number | null;
   pacing: {
     onTrack: boolean;

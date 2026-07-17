@@ -70,8 +70,10 @@ export type GoalWithPacing = {
   cadenceUnit: string | null;
   metricSource: string | null;
   deadline: string | null;
-  groupId: number | null;
   parentGoalId: number | null;
+  sortOrder: number | null;
+  ftSlug: string | null;
+  originalTarget: number | null;
   status: string | null;
   createdAt: string;
   milestones: (typeof goalMilestones.$inferSelect)[];
@@ -245,8 +247,10 @@ export function analyzeGoals(): GoalWithPacing[] {
       cadenceUnit: g.cadenceUnit,
       metricSource: g.metricSource,
       deadline: g.deadline,
-      groupId: g.groupId,
       parentGoalId: g.parentGoalId,
+      sortOrder: g.sortOrder,
+      ftSlug: g.ftSlug,
+      originalTarget: g.originalTarget,
       status: g.status,
       createdAt: g.createdAt,
       milestones: ms,
@@ -261,7 +265,58 @@ export function analyzeGoals(): GoalWithPacing[] {
       byId.get(g.parentGoalId)!.children.push(g);
     }
   }
+  for (const g of mapped) {
+    if (g.children.length > 1) {
+      g.children.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+    }
+  }
+
+  computeAggregatePacing(mapped.filter((g) => !g.parentGoalId));
   return mapped.filter((g) => !g.parentGoalId);
+}
+
+function computeAggregatePacing(roots: GoalWithPacing[]) {
+  const now = new Date();
+  function walk(g: GoalWithPacing) {
+    for (const child of g.children) walk(child);
+    if (g.children.length === 0 || g.status === "completed") return;
+
+    let totalWeight = 0;
+    let weightedSum = 0;
+    let allOnTrack = true;
+    let latestDeadline: Date | null = null;
+
+    for (const child of g.children) {
+      const pct = child.pacing?.percentComplete ??
+        (child.status === "completed" ? 100 : 0);
+      const weight = child.targetValue ?? 1;
+      weightedSum += pct * weight;
+      totalWeight += weight;
+      if (child.pacing && !child.pacing.onTrack) allOnTrack = false;
+      if (child.deadline) {
+        const d = new Date(child.deadline);
+        if (!latestDeadline || d > latestDeadline) latestDeadline = d;
+      }
+    }
+
+    const aggregatePercent = totalWeight > 0 ? weightedSum / totalWeight : 0;
+    const effectiveDeadline = g.deadline ? new Date(g.deadline) : latestDeadline;
+    const daysRemaining = effectiveDeadline
+      ? Math.max(0, Math.ceil((effectiveDeadline.getTime() - now.getTime()) / 86400000))
+      : 0;
+
+    const completedCount = g.children.filter((c) => c.status === "completed").length;
+    const milestonePct = (completedCount / g.children.length) * 100;
+
+    g.pacing = {
+      daysRemaining,
+      percentComplete: Math.round(aggregatePercent * 10) / 10,
+      onTrack: allOnTrack && (daysRemaining > 0 || aggregatePercent >= 100),
+      requiredPace: `${completedCount}/${g.children.length} milestones`,
+      currentPace: `${Math.round(aggregatePercent)}% aggregate`,
+    };
+  }
+  for (const root of roots) walk(root);
 }
 
 export function flattenGoals(tree: GoalWithPacing[]): GoalWithPacing[] {

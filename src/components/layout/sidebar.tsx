@@ -20,13 +20,41 @@ const navItems = [
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
+function ShieldLogo() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+      <path
+        d="M14 2L4 6.5V13C4 19.5 8.2 25.4 14 27C19.8 25.4 24 19.5 24 13V6.5L14 2Z"
+        fill="oklch(0.82 0.055 80)"
+        stroke="oklch(0.82 0.055 80)"
+        strokeWidth="0.5"
+      />
+      <path
+        d="M10 12L13 14.5L10 17"
+        stroke="#1a1916"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <line
+        x1="14.5"
+        y1="17"
+        x2="18"
+        y2="17"
+        stroke="#1a1916"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 export function Sidebar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
     <>
-      {/* Mobile toggle */}
       <button
         className="fixed top-4 left-4 z-50 md:hidden p-1.5 rounded-sm border border-border bg-background/80 backdrop-blur-sm"
         onClick={() => setMobileOpen(!mobileOpen)}
@@ -34,7 +62,6 @@ export function Sidebar() {
         {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
       </button>
 
-      {/* Overlay */}
       {mobileOpen && (
         <div
           className="fixed inset-0 z-30 bg-black/60 md:hidden"
@@ -42,46 +69,48 @@ export function Sidebar() {
         />
       )}
 
-      {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 flex w-56 flex-col border-r border-border bg-sidebar transition-transform duration-200 md:translate-x-0",
+          "fixed inset-y-0 left-0 z-40 flex w-12 flex-col items-center border-r border-border bg-sidebar transition-transform duration-200 md:translate-x-0",
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className="flex h-14 items-center gap-2.5 border-b border-border px-5">
-          <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-[11px]">L</span>
+        <div className="flex h-14 items-center justify-center">
+          <div className="flex h-[30px] w-[30px] items-center justify-center">
+            <ShieldLogo />
           </div>
-          <span className="font-bold text-[15px] tracking-tight">Learner DB</span>
         </div>
 
-        <nav className="flex-1 px-3 py-4">
-          <p className="section-label px-2.5 mb-2.5">Navigate</p>
-          <div className="space-y-0.5">
-            {navItems.map((item) => {
-              const isActive =
-                item.href === "/"
-                  ? pathname === "/"
-                  : pathname.startsWith(item.href);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMobileOpen(false)}
+        <nav className="flex flex-col gap-0.5 mt-3.5">
+          {navItems.map((item) => {
+            const isActive =
+              item.href === "/"
+                ? pathname === "/"
+                : pathname.startsWith(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setMobileOpen(false)}
+                title={item.label}
+                className={cn(
+                  "flex h-[34px] w-[34px] items-center justify-center rounded-sm transition-colors",
+                  isActive
+                    ? "bg-[oklch(0.82_0.055_80/0.1)]"
+                    : "hover:bg-[rgba(237,232,220,0.05)]"
+                )}
+              >
+                <item.icon
                   className={cn(
-                    "flex items-center gap-2.5 rounded-sm px-2.5 py-2 text-[14px] font-medium transition-colors",
+                    "h-4 w-4",
                     isActive
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                      ? "text-[oklch(0.82_0.055_80)]"
+                      : "text-[rgba(237,232,220,0.35)] hover:text-[rgba(237,232,220,0.7)]"
                   )}
-                >
-                  <item.icon className="h-4 w-4" />
-                  {item.label}
-                </Link>
-              );
-            })}
-          </div>
+                />
+              </Link>
+            );
+          })}
         </nav>
       </aside>
     </>

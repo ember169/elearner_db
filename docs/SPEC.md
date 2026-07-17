@@ -131,8 +131,7 @@ Platform APIs          Sync Engine            SQLite DB
 
 | Table | Purpose |
 |-------|---------|
-| `goals` | Trackable goals with two types. **Cumulative**: reach targetValue by deadline. **Cadence**: maintain cadenceValue per cadenceUnit (per_week/per_month) over a rolling window. Supports a 3-level Jira-like hierarchy via self-referential `parentGoalId`: **Epic** (depth 0) → **Issue** (depth 1) → **Task** (depth 2). Parent goals track child completion: targetValue = child count, currentValue = completed child count. Auto-completion cascades up (all children complete → parent completes) and down (complete parent → all children complete). Cadence goals only at leaf level. Fields: title, description, category, goalType, targetValue, currentValue, cadenceValue, cadenceUnit, metricSource, deadline, groupId (FK to goalGroups), parentGoalId (self-referential FK), status. |
-| `goalGroups` | Compound logic groups. Operator is AND (all children must be on track) or OR (any child). One nesting level: a group can contain goals or sub-groups, but sub-groups can only contain goals (max depth 2). Fields: title, operator, parentGroupId. |
+| `goals` | Trackable goals with two types. **Cumulative**: reach targetValue by deadline. **Cadence**: maintain cadenceValue per cadenceUnit (per_week/per_month) over a rolling window. Supports a 3-level hierarchy via self-referential `parentGoalId`: **Epic** (depth 0) → **Issue** (depth 1) → **Task** (depth 2). Parent `currentValue` = completed child count (targetValue is NOT overwritten by child operations — it preserves the user's original target). Auto-completion cascades up and down. Cadence goals only at leaf level. Circular references prevented by `validateParentChain()`. Fields: title, description, category, goalType, targetValue, currentValue, cadenceValue, cadenceUnit, metricSource, deadline, parentGoalId (self-ref FK), sortOrder, ftSlug (link to 42 project), originalTarget (preserves user target separate from rollup), status. |
 | `goalMilestones` | Milestones (FK to goals, cascade delete): title, target value threshold, reached-at timestamp. |
 
 ### Other
@@ -188,25 +187,65 @@ Multi-view progress dashboard.
 
 ### Goals (`/goals`)
 
-Goal management with two goal types, compound logic groups, hierarchical goals, and auto-tracking.
+Goal management with two goal types, hierarchical goals, and auto-tracking via a split-panel layout.
 
-**Server component** (`src/app/goals/page.tsx`): runs guidance engine, computes competency signals, loads mentor plan focus items, loads goal groups.
+**Server component** (`src/app/goals/page.tsx`): runs guidance engine, computes competency signals, loads mentor plan focus items.
 
-**Client features** (`src/components/goals/goals-client.tsx`):
+**Layout** (`src/app/goals/layout.tsx`): removes default padding so the split panel fills the viewport.
 
-- **Two goal types**: **Cumulative** (reach X by deadline) and **Cadence** (maintain >= X per week/month over a rolling window).
-- **Goal hierarchy**: 3-level Jira-like structure: **Epic** → **Issue** → **Task**. Epics and issues display as expandable `HierarchyCard` components with EPIC/ISSUE badges, progress bars (completedChildren/totalChildren), pacing status, and tree connectors (border-l-2). Tasks display as compact `GoalCard` rows. Completed children show with strikethrough + muted opacity + checkmark icon. Each hierarchy level has "Add issue" or "Add task" buttons. Child creation dialog is simplified: only title and deadline (inherits category from parent, no metric/cadence/group fields).
-- **Progress rollup**: parent goals' targetValue/currentValue are maintained by the API (child count / completed child count). Auto-completion cascades up when all siblings complete, and down when a parent is marked complete. Reopening a child cascades up to reopen completed parents.
-- **Goal cards**: progress bar with milestone markers, pacing badge (on track / behind / overdue), days remaining, required/current pace, competency area tags, "this week" connection showing which focus items feed into the goal. Cadence cards show rolling-window progress ("0 this week — target: 2/wk").
-- **Goal groups**: collapsible container cards with AND/OR operator toggle and combined status badge ("0/1 met"). Groups can nest one level deep. Goals are assigned to groups via the edit dialog. Groups are orthogonal to the hierarchy.
-- **Behind-pace alert**: banner listing all leaf goals that are behind schedule, with cadence-aware phrasing.
-- **Create/edit dialog**: goal type toggle (Cumulative/Cadence), title, platform category, auto-track metric, target value + deadline (cumulative) or rate + period (cadence), group assignment. Quick presets: 6 cumulative + 4 cadence.
-- **Suggested goals**: competencies with level < 2 that don't have a corresponding goal. One-click creation with auto 3-month deadline.
-- **Completed goals section**: archived standalone goals (completed children are shown inline in their parent's hierarchy card).
+**Client container** (`src/components/goals/goals-client.tsx`): responsive layout — desktop split panel (`hidden md:flex`) and mobile drill-down (`md:hidden`). Desktop: `GoalsTree` (200px left panel) + right pane (flex-1) that switches between `DetailPane`, `CreateForm` (new), and `CreateForm` (edit). Mobile: `GoalsMobile` drill-down with separate create/edit states. Both share dialogs (Generate42, Suggest, Delete confirmation). Manages selection state via `selectedId`, right pane mode via discriminated union (`RightPane`), and delete confirmation dialog.
+
+**Goals tree** (`src/components/goals/goals-tree.tsx`):
+- Header: "Goals" h3 + "N active · N behind" subtitle
+- Behind-pace alert card (red-tinted) listing behind goals
+- Recursive tree items: Epic (depth 0, platform color bar, font-weight 600, progress %), Issue (depth 1, chevron + title + count), Task (depth 2, checkbox + title)
+- Completed items: opacity 0.4, strikethrough, green checkmark
+- Selected item: gold left border + tinted background (`oklch(0.82 0.055 80 / 0.08)`)
+- Standalone goals below a divider
+- Bottom action bar: Suggest (opens LLM suggest dialog), 42 plan (opens generate/sync dialog), + New buttons
+
+**Detail pane** (`src/components/goals/detail-pane.tsx`): specialized views per goal type:
+- **Epic (D1)**: EPIC badge, dual progress cards (metric total + child completion rollup with platform-colored progress bars), pacing row (days left / required pace / current pace), sortable ISSUES list with "+ Add issue" button, actions bar
+- **Issue (D2)**: ISSUE badge with "in {parent}" context, 3-column stat cards (Tasks N/N, Days left, Est. effort), TASKS list with ft_slug display, "+ Add task" button
+- **Task (D3)**: clickable breadcrumb chain to parent/grandparent, checkbox + title, metadata grid (Status, Platform, Project/ft_slug, Deadline, Auto-complete), green "Mark complete" button
+- **Cadence (D4)**: `/wk` mono badge, big 44px number with platform color, progress bar, target status text, metadata grid (Platform, Metric, Rate)
+- **Standalone Goal**: GOAL badge, single progress card, pacing row, description
+- **Common elements**: parent breadcrumb navigation (click to navigate), status badge (On track/Behind pace/Completed), `MoveToSelect` component for reparenting via dropdown, `SortableChildrenList` with drag-and-drop reordering (GripVertical handle, @dnd-kit DndContext + SortableContext + DragOverlay, PATCHes sortOrder on drop, page reload), `ChildRowContent` with click-to-navigate + reopen button for completed items, deadline warnings (amber ⚠ icon when child deadline exceeds parent deadline)
+- **Actions bar**: Mark complete / Reopen, Edit, Move to..., Delete (shows descendant count for parents)
+
+**Inline create/edit form** (`src/components/goals/create-form.tsx`): renders in the right pane (not a dialog). Features:
+- NEW/EDIT badge + context text + "Esc to cancel" link
+- Dashed-underline editable title input (20px, bold)
+- Presets row (new standalone only): "42 common core", "42 level 10", "50 RM challs", ">= 2 THM/wk" — each applies title, category, goalType, metricSource, and target/rate values
+- Metadata grid: Type (Cumulative/Cadence toggle buttons), Platform (6 options), Auto-track (manual + filtered metric sources), Target or Rate+Period (switches with type), Deadline (cumulative only), Parent selector (respects max depth 2)
+- Edit mode: pre-populates all fields from the existing goal, shows "Save changes" instead of "Create goal"
+- "Add child" flow: when triggered from a detail pane's "+ Add issue/task" button, the form opens with parent pre-selected
+
+**Delete confirmation dialog (D7)**: for goals with children, offers "Delete {type} + N {children}" (recursive), "Orphan {children} (promote to standalone)", or Cancel. Red trash icon, goal title, descendant count.
+
+**Generate/Sync 42 dialog (D5/D5b)** (`src/components/goals/generate-42-dialog.tsx`): combined dialog for scaffolding and syncing 42 Common Core goals. Opens from the "42 plan" button. Two modes:
+- **Generate mode** (no existing epic): preview tree showing circles with task counts, deadlines from backward planner, pre-completed count. "Generate (1 epic + N issues + N tasks)" button creates the full hierarchy.
+- **Sync mode** (epic exists): 3-column summary cards (auto-completed / new tasks / deadline shifts). Checkable lists for newly available tasks and deadline changes. "Apply changes (N updates)" button applies selected changes.
+- Data flow: GET `/api/goals/generate-42` for preview, POST to generate, POST `/api/goals/sync-42` for diff, PATCH to apply.
+
+**LLM Suggest dialog (D6)** (`src/components/goals/suggest-dialog.tsx`): AI-powered goal suggestion. Opens from the "Suggest" button. Three states:
+- **Initial**: description text + "Generate suggestion" button
+- **Loading**: spinner + "Asking the AI for suggestions..."
+- **Result**: reasoning quote, tree preview (EPIC badge + checkable ISSUE rows with task counts + task dots), Accept/Regenerate/Dismiss buttons. Issues are individually selectable. Accept creates the full hierarchy via sequential POST `/api/goals` calls.
+
+**Mobile views** (`src/components/goals/goals-mobile.tsx`): drill-down navigation replacing the split panel on screens < md breakpoint. Four views:
+- **M1 Goals List**: full-screen card list with "Goals" h1, Zap (suggest) + Plus (create) circle buttons, behind-pace alert banner. Epic cards (colored top bar, EPIC badge, title, progress %, child status pills), standalone cards (progress bar), cadence cards (big number + ON PACE/BEHIND badge).
+- **M2 Epic Drilled**: "← Goals" back button, EPIC+platform badges, title, ON TRACK/BEHIND badge, dual stat cards (Projects, Milestones), tappable issue rows with chevrons, "+ Add issue" button.
+- **M3 Issue Drilled**: "← {parent}" back button, ISSUE badge, title, deadline + days left + task count, progress bar, task rows with checkboxes/chevrons + deadline month labels, deadline warnings (amber when task > parent), "+ Add task" button.
+- **M4 Task Detail**: "← {parent}" back button, checkbox + title, metadata grid (Status, Project, Deadline, Auto-done), green "Mark complete" full-width button, Edit + Delete buttons.
+- **Standalone Detail**: back button, cadence big number or progress card, metadata grid, Mark complete / Edit / Delete.
+- Create/Edit: reuses `CreateForm` with `mobile` prop for Cancel/Title/Create nav bar header.
 
 **Auto-sync** (`src/lib/goals/metrics.ts`): on each guidance engine run, active goals with a `metricSource` have their `currentValue` updated from live platform data. 8 supported metrics: ft:projects_validated, ft:level, rootme:challenges_solved, rootme:score, maldev:progress, thm:rooms_completed, htb:owns, htb:points.
 
 **Cadence pacing** (`computeCadencePacing()`): for cadence goals, loads the daily snapshot from N days ago (7 for per_week, 30 for per_month), diffs the metric value, and computes achieved/target/onTrack. No new data collection needed -- reuses existing `dailySnapshots` table.
+
+**Aggregate parent pacing** (`computeAggregatePacing()`): after tree assembly, walks bottom-up and computes weighted average of children's `percentComplete` (weight = `targetValue` or 1). Parent `pacing.requiredPace` shows "N/M milestones", `pacing.currentPace` shows "X% aggregate". `onTrack` is true only when all children are on track and deadline hasn't passed.
 
 ### Settings (`/settings`)
 
@@ -254,19 +293,39 @@ Action endpoint. Body: `{ action: "reroll", week? }`. Deletes and recreates the 
 
 ### `GET /api/goals`
 
-Returns all goals and goal groups.
+Returns all goals (hierarchy-only model, no groups).
 
 ### `POST /api/goals`
 
-Creates a goal or group. For goals: `{ title, category?, goalType?, targetValue?, cadenceValue?, cadenceUnit?, deadline?, metricSource?, groupId?, parentGoalId? }`. For groups: `{ _type: "group", title, operator?, parentGroupId? }`. Enforces max nesting depth: 2 for groups, 3 levels for goal hierarchy (epic/issue/task). When `parentGoalId` is set, recomputes parent's targetValue/currentValue from child counts.
+Creates a goal. Body: `{ title, category?, goalType?, targetValue?, cadenceValue?, cadenceUnit?, deadline?, metricSource?, parentGoalId?, sortOrder?, ftSlug?, originalTarget? }`. Enforces max depth 3 via `validateParentChain()` (also rejects circular references). When `parentGoalId` is set, recomputes parent's `currentValue` (completed child count) without overwriting `targetValue`.
 
 ### `PATCH /api/goals`
 
-Updates a goal or group. Body: `{ id, ...fields }`. Goals: status, currentValue, title, description, category, goalType, targetValue, cadenceValue, cadenceUnit, deadline, metricSource, groupId, parentGoalId. Groups: `{ _type: "group", id, title?, operator?, parentGroupId? }`. Setting `status: "completed"` cascades completion to all descendants and recomputes parent chain. Setting `status: "active"` (reopening) cascades reopen to parent chain.
+Updates a goal. Body: `{ id, ...fields }`. Fields: status, currentValue, title, description, category, goalType, targetValue, cadenceValue, cadenceUnit, deadline, metricSource, parentGoalId, sortOrder, ftSlug, originalTarget. Setting `status: "completed"` cascades completion to all descendants and recomputes parent chain. Setting `status: "active"` (reopening) cascades reopen to parent chain. Reparenting validates depth and circularity, and recomputes both old and new parent values.
 
 ### `DELETE /api/goals`
 
-Deletes a goal or group. Body: `{ id }` or `{ _type: "group", id }`. Deleting a group unlinks its children (sets groupId/parentGroupId to null).
+Deletes a goal. Body: `{ id, orphan?: boolean }`. Default: recursively deletes all descendants. With `orphan: true`: promotes direct children to standalone goals (sets their parentGoalId to null) before deleting.
+
+### `GET /api/goals/generate-42`
+
+Returns preview data for the 42 plan generate/sync dialog. Computes circle progress, backward plan deadlines, task counts, and checks for an existing "42 Common-Core" epic. Returns: `{ existingEpicId, targetDate, circles[], totalTasks, preCompleted }`.
+
+### `POST /api/goals/generate-42`
+
+Scaffolds the full 42 Common Core goal hierarchy. Creates Epic ("Complete 42 Common-Core") > Issues (one per circle, "Complete Circle N") > Tasks (one per project, linked via `ftSlug`). Uses backward planner deadlines for circle issues. Pre-marks completed circles/tasks. Returns: `{ epicId, totalIssues, totalTasks, preCompleted }`.
+
+### `POST /api/goals/sync-42`
+
+Computes diff between existing 42 epic and current state. Body: `{ epicId }`. Finds: auto-completable tasks (ft_slug validated but goal not completed), newly available projects (unlocked by dependency graph), deadline shifts (backward planner recalculation). Returns: `{ autoCompleted[], newTasks[], deadlineShifts[] }`.
+
+### `PATCH /api/goals/sync-42`
+
+Applies selected sync changes. Body: `{ epicId, applyAutoComplete, newTaskSlugs[], applyDeadlineShifts }`. Updates task statuses, inserts new task goals, updates circle deadlines. Recomputes parent values after auto-completion.
+
+### `POST /api/goals/suggest`
+
+LLM-powered goal suggestion. Body: `{ scope }`. Calls Anthropic API with `tool_use` pattern (forced `emit_goal_suggestion` tool) to generate a structured goal tree. Prompt includes current competency levels, existing goals, and platform info. Returns: `{ suggestion: { epic, issues[], reasoning } }`. Requires API key in mentor config.
 
 ### `GET /api/deadlines`
 
@@ -313,7 +372,7 @@ Orchestrates all platform data into actionable recommendations.
 **`runGuidanceEngine()`** pipeline:
 1. `syncGoalValues()` -- auto-update goal metrics from live data
 2. `gatherSnapshot()` -- query all platform profiles/data from DB
-3. `analyzeGoals()` -- compute pacing for each active goal (cumulative: deadline-based pace; cadence: rolling window via `computeCadencePacing()`)
+3. `analyzeGoals()` -- compute pacing for each active goal (cumulative: deadline-based pace; cadence: rolling window via `computeCadencePacing()`; parent goals: weighted aggregate of children's `percentComplete`, weighted by `targetValue` or equal weight, displayed as "N/M milestones · X% aggregate")
 4. `analyzeFtProgress()` -- determine 42 circle, completed/available projects
 5. `buildSkillProfile()` -- aggregate cross-platform skills
 6. `generateRecommendations()` -- produce prioritized items using:
@@ -497,7 +556,7 @@ Avatar, Badge (6 variants), Button (multiple sizes including xs), Calendar, Card
 
 ### Layout (`src/components/layout/`)
 
-**Sidebar** (`sidebar.tsx`): fixed left sidebar, 56 units wide. 4 nav items: Planner (/), Progress (/progress), Goals (/goals), Settings (/settings). Mobile: off-screen with hamburger toggle and overlay.
+**Nav Rail** (`sidebar.tsx`): fixed left icon-only rail, 48px (w-12) wide. Gold shield SVG logo (28x28) at top, 4 nav buttons (34x34, 16x16 Lucide icons): Planner (/), Progress (/progress), Goals (/goals), Settings (/settings). Active state: `oklch(0.82 0.055 80 / 0.1)` bg with gold icon. Inactive: `rgba(237,232,220,.35)` icons. Mobile: off-screen with hamburger toggle and overlay. Main content offset: `md:pl-12`.
 
 ### Platform colors (`src/lib/platform-colors.ts`)
 

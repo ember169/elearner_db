@@ -1,299 +1,93 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Plus,
-  Trash2,
-  CheckCircle,
-  AlertTriangle,
-  Zap,
-  Clock,
-  ArrowRight,
-  Pencil,
-  FolderPlus,
-  ChevronDown,
-  ChevronRight,
-} from "lucide-react";
+import { Trash2 } from "lucide-react";
 import type { GoalWithPacing } from "@/lib/guidance/engine";
-import { METRIC_SOURCES, GOAL_PRESETS } from "@/lib/goals/shared";
-import type { MetricSourceKey } from "@/lib/goals/shared";
-import { PLATFORM_COLORS, PLATFORM_LABELS } from "@/lib/platform-colors";
 import { assertOk } from "@/lib/utils";
+import { GoalsTree } from "./goals-tree";
+import { DetailPane } from "./detail-pane";
+import { CreateForm } from "./create-form";
+import { Generate42Dialog } from "./generate-42-dialog";
+import { SuggestDialog } from "./suggest-dialog";
+import { GoalsMobile } from "./goals-mobile";
 
-type GoalGroup = {
-  id: number;
-  title: string;
-  operator: string;
-  parentGroupId: number | null;
-  createdAt: string;
-};
-
-type CompetencySlim = {
-  id: string;
-  label: string;
-  area: string;
-  level: number;
-};
-
+type CompetencySlim = { id: string; label: string; area: string; level: number };
 type FocusSlim = { type: string; title: string };
 
-function flattenGoalTree(tree: GoalWithPacing[]): GoalWithPacing[] {
-  const result: GoalWithPacing[] = [];
-  function walk(g: GoalWithPacing) {
-    result.push(g);
-    for (const child of g.children) walk(child);
+function findGoalById(id: number, tree: GoalWithPacing[]): GoalWithPacing | null {
+  for (const g of tree) {
+    if (g.id === id) return g;
+    const found = findGoalById(id, g.children);
+    if (found) return found;
   }
-  tree.forEach(walk);
-  return result;
+  return null;
 }
 
-function matchFocusToGoal(goal: GoalWithPacing, focusItems: FocusSlim[]): FocusSlim[] {
-  return focusItems.filter((f) => {
-    if (goal.category && goal.category !== "general" && f.type === goal.category) return true;
-    const goalLower = goal.title.toLowerCase();
-    if (goalLower.includes(f.title.toLowerCase().slice(0, 15))) return true;
-    return false;
-  });
-}
-
-function getCompetencyTags(goal: GoalWithPacing, competencies: CompetencySlim[]): string[] {
-  const titleLower = goal.title.toLowerCase();
-  const match = competencies.find((c) => titleLower.includes(c.label.toLowerCase()));
-  if (match) return [match.area];
-  if (goal.category && goal.category !== "general") {
-    const platformAreas: Record<string, string[]> = {
-      "42": ["Low-level & C", "Linux & systems"],
-      thm: ["Networking", "Active Directory"],
-      htb: ["Networking", "Active Directory"],
-      rootme: ["Web", "Crypto & forensics basics"],
-      maldev: ["Windows internals & maldev"],
-    };
-    return platformAreas[goal.category] ?? [];
-  }
-  return [];
-}
-
-function computeGroupStatus(
-  group: GoalGroup,
-  goals: GoalWithPacing[],
-  groups: GoalGroup[]
-): { onTrack: boolean; total: number; met: number } {
-  const childGoals = goals.filter((g) => g.groupId === group.id);
-  const childGroups = groups.filter((g) => g.parentGroupId === group.id);
-
-  const results: boolean[] = [];
-  for (const g of childGoals) {
-    results.push(g.pacing?.onTrack ?? true);
-  }
-  for (const sub of childGroups) {
-    const subStatus = computeGroupStatus(sub, goals, groups);
-    results.push(subStatus.onTrack);
-  }
-
-  const met = results.filter(Boolean).length;
-  const onTrack = group.operator === "and"
-    ? results.every(Boolean)
-    : results.some(Boolean);
-
-  return { onTrack, total: results.length, met };
-}
+type RightPane =
+  | { mode: "detail" }
+  | { mode: "create"; parentGoal?: GoalWithPacing | null }
+  | { mode: "edit"; goal: GoalWithPacing };
 
 export function GoalsClient({
   goals,
-  groups,
   competencies,
   focusItems = [],
 }: {
   goals: GoalWithPacing[];
-  groups: GoalGroup[];
   competencies: CompetencySlim[];
   focusItems?: FocusSlim[];
 }) {
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [groupDialogOpen, setGroupDialogOpen] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("general");
-  const [goalType, setGoalType] = useState<"cumulative" | "cadence">("cumulative");
-  const [targetValue, setTargetValue] = useState("");
-  const [cadenceValue, setCadenceValue] = useState("");
-  const [cadenceUnit, setCadenceUnit] = useState<"per_week" | "per_month">("per_week");
-  const [deadline, setDeadline] = useState("");
-  const [metricSource, setMetricSource] = useState("");
-  const [groupId, setGroupId] = useState<string>("");
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [rightPane, setRightPane] = useState<RightPane>({ mode: "detail" });
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const [show42Dialog, setShow42Dialog] = useState(false);
+  const [showSuggestDialog, setShowSuggestDialog] = useState(false);
+  const [mobilePane, setMobilePane] = useState<"nav" | "create" | "edit">("nav");
+  const [mobileCreateParent, setMobileCreateParent] = useState<GoalWithPacing | undefined>();
+  const [mobileEditGoal, setMobileEditGoal] = useState<GoalWithPacing | null>(null);
 
-  const [parentGoalId, setParentGoalId] = useState<number | null>(null);
-  const [parentGoalTitle, setParentGoalTitle] = useState("");
+  const selectedGoal = selectedId ? findGoalById(selectedId, goals) : null;
 
-  const [groupTitle, setGroupTitle] = useState("");
-  const [groupOperator, setGroupOperator] = useState<"and" | "or">("and");
-  const [groupParentId, setGroupParentId] = useState<string>("");
+  function handleSelect(id: number) {
+    setSelectedId(id);
+    setRightPane({ mode: "detail" });
+  }
 
-  const allGoalsFlat = flattenGoalTree(goals);
-  const activeGoals = allGoalsFlat.filter((g) => g.status === "active");
-  const completedGoals = allGoalsFlat.filter((g) => g.status === "completed" && !g.parentGoalId);
-  const behindGoals = activeGoals.filter(
-    (g) => g.pacing && !g.pacing.onTrack && g.pacing.percentComplete < 100 && g.children.length === 0
-  );
-  const [adding, setAdding] = useState<string | null>(null);
-  const goalTitles = new Set(allGoalsFlat.map((g) => g.title.toLowerCase()));
-  const suggestedGoals = competencies
-    .filter((c) => c.level < 2 && !goalTitles.has(`improve ${c.label}`.toLowerCase()))
-    .slice(0, 3);
+  function handleNewGoal() {
+    setSelectedId(null);
+    setRightPane({ mode: "create" });
+  }
 
-  const topLevelGroups = groups.filter((g) => g.parentGroupId === null);
-  const ungroupedRoots = goals.filter((g) => !g.groupId);
-  const epicGoals = ungroupedRoots.filter((g) => g.children.length > 0);
-  const standaloneGoals = ungroupedRoots.filter((g) => g.children.length === 0);
-
-  function applyPreset(preset: (typeof GOAL_PRESETS)[number]) {
-    setTitle(preset.title);
-    setCategory(preset.category);
-    setGoalType(preset.goalType);
-    setMetricSource(preset.metricSource);
-    if (preset.goalType === "cadence") {
-      setCadenceValue(String(preset.cadenceValue ?? ""));
-      setCadenceUnit(preset.cadenceUnit ?? "per_week");
-      setTargetValue("");
-      setDeadline("");
-    } else {
-      setTargetValue(String(preset.targetValue ?? ""));
-      setCadenceValue("");
+  function handleEdit(goal: GoalWithPacing) {
+    if (goal.id === -1 && selectedGoal) {
+      setRightPane({ mode: "create", parentGoal: selectedGoal });
+      return;
     }
+    setRightPane({ mode: "edit", goal });
   }
 
-  function resetForm() {
-    setEditingId(null);
-    setTitle("");
-    setCategory("general");
-    setGoalType("cumulative");
-    setTargetValue("");
-    setCadenceValue("");
-    setCadenceUnit("per_week");
-    setDeadline("");
-    setMetricSource("");
-    setGroupId("");
-    setParentGoalId(null);
-    setParentGoalTitle("");
+  function handleFormDone() {
+    setRightPane({ mode: "detail" });
+    window.location.reload();
   }
 
-  function openEdit(goal: GoalWithPacing) {
-    setEditingId(goal.id);
-    setTitle(goal.title);
-    setCategory(goal.category ?? "general");
-    setGoalType((goal.goalType as "cumulative" | "cadence") ?? "cumulative");
-    setTargetValue(goal.targetValue != null ? String(goal.targetValue) : "");
-    setCadenceValue(goal.cadenceValue != null ? String(goal.cadenceValue) : "");
-    setCadenceUnit((goal.cadenceUnit as "per_week" | "per_month") ?? "per_week");
-    setDeadline(goal.deadline ?? "");
-    setMetricSource(goal.metricSource ?? "");
-    setGroupId(goal.groupId != null ? String(goal.groupId) : "");
-    setParentGoalId(null);
-    setParentGoalTitle("");
-    setDialogOpen(true);
-  }
-
-  function openAddChild(parent: GoalWithPacing) {
-    resetForm();
-    setParentGoalId(parent.id);
-    setParentGoalTitle(parent.title);
-    setCategory(parent.category ?? "general");
-    setDialogOpen(true);
-  }
-
-  const isChildForm = parentGoalId !== null && !editingId;
-
-  async function submitGoal() {
-    if (!title.trim()) return;
-    const payload: Record<string, unknown> = {
-      title,
-      category,
-    };
-    if (isChildForm) {
-      payload.goalType = "cumulative";
-      payload.parentGoalId = parentGoalId;
-      payload.deadline = deadline || null;
-      payload.metricSource = null;
-      payload.targetValue = null;
-      payload.cadenceValue = null;
-      payload.cadenceUnit = null;
-      payload.groupId = null;
-    } else {
-      payload.goalType = goalType;
-      payload.metricSource = metricSource && metricSource !== "manual" ? metricSource : null;
-      payload.groupId = groupId ? parseInt(groupId) : null;
-      if (goalType === "cadence") {
-        payload.cadenceValue = cadenceValue ? parseFloat(cadenceValue) : null;
-        payload.cadenceUnit = cadenceUnit;
-        payload.targetValue = null;
-        payload.deadline = null;
-      } else {
-        payload.targetValue = targetValue ? parseFloat(targetValue) : null;
-        payload.deadline = deadline || null;
-        payload.cadenceValue = null;
-        payload.cadenceUnit = null;
-      }
-    }
-    try {
-      const res = await fetch("/api/goals", {
-        method: editingId ? "PATCH" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editingId ? { id: editingId, ...payload } : payload),
-      });
-      await assertOk(res);
-      resetForm();
-      setDialogOpen(false);
-      window.location.reload();
-    } catch (e) {
-      alert(e instanceof Error ? e.message : `Failed to ${editingId ? "update" : "create"} goal.`);
-    }
-  }
-
-  async function submitGroup() {
-    if (!groupTitle.trim()) return;
-    try {
-      const res = await fetch("/api/goals", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          _type: "group",
-          title: groupTitle,
-          operator: groupOperator,
-          parentGroupId: groupParentId ? parseInt(groupParentId) : null,
-        }),
-      });
-      await assertOk(res);
-      setGroupTitle("");
-      setGroupOperator("and");
-      setGroupParentId("");
-      setGroupDialogOpen(false);
-      window.location.reload();
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "Failed to create group.");
-    }
+  function handleFormCancel() {
+    setRightPane({ mode: "detail" });
   }
 
   async function deleteGoal(goalId: number) {
+    const goal = findGoalById(goalId, goals);
+    if (goal && goal.children.length > 0) {
+      setDeleteConfirmId(goalId);
+      return;
+    }
     try {
       const res = await fetch("/api/goals", {
         method: "DELETE",
@@ -301,1147 +95,168 @@ export function GoalsClient({
         body: JSON.stringify({ id: goalId }),
       });
       await assertOk(res);
+      if (selectedId === goalId) setSelectedId(null);
       window.location.reload();
     } catch (e) {
       alert(e instanceof Error ? e.message : "Failed to delete goal.");
     }
   }
 
-  async function deleteGroup(groupId: number) {
+  async function confirmDelete(orphan: boolean) {
+    if (!deleteConfirmId) return;
     try {
       const res = await fetch("/api/goals", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ _type: "group", id: groupId }),
+        body: JSON.stringify({ id: deleteConfirmId, orphan }),
       });
       await assertOk(res);
+      if (selectedId === deleteConfirmId) setSelectedId(null);
+      setDeleteConfirmId(null);
       window.location.reload();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Failed to delete group.");
+      alert(e instanceof Error ? e.message : "Failed to delete goal.");
     }
   }
 
-  async function toggleGroupOperator(group: GoalGroup) {
-    try {
-      const res = await fetch("/api/goals", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          _type: "group",
-          id: group.id,
-          operator: group.operator === "and" ? "or" : "and",
-        }),
-      });
-      await assertOk(res);
-      window.location.reload();
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "Failed to update group.");
-    }
-  }
-
-  async function completeGoal(goalId: number) {
-    try {
-      const res = await fetch("/api/goals", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: goalId, status: "completed" }),
-      });
-      await assertOk(res);
-      window.location.reload();
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "Failed to update goal.");
-    }
-  }
-
-  const metricSourcesForCategory = Object.entries(METRIC_SOURCES).filter(
-    ([, meta]) => category === "general" || meta.platform === category
-  );
-
-  const cumulativePresets = GOAL_PRESETS.filter((p) => p.goalType === "cumulative");
-  const cadencePresets = GOAL_PRESETS.filter((p) => p.goalType === "cadence");
-
-  const childDepthLabel = parentGoalId
-    ? allGoalsFlat.find((g) => g.id === parentGoalId)?.parentGoalId
-      ? "task"
-      : "issue"
-    : null;
+  const deleteGoalObj = deleteConfirmId ? findGoalById(deleteConfirmId, goals) : null;
+  const deleteChildLabel = deleteGoalObj
+    ? (deleteGoalObj.children.length > 0 && !deleteGoalObj.parentGoalId ? "issues" : "tasks")
+    : "items";
+  const deleteDescendantCount = deleteGoalObj
+    ? deleteGoalObj.children.reduce((acc, c) => acc + 1 + c.children.length, 0)
+    : 0;
 
   return (
-    <div className="space-y-5 max-w-[896px]">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="page-title">Goals</h1>
-          <p className="page-subtitle mt-1">
-            {activeGoals.length > 0 || completedGoals.length > 0 ? (
-              <>
-                {activeGoals.length} active
-                {behindGoals.length > 0 && (
-                  <span style={{ color: "var(--status-danger)" }}>
-                    {" "}&middot; {behindGoals.length} behind pace
-                  </span>
-                )}
-              </>
-            ) : (
-              "Your destinations — where you're heading and whether you're on pace"
-            )}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Dialog open={groupDialogOpen} onOpenChange={setGroupDialogOpen}>
-            <DialogTrigger
-              render={
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setGroupTitle("");
-                    setGroupOperator("and");
-                    setGroupParentId("");
-                  }}
-                />
-              }
-            >
-              <FolderPlus className="h-3.5 w-3.5 mr-1" />
-              Group
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>New goal group</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 pt-1">
-                <div className="space-y-1.5">
-                  <Label className="text-[13px]">Group title</Label>
-                  <Input
-                    value={groupTitle}
-                    onChange={(e) => setGroupTitle(e.target.value)}
-                    placeholder='e.g., "Weekly cybersec targets"'
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label className="text-[13px]">Logic</Label>
-                    <Select
-                      value={groupOperator}
-                      onValueChange={(v) => setGroupOperator(v as "and" | "or")}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="and">AND — all must pass</SelectItem>
-                        <SelectItem value="or">OR — any can pass</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  {topLevelGroups.length > 0 && (
-                    <div className="space-y-1.5">
-                      <Label className="text-[13px]">Parent group</Label>
-                      <Select value={groupParentId} onValueChange={(v) => setGroupParentId(v ?? "")}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="None (top level)" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">None (top level)</SelectItem>
-                          {topLevelGroups.map((g) => (
-                            <SelectItem key={g.id} value={String(g.id)}>
-                              {g.title}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-                </div>
-                <Button onClick={submitGroup} className="w-full">
-                  Create group
-                  <ArrowRight className="h-3 w-3 ml-1.5" />
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-
-          <Dialog
-            open={dialogOpen}
-            onOpenChange={(open) => {
-              setDialogOpen(open);
-              if (!open) resetForm();
-            }}
-          >
-            <DialogTrigger render={<Button size="sm" onClick={resetForm} />}>
-              <Plus className="h-3.5 w-3.5 mr-1" />
-              New goal
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>
-                  {editingId
-                    ? "Edit goal"
-                    : isChildForm
-                      ? `New ${childDepthLabel} in "${parentGoalTitle}"`
-                      : "New goal"}
-                </DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 pt-1">
-                {!editingId && !isChildForm && (
-                  <>
-                    <div>
-                      <p className="section-label mb-2">Quick presets</p>
-                      <div className="space-y-2">
-                        <div>
-                          <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Cumulative</p>
-                          <div className="flex flex-wrap gap-1.5">
-                            {cumulativePresets.map((p) => (
-                              <button
-                                key={p.title}
-                                onClick={() => applyPreset(p)}
-                                className="text-[12px] px-2.5 py-1.5 rounded-sm border border-border bg-transparent hover:bg-accent transition-colors"
-                              >
-                                {p.title}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                        <div>
-                          <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Cadence</p>
-                          <div className="flex flex-wrap gap-1.5">
-                            {cadencePresets.map((p) => (
-                              <button
-                                key={p.title}
-                                onClick={() => applyPreset(p)}
-                                className="text-[12px] px-2.5 py-1.5 rounded-sm border border-border bg-transparent hover:bg-accent transition-colors"
-                              >
-                                {p.title}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <Separator />
-                  </>
-                )}
-
-                {!isChildForm && (
-                  <div className="space-y-1.5">
-                    <Label className="text-[13px]">Goal type</Label>
-                    <div className="flex rounded-sm border border-border overflow-hidden">
-                      <button
-                        className="flex-1 text-[13px] py-2 transition-colors"
-                        style={{
-                          background: goalType === "cumulative" ? "var(--accent)" : "transparent",
-                          fontWeight: goalType === "cumulative" ? 600 : 400,
-                        }}
-                        onClick={() => setGoalType("cumulative")}
-                      >
-                        Cumulative
-                      </button>
-                      <button
-                        className="flex-1 text-[13px] py-2 transition-colors border-l border-border"
-                        style={{
-                          background: goalType === "cadence" ? "var(--accent)" : "transparent",
-                          fontWeight: goalType === "cadence" ? 600 : 400,
-                        }}
-                        onClick={() => setGoalType("cadence")}
-                      >
-                        Cadence
-                      </button>
-                    </div>
-                    <p className="text-[11px] text-muted-foreground">
-                      {goalType === "cumulative"
-                        ? "Reach a total target by a deadline"
-                        : "Maintain a rate over a rolling window"}
-                    </p>
-                  </div>
-                )}
-
-                <div className="space-y-1.5">
-                  <Label className="text-[13px]">Title</Label>
-                  <Input
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder={
-                      isChildForm
-                        ? childDepthLabel === "task"
-                          ? "e.g., Complete ft_printf"
-                          : "e.g., Complete Circle 1"
-                        : goalType === "cadence"
-                          ? "e.g., >= 2 THM rooms per week"
-                          : "e.g., 50 Root-me challenges by Dec"
-                    }
-                  />
-                </div>
-
-                {!isChildForm && (
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <Label className="text-[13px]">Platform</Label>
-                      <Select
-                        value={category}
-                        onValueChange={(v) => {
-                          if (!v) return;
-                          setCategory(v);
-                          setMetricSource("");
-                        }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {["42", "thm", "htb", "rootme", "maldev", "general"].map(
-                            (c) => (
-                              <SelectItem key={c} value={c}>
-                                {c === "42"
-                                  ? "42 Paris"
-                                  : c === "thm"
-                                    ? "TryHackMe"
-                                    : c === "htb"
-                                      ? "HackTheBox"
-                                      : c === "rootme"
-                                        ? "Root-me"
-                                        : c === "maldev"
-                                          ? "Maldev"
-                                          : "General"}
-                              </SelectItem>
-                            )
-                          )}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-[13px]">Auto-track metric</Label>
-                      <Select
-                        value={metricSource}
-                        onValueChange={(v) => v && setMetricSource(v)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Manual tracking" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="manual">Manual tracking</SelectItem>
-                          {metricSourcesForCategory.map(([key, meta]) => (
-                            <SelectItem key={key} value={key}>
-                              {meta.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                )}
-
-                {!isChildForm && goalType === "cadence" ? (
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <Label className="text-[13px]">{"Rate (>=)"}</Label>
-                      <Input
-                        type="number"
-                        min="1"
-                        step="1"
-                        value={cadenceValue}
-                        onChange={(e) => setCadenceValue(e.target.value)}
-                        placeholder="e.g., 2"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-[13px]">Period</Label>
-                      <Select value={cadenceUnit} onValueChange={(v) => setCadenceUnit(v as "per_week" | "per_month")}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="per_week">Per week</SelectItem>
-                          <SelectItem value="per_month">Per month</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                ) : (
-                  (!isChildForm || true) && goalType !== "cadence" && (
-                    <div className={isChildForm ? "space-y-1.5" : "grid grid-cols-2 gap-3"}>
-                      {!isChildForm && (
-                        <div className="space-y-1.5">
-                          <Label className="text-[13px]">Target value</Label>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={targetValue}
-                            onChange={(e) => setTargetValue(e.target.value)}
-                            placeholder="e.g., 50"
-                          />
-                        </div>
-                      )}
-                      <div className="space-y-1.5">
-                        <Label className="text-[13px]">Deadline</Label>
-                        <Input
-                          type="date"
-                          value={deadline}
-                          onChange={(e) => setDeadline(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                  )
-                )}
-
-                {!isChildForm && groups.length > 0 && (
-                  <div className="space-y-1.5">
-                    <Label className="text-[13px]">Group</Label>
-                    <Select value={groupId} onValueChange={(v) => setGroupId(v ?? "")}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="No group" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">No group</SelectItem>
-                        {groups.map((g) => (
-                          <SelectItem key={g.id} value={String(g.id)}>
-                            {g.title} ({g.operator.toUpperCase()})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                <Button onClick={submitGoal} className="w-full">
-                  {editingId
-                    ? "Save changes"
-                    : isChildForm
-                      ? `Create ${childDepthLabel}`
-                      : "Create goal"}
-                  <ArrowRight className="h-3 w-3 ml-1.5" />
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </div>
-
-      {/* Behind-pace alert */}
-      {behindGoals.length > 0 && (
-        <div
-          className="rounded-sm px-4 py-3 space-y-2"
-          style={{
-            background: "oklch(0.70 0.18 25 / 0.08)",
-            border: "1px solid oklch(0.70 0.18 25 / 0.2)",
-          }}
-        >
-          {behindGoals.map((g) => (
-            <div key={g.id} className="flex items-center gap-2">
-              <AlertTriangle className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--status-danger)" }} />
-              <span className="text-[13px] font-medium" style={{ color: "var(--status-danger)" }}>
-                {g.title}
-              </span>
-              <span className="text-[12px] text-muted-foreground">
-                — {g.goalType === "cadence"
-                  ? `${g.pacing?.currentPace}, need ${g.pacing?.requiredPace}`
-                  : `${g.pacing?.daysRemaining}d left, need ${g.pacing?.requiredPace}`
-                }
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Goal groups */}
-      {topLevelGroups.map((group) => (
-        <GroupCard
-          key={group.id}
-          group={group}
-          goals={allGoalsFlat}
-          groups={groups}
-          onComplete={completeGoal}
-          onDelete={deleteGoal}
-          onDeleteGroup={deleteGroup}
-          onEdit={openEdit}
-          onAddChild={openAddChild}
-          onToggleOperator={toggleGroupOperator}
-          focusItems={focusItems}
-          competencies={competencies}
+    <>
+      {/* Desktop: split panel */}
+      <div className="hidden md:flex h-[calc(100vh)]">
+        <GoalsTree
+          goals={goals}
+          selectedId={selectedId}
+          onSelect={handleSelect}
+          onNewGoal={handleNewGoal}
+          onSuggest={() => setShowSuggestDialog(true)}
+          on42Plan={() => setShow42Dialog(true)}
         />
-      ))}
 
-      {/* Epics (goals with children) */}
-      {epicGoals.length > 0 && (
-        <div className="space-y-3">
-          {epicGoals.map((goal) => (
-            <HierarchyCard
-              key={goal.id}
-              goal={goal}
-              depth={0}
-              onComplete={completeGoal}
-              onDelete={deleteGoal}
-              onEdit={openEdit}
-              onAddChild={openAddChild}
-              focusItems={focusItems}
-              competencies={competencies}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Standalone active goals (no children, no group) */}
-      {activeGoals.length === 0 && completedGoals.length === 0 && groups.length === 0 ? (
-        <Card>
-          <CardContent className="py-16 text-center">
-            <p className="text-[14px] text-muted-foreground mb-1">
-              No destinations set yet.
-            </p>
-            <p className="text-[12px] text-muted-foreground">
-              Create a goal to start tracking your pace toward it.
-            </p>
-          </CardContent>
-        </Card>
-      ) : standaloneGoals.length > 0 ? (
-        <div className="space-y-3">
-          {standaloneGoals.map((goal) => (
-            <GoalCard
-              key={goal.id}
-              goal={goal}
-              onComplete={completeGoal}
-              onDelete={deleteGoal}
-              onEdit={openEdit}
-              weekItems={matchFocusToGoal(goal, focusItems)}
-              competencyTags={getCompetencyTags(goal, competencies)}
-            />
-          ))}
-        </div>
-      ) : null}
-
-      {/* Suggested goals from competency gaps */}
-      {suggestedGoals.length > 0 && (
-        <div>
-          <p className="section-label mb-2">
-            Suggested goals (based on competency gaps)
-          </p>
-          <div className="space-y-1.5">
-            {suggestedGoals.map((c) => (
-              <div
-                key={c.id}
-                className="flex items-center gap-3 px-4 py-3 rounded-sm border border-dashed border-border"
-              >
-                <div className="flex-1 min-w-0">
-                  <span className="text-[13px] font-medium">
-                    Improve {c.label}
-                  </span>
-                  <span className="text-[12px] text-muted-foreground ml-2">
-                    {c.level}/5 → target {Math.min(c.level + 2, 5)}/5
-                  </span>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  disabled={adding === c.id}
-                  onClick={async () => {
-                    setAdding(c.id);
-                    const target = Math.min(c.level + 2, 5);
-                    const deadlineDate = new Date();
-                    deadlineDate.setMonth(deadlineDate.getMonth() + 3);
-                    const dl = deadlineDate.toISOString().slice(0, 10);
-                    try {
-                      const res = await fetch("/api/goals", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          title: `Improve ${c.label}`,
-                          description: `Reach competency level ${target}/5 in ${c.area}. Currently at ${c.level}/5.`,
-                          category: "general",
-                          targetValue: target,
-                          currentValue: c.level,
-                          deadline: dl,
-                          metricSource: null,
-                        }),
-                      });
-                      await assertOk(res);
-                      window.location.reload();
-                    } catch (e) {
-                      alert(e instanceof Error ? e.message : "Failed to create goal.");
-                      setAdding(null);
-                    }
-                  }}
-                >
-                  <Plus className="h-3 w-3 mr-1" />
-                  {adding === c.id ? "Adding..." : "Add"}
-                </Button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Completed */}
-      {completedGoals.length > 0 && (
-        <div className="space-y-2 pt-2">
-          <p className="section-label">Completed &middot; {completedGoals.length}</p>
-          {completedGoals.map((goal) => (
-            <Card key={goal.id} className="opacity-50">
-              <CardContent className="py-2.5 px-4">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-3.5 w-3.5 text-success shrink-0" />
-                  <span className="text-[14px] font-medium flex-1">{goal.title}</span>
-                  {goal.category && (
-                    <span
-                      className="text-[10px] font-bold uppercase tracking-widest"
-                      style={{ color: PLATFORM_COLORS[goal.category] ?? "var(--muted-foreground)" }}
-                    >
-                      {PLATFORM_LABELS[goal.category] ?? goal.category}
-                    </span>
-                  )}
-                  <button
-                    onClick={() => deleteGoal(goal.id)}
-                    className="p-1 text-muted-foreground hover:text-destructive transition-colors"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function HierarchyCard({
-  goal,
-  depth,
-  onComplete,
-  onDelete,
-  onEdit,
-  onAddChild,
-  focusItems,
-  competencies,
-}: {
-  goal: GoalWithPacing;
-  depth: number;
-  onComplete: (id: number) => void;
-  onDelete: (id: number) => void;
-  onEdit: (goal: GoalWithPacing) => void;
-  onAddChild: (parent: GoalWithPacing) => void;
-  focusItems: FocusSlim[];
-  competencies: CompetencySlim[];
-}) {
-  const [expanded, setExpanded] = useState(true);
-  const hasChildren = goal.children.length > 0;
-  const isLeaf = !hasChildren;
-  const childLabel = depth === 0 ? "issue" : "task";
-  const canAddChildren = depth < 2;
-
-  if (isLeaf) {
-    return (
-      <GoalCard
-        goal={goal}
-        compact={depth > 0}
-        onComplete={onComplete}
-        onDelete={onDelete}
-        onEdit={onEdit}
-        weekItems={matchFocusToGoal(goal, focusItems)}
-        competencyTags={depth === 0 ? getCompetencyTags(goal, competencies) : []}
-      />
-    );
-  }
-
-  const completedChildren = goal.currentValue ?? 0;
-  const totalChildren = goal.targetValue ?? goal.children.length;
-  const color = PLATFORM_COLORS[goal.category ?? "general"] ?? "var(--muted-foreground)";
-  const progress = totalChildren > 0 ? (completedChildren / totalChildren) * 100 : 0;
-  const levelLabel = depth === 0 ? "EPIC" : "ISSUE";
-
-  return (
-    <Card className="overflow-hidden gap-0 py-0">
-      <div className="h-[3px]" style={{ backgroundColor: color }} />
-      <CardContent className={depth > 0 ? "pt-3 pb-3 px-4 space-y-2" : "pt-4 pb-4 px-5 space-y-3"}>
-        {/* Header */}
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <button
-              onClick={() => setExpanded(!expanded)}
-              className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
-            >
-              {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-            </button>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span
-                  className="text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-sm"
-                  style={{ background: `${color}20`, color }}
-                >
-                  {levelLabel}
-                </span>
-                <h3 className={depth === 0 ? "text-[15px] font-semibold tracking-tight" : "text-[14px] font-semibold"}>
-                  {goal.title}
-                </h3>
-                {goal.pacing && <PaceStatus pacing={goal.pacing} />}
-              </div>
-              {goal.deadline && (
-                <p className="text-[12px] text-muted-foreground mt-0.5 ml-0">
-                  by {goal.deadline}
-                </p>
-              )}
-            </div>
-          </div>
-          <span className="text-[13px] font-medium tabular-nums text-muted-foreground shrink-0">
-            {completedChildren}/{totalChildren}
-          </span>
-        </div>
-
-        {/* Progress bar */}
-        <div className="progress-track" style={{ height: "4px" }}>
-          <div
-            className="progress-fill"
-            style={{
-              width: `${Math.min(progress, 100)}%`,
-              backgroundColor: color,
-              height: "4px",
-            }}
+        {rightPane.mode === "create" ? (
+          <CreateForm
+            allGoals={goals}
+            parentGoal={rightPane.parentGoal}
+            onDone={handleFormDone}
+            onCancel={handleFormCancel}
           />
-        </div>
-
-        {/* Pacing stats */}
-        {goal.pacing && (
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              {goal.pacing.daysRemaining}d left
-            </span>
-            {goal.pacing.requiredPace !== "Complete!" && (
-              <span className="flex items-center gap-1">
-                <Zap className="h-3 w-3" />
-                {goal.pacing.requiredPace}
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* Actions */}
-        <div className="flex gap-0.5">
-          <button onClick={() => onEdit(goal)} className="p-1 hover:text-primary text-muted-foreground transition-colors" title="Edit">
-            <Pencil className="h-3.5 w-3.5" />
-          </button>
-          <button onClick={() => onComplete(goal.id)} className="p-1 hover:text-success text-muted-foreground transition-colors" title="Complete all">
-            <CheckCircle className="h-3.5 w-3.5" />
-          </button>
-          <button onClick={() => onDelete(goal.id)} className="p-1 hover:text-destructive text-muted-foreground transition-colors" title="Delete">
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      </CardContent>
-
-      {/* Children */}
-      {expanded && (
-        <div
-          className="px-5 pb-4 space-y-2"
-          style={{ borderTop: "1px solid var(--border)" }}
-        >
-          <div className="ml-2 pl-3 border-l-2 border-border space-y-2 pt-2">
-            {goal.children.map((child) => (
-              <HierarchyCard
-                key={child.id}
-                goal={child}
-                depth={depth + 1}
-                onComplete={onComplete}
-                onDelete={onDelete}
-                onEdit={onEdit}
-                onAddChild={onAddChild}
-                focusItems={focusItems}
-                competencies={competencies}
-              />
-            ))}
-            {canAddChildren && (
-              <button
-                onClick={() => onAddChild(goal)}
-                className="flex items-center gap-1.5 text-[12px] text-muted-foreground hover:text-foreground transition-colors py-1.5"
-              >
-                <Plus className="h-3 w-3" />
-                Add {childLabel}
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-    </Card>
-  );
-}
-
-function GroupCard({
-  group,
-  goals,
-  groups,
-  onComplete,
-  onDelete,
-  onDeleteGroup,
-  onEdit,
-  onAddChild,
-  onToggleOperator,
-  focusItems,
-  competencies,
-}: {
-  group: GoalGroup;
-  goals: GoalWithPacing[];
-  groups: GoalGroup[];
-  onComplete: (id: number) => void;
-  onDelete: (id: number) => void;
-  onDeleteGroup: (id: number) => void;
-  onEdit: (goal: GoalWithPacing) => void;
-  onAddChild: (parent: GoalWithPacing) => void;
-  onToggleOperator: (group: GoalGroup) => void;
-  focusItems: FocusSlim[];
-  competencies: CompetencySlim[];
-}) {
-  const [expanded, setExpanded] = useState(true);
-  const childGoals = goals.filter((g) => g.groupId === group.id);
-  const childGroups = groups.filter((g) => g.parentGroupId === group.id);
-  const status = computeGroupStatus(group, goals, groups);
-
-  if (childGoals.length === 0 && childGroups.length === 0) return null;
-
-  return (
-    <div
-      className="rounded-sm border border-border overflow-hidden"
-      style={{ background: "oklch(0.15 0.005 75 / 0.5)" }}
-    >
-      <div className="flex items-center gap-2 px-4 py-3">
-        <button onClick={() => setExpanded(!expanded)} className="text-muted-foreground hover:text-foreground transition-colors">
-          {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-        </button>
-        <h3 className="text-[14px] font-semibold flex-1">{group.title}</h3>
-        <button
-          onClick={() => onToggleOperator(group)}
-          className="text-[11px] font-mono px-2 py-0.5 rounded-sm border border-border hover:bg-accent transition-colors"
-          title="Click to toggle AND/OR"
-        >
-          {group.operator.toUpperCase()}
-        </button>
-        <Badge variant={status.onTrack ? "success" : "danger"}>
-          {status.met}/{status.total} met
-        </Badge>
-        <button
-          onClick={() => onDeleteGroup(group.id)}
-          className="p-1 text-muted-foreground hover:text-destructive transition-colors"
-        >
-          <Trash2 className="h-3 w-3" />
-        </button>
-      </div>
-      {expanded && (
-        <div className="px-3 pb-3 space-y-2">
-          {childGroups.map((sub) => (
-            <GroupCard
-              key={sub.id}
-              group={sub}
-              goals={goals}
-              groups={groups}
-              onComplete={onComplete}
-              onDelete={onDelete}
-              onDeleteGroup={onDeleteGroup}
-              onEdit={onEdit}
-              onAddChild={onAddChild}
-              onToggleOperator={onToggleOperator}
-              focusItems={focusItems}
-              competencies={competencies}
-            />
-          ))}
-          {childGoals.map((goal) =>
-            goal.children.length > 0 ? (
-              <HierarchyCard
-                key={goal.id}
-                goal={goal}
-                depth={0}
-                onComplete={onComplete}
-                onDelete={onDelete}
-                onEdit={onEdit}
-                onAddChild={onAddChild}
-                focusItems={focusItems}
-                competencies={competencies}
-              />
-            ) : (
-              <GoalCard
-                key={goal.id}
-                goal={goal}
-                onComplete={onComplete}
-                onDelete={onDelete}
-                onEdit={onEdit}
-                weekItems={matchFocusToGoal(goal, focusItems)}
-                competencyTags={getCompetencyTags(goal, competencies)}
-              />
-            )
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function GoalCard({
-  goal,
-  compact,
-  onComplete,
-  onDelete,
-  onEdit,
-  weekItems,
-  competencyTags,
-}: {
-  goal: GoalWithPacing;
-  compact?: boolean;
-  onComplete: (id: number) => void;
-  onDelete: (id: number) => void;
-  onEdit: (goal: GoalWithPacing) => void;
-  weekItems: FocusSlim[];
-  competencyTags: string[];
-}) {
-  const isCadence = goal.goalType === "cadence";
-  const progress = goal.pacing?.percentComplete ?? 0;
-  const color = PLATFORM_COLORS[goal.category ?? "general"] ?? "var(--muted-foreground)";
-  const isBehind = goal.pacing && !goal.pacing.onTrack && goal.pacing.percentComplete < 100;
-
-  const isCompleted = goal.status === "completed";
-
-  if (compact) {
-    return (
-      <div
-        className={`flex items-center gap-3 py-2 px-3 rounded-sm border border-border group ${isCompleted ? "opacity-50" : ""}`}
-        style={isBehind && !isCompleted ? { borderColor: "oklch(0.70 0.18 25 / 0.3)" } : undefined}
-      >
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className={`text-[13px] font-medium truncate ${isCompleted ? "line-through" : ""}`}>{goal.title}</span>
-            {isCadence && (
-              <span className="text-[9px] font-mono px-1 py-0.5 rounded-sm border border-border text-muted-foreground">
-                {goal.cadenceUnit === "per_month" ? "/mo" : "/wk"}
-              </span>
-            )}
-            {goal.pacing && <PaceStatus pacing={goal.pacing} isCadence={isCadence} />}
-          </div>
-          {goal.deadline && (
-            <span className="text-[11px] text-muted-foreground">by {goal.deadline}</span>
-          )}
-        </div>
-        {goal.pacing && (
-          <span
-            className="text-[14px] font-bold tabular-nums shrink-0"
-            style={{ color: isBehind ? "var(--status-danger)" : "var(--foreground)" }}
-          >
-            {Math.round(progress)}%
-          </span>
-        )}
-        {!isCompleted && (
-          <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-            <button onClick={() => onEdit(goal)} className="p-1 hover:text-primary text-muted-foreground transition-colors">
-              <Pencil className="h-3 w-3" />
-            </button>
-            {!isCadence && (
-              <button onClick={() => onComplete(goal.id)} className="p-1 hover:text-success text-muted-foreground transition-colors">
-                <CheckCircle className="h-3 w-3" />
-              </button>
-            )}
-            <button onClick={() => onDelete(goal.id)} className="p-1 hover:text-destructive text-muted-foreground transition-colors">
-              <Trash2 className="h-3 w-3" />
-            </button>
-          </div>
-        )}
-        {isCompleted && (
-          <CheckCircle className="h-3.5 w-3.5 text-success shrink-0" />
+        ) : rightPane.mode === "edit" ? (
+          <CreateForm
+            allGoals={goals}
+            editingGoal={rightPane.goal}
+            onDone={handleFormDone}
+            onCancel={handleFormCancel}
+          />
+        ) : (
+          <DetailPane
+            goal={selectedGoal}
+            allGoals={goals}
+            onEdit={handleEdit}
+            onDelete={deleteGoal}
+            onSelect={handleSelect}
+          />
         )}
       </div>
-    );
-  }
 
-  return (
-    <Card
-      className="overflow-hidden group gap-0 py-0"
-      style={isBehind ? { borderColor: "oklch(0.70 0.18 25 / 0.3)" } : undefined}
-    >
-      <div className="h-[3px]" style={{ backgroundColor: color }} />
-      <CardContent className="pt-4 pb-4 px-5 space-y-3">
-        {/* Header row */}
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-[15px] font-semibold tracking-tight">{goal.title}</h3>
-              {isCadence && (
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-sm border border-border text-muted-foreground">
-                  {goal.cadenceUnit === "per_month" ? "/mo" : "/wk"}
-                </span>
-              )}
-              {goal.pacing && <PaceStatus pacing={goal.pacing} isCadence={isCadence} />}
-              {competencyTags.map((tag) => (
-                <span
-                  key={tag}
-                  className="text-[10px] px-2 py-0.5 rounded-sm"
-                  style={{ color: "var(--muted-foreground)", background: "oklch(0.22 0.005 75)" }}
-                >
-                  → {tag}
-                </span>
-              ))}
-            </div>
-            {!isCadence && goal.deadline && (
-              <p className="text-[12px] text-muted-foreground mt-0.5">
-                by {goal.deadline}
-              </p>
-            )}
-          </div>
-          {isCadence ? (
-            <span
-              className="text-[20px] font-bold tabular-nums shrink-0"
-              style={{ color: isBehind ? "var(--status-danger)" : "var(--foreground)" }}
-            >
-              {goal.pacing ? `${Math.round(progress)}%` : "—"}
-            </span>
-          ) : goal.targetValue != null ? (
-            <span
-              className="text-[24px] font-bold tabular-nums shrink-0"
-              style={{ color: isBehind ? "var(--status-danger)" : "var(--foreground)" }}
-            >
-              {progress.toFixed(0)}%
-            </span>
-          ) : null}
-        </div>
+      {/* Mobile: drill-down */}
+      <div className="md:hidden h-[calc(100vh)]">
+        {mobilePane === "create" ? (
+          <CreateForm
+            allGoals={goals}
+            parentGoal={mobileCreateParent}
+            onDone={handleFormDone}
+            onCancel={() => setMobilePane("nav")}
+            mobile
+          />
+        ) : mobilePane === "edit" ? (
+          <CreateForm
+            allGoals={goals}
+            editingGoal={mobileEditGoal ?? undefined}
+            onDone={handleFormDone}
+            onCancel={() => setMobilePane("nav")}
+            mobile
+          />
+        ) : (
+          <GoalsMobile
+            goals={goals}
+            onSuggest={() => setShowSuggestDialog(true)}
+            on42Plan={() => setShow42Dialog(true)}
+            onNewGoal={() => {
+              setMobileCreateParent(undefined);
+              setMobilePane("create");
+            }}
+            onNewChild={(parent) => {
+              setMobileCreateParent(parent);
+              setMobilePane("create");
+            }}
+            onEdit={(goal) => {
+              setMobileEditGoal(goal);
+              setMobilePane("edit");
+            }}
+            onDelete={deleteGoal}
+          />
+        )}
+      </div>
 
-        {/* Progress bar */}
-        {(isCadence || goal.targetValue != null) && (
-          <div className="space-y-1">
-            <div className="relative">
-              <div className="progress-track" style={{ height: "6px" }}>
-                <div
-                  className="progress-fill"
-                  style={{
-                    width: `${Math.min(progress, 100)}%`,
-                    backgroundColor: isBehind ? "var(--status-danger)" : color,
-                    height: "6px",
-                  }}
-                />
+      <Generate42Dialog
+        open={show42Dialog}
+        onOpenChange={setShow42Dialog}
+        onDone={() => { setShow42Dialog(false); window.location.reload(); }}
+      />
+      <SuggestDialog
+        open={showSuggestDialog}
+        onOpenChange={setShowSuggestDialog}
+        onDone={() => { setShowSuggestDialog(false); window.location.reload(); }}
+      />
+
+      {/* Delete Confirmation Dialog (D7) */}
+      <Dialog open={deleteConfirmId !== null} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
+        <DialogContent className="max-w-[400px]">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-red-500/10 flex items-center justify-center">
+                <Trash2 className="h-5 w-5 text-red-400" />
               </div>
-              {!isCadence && goal.milestones.map((m) => {
-                if (!goal.targetValue) return null;
-                const mVal = m.targetValue ?? 0;
-                const pos = (mVal / goal.targetValue) * 100;
-                return (
-                  <div
-                    key={m.id}
-                    className="absolute top-0 -translate-x-1/2"
-                    style={{ left: `${Math.min(pos, 100)}%` }}
-                  >
-                    <div
-                      className="h-[6px] w-[2px]"
-                      style={{
-                        background: m.reachedAt ? "var(--status-success)" : "var(--foreground)",
-                        opacity: m.reachedAt ? 1 : 0.4,
-                      }}
-                    />
-                    <span className="text-[9px] text-muted-foreground block mt-0.5 whitespace-nowrap">
-                      {m.reachedAt ? "✓" : ""}{mVal}
-                    </span>
-                  </div>
-                );
-              })}
+              <div>
+                <DialogTitle className="text-[15px]">Delete &ldquo;{deleteGoalObj?.title}&rdquo;?</DialogTitle>
+                <p className="text-[12px] text-muted-foreground mt-0.5">
+                  This {deleteGoalObj?.parentGoalId ? "issue" : "goal"} has {deleteDescendantCount} child {deleteChildLabel}.
+                </p>
+              </div>
             </div>
-            <div className="flex items-center justify-between text-[12px] text-muted-foreground tabular-nums">
-              {isCadence ? (
-                <span>
-                  {goal.pacing?.currentPace ?? "No data"} — target: {goal.cadenceValue}{goal.cadenceUnit === "per_month" ? "/mo" : "/wk"}
-                </span>
-              ) : (
-                <span>{goal.currentValue ?? 0} / {goal.targetValue}</span>
-              )}
-              {goal.metricSource && (
-                <span className="text-[11px]">
-                  Auto: {METRIC_SOURCES[goal.metricSource as MetricSourceKey]?.label ?? goal.metricSource}
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Pacing stats */}
-        {goal.pacing && (
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              {isCadence
-                ? `${goal.pacing.daysRemaining}d left ${goal.cadenceUnit === "per_month" ? "this month" : "this week"}`
-                : `${goal.pacing.daysRemaining}d left`
-              }
-            </span>
-            {goal.pacing.requiredPace !== "Complete!" && goal.pacing.requiredPace !== "Target met" && (
-              <span className="flex items-center gap-1">
-                <Zap className="h-3 w-3" />
-                {goal.pacing.requiredPace}
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* This week connection */}
-        {weekItems.length > 0 && (
-          <div
-            className="flex items-center gap-2 px-3 py-2 rounded-sm text-[12px]"
-            style={{ background: "oklch(0.58 0.16 250 / 0.06)" }}
-          >
-            <span className="font-semibold text-primary shrink-0">THIS WEEK</span>
-            <span className="text-muted-foreground">
-              {weekItems.length}x {weekItems.map((w) => w.title).join(", ").slice(0, 60)}
-              {weekItems.map((w) => w.title).join(", ").length > 60 ? "..." : ""} from mentor plan
-            </span>
-          </div>
-        )}
-
-        {/* Actions row for behind-pace goals */}
-        {isBehind && (
-          <div
-            className="flex items-center gap-3 px-3 py-2 rounded-sm text-[12px]"
-            style={{ background: "oklch(0.70 0.18 25 / 0.06)" }}
-          >
-            <AlertTriangle className="h-3 w-3 shrink-0" style={{ color: "var(--status-danger)" }} />
-            <span className="text-muted-foreground">
-              {isCadence
-                ? "Behind pace — increase effort this period"
-                : "Action needed — increase effort, extend deadline, or reduce scope"
-              }
-            </span>
-            <button
-              onClick={() => onEdit(goal)}
-              className="text-primary hover:underline ml-auto shrink-0"
+          </DialogHeader>
+          <div className="flex flex-col gap-2 pt-2">
+            <Button
+              variant="destructive"
+              onClick={() => confirmDelete(false)}
+              className="w-full"
             >
-              Adjust →
-            </button>
+              Delete {deleteGoalObj?.parentGoalId ? "issue" : "goal"} + {deleteDescendantCount} {deleteChildLabel}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => confirmDelete(true)}
+              className="w-full"
+            >
+              Orphan {deleteChildLabel} (promote to standalone)
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => setDeleteConfirmId(null)}
+              className="w-full"
+            >
+              Cancel
+            </Button>
           </div>
-        )}
-
-        {/* Hover actions */}
-        <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button onClick={() => onEdit(goal)} className="p-1 hover:text-primary text-muted-foreground transition-colors" title="Edit goal">
-            <Pencil className="h-3.5 w-3.5" />
-          </button>
-          {!isCadence && (
-            <button onClick={() => onComplete(goal.id)} className="p-1 hover:text-success text-muted-foreground transition-colors" title="Mark complete">
-              <CheckCircle className="h-3.5 w-3.5" />
-            </button>
-          )}
-          <button onClick={() => onDelete(goal.id)} className="p-1 hover:text-destructive text-muted-foreground transition-colors" title="Delete goal">
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      </CardContent>
-    </Card>
+        </DialogContent>
+      </Dialog>
+    </>
   );
-}
-
-function PaceStatus({ pacing, isCadence }: { pacing: NonNullable<GoalWithPacing["pacing"]>; isCadence?: boolean }) {
-  if (!isCadence && pacing.percentComplete >= 100) {
-    return <Badge variant="success">Complete</Badge>;
-  }
-  if (isCadence && pacing.onTrack) {
-    return <Badge variant="success">On pace</Badge>;
-  }
-  if (pacing.requiredPace === "Overdue") {
-    return (
-      <Badge variant="danger">
-        <AlertTriangle className="h-2.5 w-2.5 mr-0.5" />
-        Overdue
-      </Badge>
-    );
-  }
-  if (pacing.onTrack) {
-    return <Badge variant="success">On track</Badge>;
-  }
-  return <Badge variant="danger">Behind</Badge>;
 }
