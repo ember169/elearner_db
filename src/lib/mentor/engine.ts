@@ -671,25 +671,117 @@ export function generateFallbackNarrative(
 
   const collapsed = second ? `${first}, then ${second}` : first;
 
-  const focusTypes = scheduledItems.map((f) => f.type);
-  const sideProjectSkills = focusTypes.includes("42")
-    ? ["C", "scripting"]
-    : ["security", "automation"];
+  const side_project = pickSideProject(scheduledItems, objective);
 
+  return { briefing, collapsed_briefing: collapsed, side_project };
+}
+
+type SideProjectTemplate = {
+  match: (items: MentorFocus[]) => boolean;
+  title: string;
+  description: string;
+  skills: string[];
+  steps: { title: string; description: string; estimatedHours: number }[];
+  capstone: string;
+};
+
+const SIDE_PROJECT_TEMPLATES: SideProjectTemplate[] = [
+  {
+    match: (items) => items.some((i) => i.ref === "minishell" || i.title.toLowerCase().includes("minishell")),
+    title: "Build a reverse shell in C",
+    description: "Apply your shell-building skills to create a basic reverse shell — connects back to a listener, spawns /bin/sh, handles I/O redirection.",
+    skills: ["C", "networking", "unix"],
+    steps: [
+      { title: "Socket connection", description: "Create a TCP socket that connects to a hardcoded IP:port.", estimatedHours: 1 },
+      { title: "Shell spawning", description: "Fork, dup2 stdin/stdout/stderr to the socket, execve /bin/sh.", estimatedHours: 2 },
+      { title: "Add features", description: "Add signal handling, retry logic, or basic encryption.", estimatedHours: 2 },
+    ],
+    capstone: "Core malware dev skill — understanding how shells work from the inside.",
+  },
+  {
+    match: (items) => items.some((i) => i.ref === "philosophers" || i.title.toLowerCase().includes("philosopher")),
+    title: "Build a thread-safe keylogger PoC",
+    description: "Use your threading/mutex knowledge from Philosophers to build a keylogger that logs keystrokes to a file using producer-consumer threads.",
+    skills: ["C", "threading", "unix"],
+    steps: [
+      { title: "Input capture thread", description: "Read from /dev/input or terminal in raw mode.", estimatedHours: 1 },
+      { title: "Logging thread", description: "Consumer thread writes buffered keystrokes to a file with mutex protection.", estimatedHours: 2 },
+      { title: "Stealth features", description: "Add timestamp logging, process name detection, or self-delete.", estimatedHours: 2 },
+    ],
+    capstone: "Combines threading (Philosophers) with red team concepts.",
+  },
+  {
+    match: (items) => items.some((i) => i.ref?.startsWith("cpp") || i.title.toLowerCase().includes("cpp")),
+    title: "Build a simple C++ port scanner",
+    description: "Apply OOP concepts from CPP modules to build a multi-threaded port scanner with clean class design.",
+    skills: ["C++", "networking", "OOP"],
+    steps: [
+      { title: "Scanner class", description: "Create a PortScanner class with target, port range, and scan() method.", estimatedHours: 1 },
+      { title: "TCP connect scan", description: "Implement connect() scan with configurable timeout.", estimatedHours: 2 },
+      { title: "Output formatting", description: "Add service detection (common ports) and formatted results.", estimatedHours: 1 },
+    ],
+    capstone: "Bridges C++ OOP skills with practical security tooling.",
+  },
+  {
+    match: (items) => items.some((i) => i.type === "thm" || i.type === "htb"),
+    title: "Automate a CTF recon workflow",
+    description: "Script your standard recon steps — nmap, gobuster, enum4linux — into a single tool that generates a clean report.",
+    skills: ["bash", "scripting", "recon"],
+    steps: [
+      { title: "Nmap wrapper", description: "Run staged nmap scans and parse output to find open ports.", estimatedHours: 1 },
+      { title: "Service enumeration", description: "Auto-run gobuster for HTTP, enum4linux for SMB, etc.", estimatedHours: 2 },
+      { title: "Report generation", description: "Output a markdown report with findings.", estimatedHours: 1 },
+    ],
+    capstone: "Speeds up your THM/HTB workflow and builds scripting muscle.",
+  },
+  {
+    match: (items) => items.some((i) => i.ref === "netpractice" || i.title.toLowerCase().includes("netpractice")),
+    title: "Build a subnet calculator CLI",
+    description: "Reinforce networking fundamentals by building a tool that calculates subnets, CIDR ranges, and host counts.",
+    skills: ["C", "networking", "bitwise ops"],
+    steps: [
+      { title: "IP parsing", description: "Parse dotted-quad notation and CIDR prefixes.", estimatedHours: 1 },
+      { title: "Subnet math", description: "Calculate network address, broadcast, first/last host, wildcard mask.", estimatedHours: 2 },
+      { title: "Range operations", description: "Check if an IP is in a subnet, split/merge subnets.", estimatedHours: 2 },
+    ],
+    capstone: "Directly reinforces NetPractice concepts with hands-on code.",
+  },
+  {
+    match: (items) => items.some((i) => i.type === "maldev" || i.title.toLowerCase().includes("maldev")),
+    title: "Write a basic process injector",
+    description: "Create a simple process injection tool that injects shellcode into a running process using ptrace or /proc/pid/mem.",
+    skills: ["C", "linux internals", "maldev"],
+    steps: [
+      { title: "Process enumeration", description: "List running processes, find target by name.", estimatedHours: 1 },
+      { title: "Memory injection", description: "Use ptrace to write shellcode into the target's address space.", estimatedHours: 3 },
+      { title: "Execution", description: "Redirect execution flow to the injected code.", estimatedHours: 2 },
+    ],
+    capstone: "Foundational technique for malware development and red team ops.",
+  },
+];
+
+function pickSideProject(scheduledItems: MentorFocus[], objective: string): SideProject {
+  const template = SIDE_PROJECT_TEMPLATES.find((t) => t.match(scheduledItems));
+  if (template) {
+    return {
+      title: template.title,
+      description: template.description,
+      skills: template.skills,
+      steps: template.steps,
+      capstone_connection: template.capstone,
+    };
+  }
+  // Generic fallback only if nothing matches
   return {
-    briefing,
-    collapsed_briefing: collapsed,
-    side_project: {
-      title: "Build a small tool related to this week's learning",
-      description: `Create a practical tool that reinforces what you're studying. Focus on ${objective.split(",")[0]?.trim() ?? "your objective"}.`,
-      skills: sideProjectSkills,
-      steps: [
-        { title: "Set up project scaffold", description: "Create the project structure.", estimatedHours: 1 },
-        { title: "Implement core logic", description: "Build the main functionality.", estimatedHours: 3 },
-        { title: "Test and document", description: "Verify it works and write usage notes.", estimatedHours: 1 },
-      ],
-      capstone_connection: `Feeds into your long-term ${objective.split(",")[0]?.trim() ?? "objective"} path.`,
-    },
+    title: "Build a security tool prototype",
+    description: `Pick a concept from this week's learning and turn it into a small, working tool. Focus on ${objective.split("/")[0]?.trim() ?? "your objective"}.`,
+    skills: ["scripting", "security"],
+    steps: [
+      { title: "Choose a concept", description: "Pick one technique or topic from this week to implement.", estimatedHours: 1 },
+      { title: "Implement it", description: "Build a minimal working prototype.", estimatedHours: 3 },
+      { title: "Test against a lab", description: "Try it on a THM/HTB box or local VM.", estimatedHours: 1 },
+    ],
+    capstone_connection: `Reinforces practical ${objective.split("/")[0]?.trim() ?? "security"} skills.`,
   };
 }
 
