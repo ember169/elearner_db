@@ -2,6 +2,13 @@ import { db } from "@/lib/db";
 import { weeklyPlans, planItems } from "@/lib/db/schema";
 import { eq, and, lte } from "drizzle-orm";
 import { loadCurrentPlan } from "@/lib/mentor/store";
+import {
+  runGuidanceEngine,
+  flattenGoals,
+  type Recommendation,
+} from "@/lib/guidance/engine";
+import { getMainDeadline } from "@/lib/planning/backward-planner";
+import { WEEKLY_HOURS_BUDGET } from "@/lib/planning/rule-engine";
 
 export type PlanItem = typeof planItems.$inferSelect;
 export type WeekPlan = typeof weeklyPlans.$inferSelect;
@@ -269,4 +276,215 @@ export function rerollWeekPlan(weekStart: string): WeekPlanWithItems {
       .run();
   }
   return createWeekPlanFromMentor(weekStart);
+}
+
+function resolveLink(type: string, ref?: string): string | undefined {
+  if (!ref) return undefined;
+  switch (type) {
+    case "thm": return `https://tryhackme.com/room/${ref}`;
+    case "htb": return `https://academy.hackthebox.com/module/details/${ref}`;
+    case "rootme": return `https://www.root-me.org/en/Challenges/${encodeURIComponent(ref)}/`;
+    default: return undefined;
+  }
+}
+
+type MonthItem = {
+  title: string;
+  type: string;
+  why: string;
+  hours: number;
+  priority: string;
+  ref?: string;
+  link?: string;
+};
+
+export function createMonthPlan(weekStarts: string[]): WeekPlanWithItems[] {
+  const guidance = runGuidanceEngine();
+  const allRecs = guidance.recommendations;
+  const { ftProgress } = guidance;
+  const goals = flattenGoals(guidance.goals);
+
+  const mainDeadline = getMainDeadline();
+  const weeklyBudget = mainDeadline?.weeklyBudget ?? WEEKLY_HOURS_BUDGET;
+
+  const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
+  const sorted = [...allRecs].sort(
+    (a, b) => (priorityOrder[a.priority] ?? 2) - (priorityOrder[b.priority] ?? 2)
+  );
+
+  const ft42Recs = sorted.filter((r) => r.platform === "42");
+  const platformRecs = sorted.filter((r) =>
+    ["thm", "htb", "rootme"].includes(r.platform)
+  );
+  const maldevRecs = sorted.filter((r) => r.platform === "maldev");
+
+  // Supplement 42 projects beyond what recommendations provide
+  const refsUsed = new Set(ft42Recs.map((r) => r.ref));
+  const extra42: Recommendation[] = ftProgress.availableProjects
+    .filter((p) => !refsUsed.has(p.slug))
+    .slice(0, 6)
+    .map((p) => ({
+      priority: "medium" as const,
+      platform: "42",
+      title: `Start ${p.name}`,
+      reason: `Next in Circle ${p.circle}.`,
+      estimatedHours: p.estimatedHours,
+      ref: p.slug,
+    }));
+
+  const all42 = [...ft42Recs, ...extra42];
+  const numWeeks = weekStarts.length;
+
+  const weekItems: MonthItem[][] = weekStarts.map(() => []);
+  const budgets = weekStarts.map(() => weeklyBudget);
+
+  // 1. Maldev: small recurring allocation every week
+  for (const rec of maldevRecs) {
+    const perWeek = Math.min(rec.estimatedHours ?? 2, 3);
+    for (let w = 0; w < numWeeks; w++) {
+      if (budgets[w] >= perWeek) {
+        weekItems[w].push({
+          title: rec.title,
+          type: rec.platform,
+          why: rec.reason,
+          hours: perWeek,
+          priority: rec.priority,
+          ref: rec.ref,
+          link: rec.link ?? resolveLink(rec.platform, rec.ref),
+        });
+        budgets[w] -= perWeek;
+      }
+    }
+  }
+
+  // 2. Platform items: distribute unique recs across weeks, then backfill
+  for (let w = 0; w < numWeeks; w++) {
+    if (w < platformRecs.length) {
+      const rec = platformRecs[w];
+      const hours = rec.estimatedHours ?? 2;
+      if (budgets[w] >= hours) {
+        weekItems[w].push({
+          title: rec.title,
+          type: rec.platform,
+          why: rec.reason,
+          hours,
+          priority: rec.priority,
+          ref: rec.ref,
+          link: rec.link ?? resolveLink(rec.platform, rec.ref),
+        });
+        budgets[w] -= hours;
+      }
+    } else if (platformRecs.length > 0) {
+      // Backfill: create generic practice items for weeks beyond specific recs
+      const platforms = [...new Set(platformRecs.map((r) => r.platform))];
+      const plat = platforms[w % platforms.length];
+      const label =
+        plat === "thm" ? "Complete a THM room"
+        : plat === "htb" ? "Complete an HTB module"
+        : "Root-me challenges";
+      const goalMatch = goals.find((g) => g.category === plat);
+      const why = goalMatch?.pacing
+        ? `${goalMatch.pacing.requiredPace} for "${goalMatch.title}".`
+        : "Regular practice.";
+      if (budgets[w] >= 2) {
+        weekItems[w].push({
+          title: label,
+          type: plat,
+          why,
+          hours: 2,
+          priority: "medium",
+        });
+        budgets[w] -= 2;
+      }
+    }
+  }
+
+  // 3. 42 projects: sequential, large projects span multiple weeks
+  for (const rec of all42) {
+    let remaining = rec.estimatedHours ?? 10;
+    let isFirst = true;
+    for (let w = 0; w < numWeeks && remaining > 0; w++) {
+      if (budgets[w] < 2) continue;
+      const alloc = Math.min(remaining, budgets[w], 8);
+      if (alloc < 1) continue;
+
+      let title = rec.title;
+      if (!isFirst) {
+        title = title.replace(/^(Start|Finish)\s/, "Continue ");
+        if (!title.startsWith("Continue")) title = `Continue ${title}`;
+      }
+
+      weekItems[w].push({
+        title,
+        type: "42",
+        why: rec.reason,
+        hours: alloc,
+        priority: isFirst ? rec.priority : "medium",
+        ref: rec.ref,
+      });
+      budgets[w] -= alloc;
+      remaining -= alloc;
+      isFirst = false;
+    }
+  }
+
+  // Generate briefing from week 1's items
+  const briefingItems = weekItems[0].map((i) => ({
+    type: i.type,
+    title: i.title,
+    priority: i.priority,
+  }));
+  const { mentorBriefing, collapsedBriefing } = generateBriefing(briefingItems);
+
+  const results: WeekPlanWithItems[] = [];
+
+  for (let w = 0; w < numWeeks; w++) {
+    const ws = weekStarts[w];
+
+    // Delete existing plan for this week
+    const existing = db
+      .select()
+      .from(weeklyPlans)
+      .where(eq(weeklyPlans.weekStart, ws))
+      .get();
+    if (existing) {
+      db.delete(planItems)
+        .where(eq(planItems.weeklyPlanId, existing.id))
+        .run();
+      db.delete(weeklyPlans)
+        .where(eq(weeklyPlans.id, existing.id))
+        .run();
+    }
+
+    const plan = db
+      .insert(weeklyPlans)
+      .values({ weekStart: ws, mentorBriefing, collapsedBriefing })
+      .returning()
+      .get();
+
+    const items: PlanItem[] = [];
+    for (const mi of weekItems[w]) {
+      const item = db
+        .insert(planItems)
+        .values({
+          weeklyPlanId: plan.id,
+          title: mi.title,
+          type: mi.type,
+          why: mi.why,
+          estimatedHours: mi.hours,
+          priority: mi.priority,
+          ref: mi.ref,
+          link: mi.link,
+          sortOrder: items.length,
+        })
+        .returning()
+        .get();
+      items.push(item);
+    }
+
+    autoDistribute(items, ws);
+    results.push({ ...plan, items });
+  }
+
+  return results;
 }

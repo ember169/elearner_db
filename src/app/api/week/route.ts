@@ -4,9 +4,11 @@ import {
   getOrCreateWeekPlan,
   getISOWeekNumber,
   getMonthWeekStarts,
+  loadWeekPlan,
   updatePlanItem,
   rerollWeekPlan,
   movePlanItem,
+  createMonthPlan,
 } from "@/lib/week/store";
 
 export async function GET(request: Request) {
@@ -17,10 +19,17 @@ export async function GET(request: Request) {
     const [yearStr, monthStr] = month.split("-");
     const date = new Date(parseInt(yearStr), parseInt(monthStr) - 1, 1);
     const weekStarts = getMonthWeekStarts(date);
-    const plans = weekStarts.map((ws) => ({
+
+    const existing = weekStarts.map((ws) => loadWeekPlan(ws));
+    const allExist = existing.every((p) => p !== null);
+    const monthPlans = allExist
+      ? (existing as NonNullable<typeof existing[number]>[])
+      : createMonthPlan(weekStarts);
+
+    const plans = weekStarts.map((ws, i) => ({
       weekStart: ws,
       weekNum: getISOWeekNumber(ws),
-      plan: getOrCreateWeekPlan(ws),
+      plan: monthPlans[i],
     }));
     return NextResponse.json({ plans });
   }
@@ -61,10 +70,11 @@ export async function POST(request: Request) {
 
   if (body.action === "reroll-month") {
     const weekStarts = body.weekStarts as string[];
-    const plans = weekStarts.map((ws) => ({
+    const monthPlans = createMonthPlan(weekStarts);
+    const plans = weekStarts.map((ws, i) => ({
       weekStart: ws,
       weekNum: getISOWeekNumber(ws),
-      plan: rerollWeekPlan(ws),
+      plan: monthPlans[i],
     }));
     return NextResponse.json({ plans });
   }

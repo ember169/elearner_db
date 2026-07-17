@@ -14,7 +14,7 @@ import { loadCurrentPlan } from "@/lib/mentor/store";
 import { runGuidanceEngine, flattenGoals } from "@/lib/guidance/engine";
 import { computeCompetencySignals } from "@/lib/mentor/competency-signals";
 import { COMPETENCIES } from "@/lib/mentor/competency-map";
-import { getWeekStart, getMonthWeekStarts, getOrCreateWeekPlan, getISOWeekNumber } from "@/lib/week/store";
+import { getWeekStart, getMonthWeekStarts, getOrCreateWeekPlan, getISOWeekNumber, loadWeekPlan, createMonthPlan } from "@/lib/week/store";
 import { PlannerClient } from "@/components/planner/planner-client";
 
 export const dynamic = "force-dynamic";
@@ -23,10 +23,18 @@ export default function HomePage() {
   const now = new Date();
   const todayWeek = getWeekStart();
   const weekStarts = getMonthWeekStarts(now);
-  const monthPlans = weekStarts.map((ws) => ({
+
+  // Use existing plans if all weeks already have one; otherwise generate as a month
+  const existingPlans = weekStarts.map((ws) => loadWeekPlan(ws));
+  const allExist = existingPlans.every((p) => p !== null);
+  const plans = allExist
+    ? (existingPlans as NonNullable<typeof existingPlans[number]>[])
+    : createMonthPlan(weekStarts);
+
+  const monthPlans = weekStarts.map((ws, i) => ({
     weekStart: ws,
     weekNum: getISOWeekNumber(ws),
-    plan: getOrCreateWeekPlan(ws),
+    plan: plans[i],
   }));
 
   const mentorResult = loadCurrentPlan();
