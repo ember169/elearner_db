@@ -455,9 +455,13 @@ export function PlannerClient({
                 return (
                   <span key={g.id}>
                     {i > 0 && " · "}
-                    <span style={{ color: onTrack ? "var(--status-success)" : "var(--status-warning)" }}>
+                    <a
+                      href={`/goals?goal=${g.id}`}
+                      className="hover:underline transition-colors"
+                      style={{ color: onTrack ? "var(--status-success)" : "var(--status-warning)" }}
+                    >
                       {label}{detail} {onTrack ? "✓" : "⚠"}
-                    </span>
+                    </a>
                   </span>
                 );
               })}

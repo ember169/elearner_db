@@ -28,6 +28,12 @@ import {
   Clock,
 } from "lucide-react";
 import { PLATFORM_COLORS, PLATFORM_LABELS } from "@/lib/platform-colors";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import type { PlanItemData } from "./types";
 
 const DAY_NAMES = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
@@ -340,7 +346,6 @@ export function TaskCard({
   onStatusToggle: (id: number) => void;
   onMenuAction: (id: number, action: string) => void;
 }) {
-  const [menuOpen, setMenuOpen] = useState(false);
   const style = getStatusStyle(item.status, item.sourceWeek);
   const StatusIcon = style.icon;
   const platformColor = PLATFORM_COLORS[item.type] ?? "var(--muted-foreground)";
@@ -376,13 +381,30 @@ export function TaskCard({
           {platformLabel}
         </span>
 
-        {/* Context menu trigger */}
-        <button
-          onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen); }}
-          className="ml-auto text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-        >
-          ···
-        </button>
+        {/* Context menu */}
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            className="ml-auto text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+            render={<button />}
+            onClick={(e) => e.stopPropagation()}
+          >
+            ···
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" side="bottom" sideOffset={2}>
+            {(["blocked", "stuck", "deferred", "pending"] as const).map((s) => (
+              <DropdownMenuItem
+                key={s}
+                className="text-[11px]"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onMenuAction(item.id, s);
+                }}
+              >
+                Mark {s}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Title */}
@@ -431,30 +453,6 @@ export function TaskCard({
         )}
       </div>
 
-      {/* Context menu */}
-      {menuOpen && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-          <div
-            className="absolute right-0 top-full z-50 mt-1 rounded-sm border border-border py-1 min-w-[120px]"
-            style={{ background: "var(--popover)" }}
-          >
-            {(["blocked", "stuck", "deferred", "pending"] as const).map((s) => (
-              <button
-                key={s}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onMenuAction(item.id, s);
-                  setMenuOpen(false);
-                }}
-                className="w-full text-left px-3 py-1.5 text-[11px] hover:bg-white/5"
-              >
-                Mark {s}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
     </div>
   );
 }

@@ -210,11 +210,18 @@ export function FullWeekView({
   onWeekSwipe: (delta: number) => void;
 }) {
   const touchStartX = useRef(0);
+  const [swipeDelta, setSwipeDelta] = useState(0);
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
+    setSwipeDelta(0);
+  }, []);
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    const dx = e.touches[0].clientX - touchStartX.current;
+    setSwipeDelta(dx * 0.3);
   }, []);
   const handleTouchEnd = useCallback((e: React.TouchEvent) => {
     const dx = e.changedTouches[0].clientX - touchStartX.current;
+    setSwipeDelta(0);
     if (Math.abs(dx) > 80) onWeekSwipe(dx > 0 ? -1 : 1);
   }, [onWeekSwipe]);
 
@@ -234,7 +241,15 @@ export function FullWeekView({
   ];
 
   return (
-    <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+    <div
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      style={{
+        transform: swipeDelta ? `translateX(${swipeDelta}px)` : undefined,
+        transition: swipeDelta ? "none" : "transform 0.3s ease-out",
+      }}
+    >
       {/* Budget bar */}
       <div
         className="flex items-center gap-2 px-3 py-2 rounded-sm mb-3"
@@ -419,7 +434,7 @@ function BacklogCard({
         <button
           onClick={() => onDrop(item.id)}
           className="text-[11px] px-2.5 py-1 rounded-sm border text-muted-foreground"
-          style={{ borderColor: "oklch(0.25 0.007 70)" }}
+          style={{ borderColor: "var(--border)" }}
         >
           Drop
         </button>

@@ -128,6 +128,36 @@
   }
 }
 
+/* Global focus-visible ring for all interactive elements */
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: var(--radius);
+}
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/*
+ * Type scale — 8 stops for the whole app.
+ * Existing components use arbitrary text-[Npx] values; new code should
+ * prefer these utilities so sizes converge over time.
+ *
+ *  --text-caption: 10px  — smallest readable, badges & timestamps
+ *  --text-xs:      12px  — secondary labels, metadata
+ *  --text-sm:      14px  — body text, form labels
+ *  --text-base:    16px  — primary body (Tailwind default)
+ *  --text-sub:     15px  — card/dialog titles (between sm and base)
+ *  --text-lg:      18px  — section headings, stat labels
+ *  --text-xl:      22px  — metric values, mobile headings
+ *  --text-2xl:     28px  — page titles
+ *  --text-hero:    44px  — hero / splash
+ */
+
 /* Grid background pattern — faint dot grid, not graph paper */
 .grid-bg {
   background-image: radial-gradient(oklch(1 0 0 / 0.06) 1px, transparent 1px);

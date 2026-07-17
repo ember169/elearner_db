@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -46,7 +46,11 @@ export function GoalsClient({
   focusItems?: FocusSlim[];
 }) {
   const router = useRouter();
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const searchParams = useSearchParams();
+  const [selectedId, setSelectedId] = useState<number | null>(() => {
+    const param = searchParams.get("goal");
+    return param ? parseInt(param, 10) : null;
+  });
   const [rightPane, setRightPane] = useState<RightPane>({ mode: "detail" });
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [show42Dialog, setShow42Dialog] = useState(false);

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { runGuidanceEngine } from "@/lib/guidance/engine";
 import { computeCompetencySignals } from "@/lib/mentor/competency-signals";
 import { COMPETENCIES } from "@/lib/mentor/competency-map";
@@ -29,10 +30,12 @@ export default function GoalsPage() {
   }));
 
   return (
-    <GoalsClient
-      goals={guidance.goals}
-      competencies={competencies}
-      focusItems={focusItems}
-    />
+    <Suspense>
+      <GoalsClient
+        goals={guidance.goals}
+        competencies={competencies}
+        focusItems={focusItems}
+      />
+    </Suspense>
   );
 }

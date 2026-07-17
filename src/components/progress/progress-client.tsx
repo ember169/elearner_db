@@ -495,14 +495,16 @@ function DeltaStat({ label, value }: { label: string; value: string }) {
 
 function PlatformCard({ color, name, value, detail }: { color: string; name: string; value: string; detail: string }) {
   return (
-    <Card className="overflow-hidden gap-0 py-0">
-      <div className="h-[3px]" style={{ backgroundColor: color }} />
-      <CardContent className="pt-3.5 pb-3.5 px-3.5">
-        <p className="section-label">{name}</p>
-        <p className="stat-value mt-1.5">{value}</p>
-        <p className="text-[11px] text-muted-foreground mt-1">{detail}</p>
-      </CardContent>
-    </Card>
+    <a href="/settings" className="block group">
+      <Card className="overflow-hidden gap-0 py-0 transition-colors group-hover:border-primary/30">
+        <div className="h-[3px]" style={{ backgroundColor: color }} />
+        <CardContent className="pt-3.5 pb-3.5 px-3.5">
+          <p className="section-label">{name}</p>
+          <p className="stat-value mt-1.5">{value}</p>
+          <p className="text-[11px] text-muted-foreground mt-1">{detail}</p>
+        </CardContent>
+      </Card>
+    </a>
   );
 }
 
