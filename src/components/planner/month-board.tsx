@@ -110,7 +110,7 @@ export function MonthBoard({
       <div
         className="grid gap-px rounded-sm overflow-hidden"
         style={{
-          gridTemplateColumns: "56px repeat(7, 1fr)",
+          gridTemplateColumns: "56px repeat(7, minmax(0, 1fr))",
           background: "var(--border)",
         }}
       >
