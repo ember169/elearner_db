@@ -23,7 +23,7 @@ import {
   type FtProject,
 } from "./ft-project-tree";
 import { THM_ROOM_CATEGORIES, THM_ROOM_CATALOG } from "./thm-room-categories";
-import { HTB_ACADEMY_MODULES } from "@/lib/mentor/htb-academy-catalog";
+import { HTB_ACADEMY_MODULES, type HtbModule } from "@/lib/mentor/htb-academy-catalog";
 import { syncGoalValues, computeCadencePacing } from "@/lib/goals/metrics";
 import { computeCompetencySignals } from "@/lib/mentor/competency-signals";
 import {
@@ -508,17 +508,33 @@ export function generateRecommendations(
     }
 
     if (goal.category === "thm" && goal.pacing.daysRemaining < 90) {
-      const thmPicks = pickThmRooms(snapshot, skillProfile, 2, thmFloors);
-      for (const room of thmPicks) {
-        recs.push({
-          priority: goal.pacing.onTrack ? "medium" : "high",
-          platform: "thm",
-          title: `THM: ${room.name}`,
-          reason: `${goal.pacing.requiredPace} needed for "${goal.title}".`,
-          estimatedHours: room.difficulty === "hard" ? 4 : room.difficulty === "medium" ? 3 : 2,
-          ref: room.code,
-          link: `https://tryhackme.com/room/${room.code}`,
-        });
+      const htbPicks = pickHtbModules(skillProfile, 2, htbFloors);
+      if (htbPicks.length > 0) {
+        for (const mod of htbPicks) {
+          const tierHours = { Fundamental: 2, Easy: 3, Medium: 5, Hard: 8 };
+          recs.push({
+            priority: goal.pacing.onTrack ? "medium" : "high",
+            platform: "htb",
+            title: `HTB: ${mod.name}`,
+            reason: `${goal.pacing.requiredPace} needed for "${goal.title}".`,
+            estimatedHours: tierHours[mod.tier],
+            ref: mod.id,
+            link: `https://academy.hackthebox.com/module/details/${mod.id}`,
+          });
+        }
+      } else {
+        const thmPicks = pickThmRooms(snapshot, skillProfile, 2, thmFloors);
+        for (const room of thmPicks) {
+          recs.push({
+            priority: goal.pacing.onTrack ? "medium" : "high",
+            platform: "thm",
+            title: `THM: ${room.name}`,
+            reason: `${goal.pacing.requiredPace} needed for "${goal.title}".`,
+            estimatedHours: room.difficulty === "hard" ? 4 : room.difficulty === "medium" ? 3 : 2,
+            ref: room.code,
+            link: `https://tryhackme.com/room/${room.code}`,
+          });
+        }
       }
     }
 
@@ -553,7 +569,36 @@ export function generateRecommendations(
       const level = skillProfile[skill] ?? 0;
       if (level < 1 && isSecurityRelated(skill)) {
         const platformSuggestion = suggestPlatformForSkill(skill);
-        if (platformSuggestion === "thm") {
+        if (platformSuggestion === "htb") {
+          const mod = pickHtbModuleForSkill(snapshot, skill, htbFloors);
+          if (mod) {
+            const tierHours = { Fundamental: 2, Easy: 3, Medium: 5, Hard: 8 };
+            recs.push({
+              priority: "low",
+              platform: "htb",
+              title: `HTB: ${mod.name}`,
+              reason: `Build ${skill} skills for upcoming "${project.name}".`,
+              estimatedHours: tierHours[mod.tier],
+              skills: [skill],
+              ref: mod.id,
+              link: `https://academy.hackthebox.com/module/details/${mod.id}`,
+            });
+          } else {
+            const room = pickThmRoomForSkill(snapshot, skill, thmFloors);
+            if (room) {
+              recs.push({
+                priority: "low",
+                platform: "thm",
+                title: `THM: ${room.name}`,
+                reason: `Build ${skill} skills for upcoming "${project.name}".`,
+                estimatedHours: room.difficulty === "hard" ? 4 : room.difficulty === "medium" ? 3 : 2,
+                skills: [skill],
+                ref: room.code,
+                link: `https://tryhackme.com/room/${room.code}`,
+              });
+            }
+          }
+        } else if (platformSuggestion === "thm") {
           const room = pickThmRoomForSkill(snapshot, skill, thmFloors);
           if (room) {
             recs.push({
@@ -700,6 +745,23 @@ function pickThmRoomForSkill(
   });
 }
 
+function pickHtbModuleForSkill(
+  snapshot: PlatformSnapshot,
+  skill: string,
+  competencyFloors?: Record<string, string>
+): HtbModule | undefined {
+  const area = SKILL_TO_HTB_AREA[skill];
+  if (!area) return undefined;
+  const floors = competencyFloors ?? {};
+  const tierWeight = { Fundamental: 0, Easy: 1, Medium: 2, Hard: 3 };
+  return HTB_ACADEMY_MODULES.filter((m) => {
+    if (m.area !== area) return false;
+    const floor = floors[m.area];
+    if (floor && !isAboveHtbFloor(m.tier, floor)) return false;
+    return true;
+  }).sort((a, b) => tierWeight[a.tier] - tierWeight[b.tier])[0];
+}
+
 function skillToRootmeCategory(skill: string): string {
   return SKILL_TO_ROOTME_CATEGORY[skill] ?? "App - Système";
 }
@@ -737,11 +799,11 @@ function isSecurityRelated(skill: string): boolean {
 
 function suggestPlatformForSkill(skill: string): string | null {
   const mapping: Record<string, string> = {
-    security: "thm",
-    networking: "thm",
+    security: "htb",
+    networking: "htb",
     cryptography: "rootme",
     "reverse-engineering": "rootme",
-    "web-security": "rootme",
+    "web-security": "htb",
     forensics: "rootme",
   };
   return mapping[skill] ?? null;
