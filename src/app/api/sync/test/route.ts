@@ -51,7 +51,7 @@ export async function POST(request: Request) {
         if (!config.htbApiToken) {
           return NextResponse.json({ error: "HTB API token not set" }, { status: 400 });
         }
-        const res = await fetch("https://labs.hackthebox.com/api/v4/profile", {
+        const res = await fetch("https://labs.hackthebox.com/api/v4/user/info", {
           headers: { Authorization: `Bearer ${config.htbApiToken}`, Accept: "application/json" },
         });
         if (!res.ok) {
