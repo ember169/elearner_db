@@ -144,7 +144,7 @@ export function populateBacklog(): BoardItem[] {
     .where(eq(planItems.weeklyPlanId, sentinelId))
     .all();
   const normalizeTitle = (t: string) =>
-    t.replace(/^(Start|Finish|Continue)\s+/i, "");
+    t.replace(/^(Start|Finish|Continue|Work on)\s+/i, "");
   const existingKeys = new Set(
     existing.map((i) => `${normalizeTitle(i.title)}::${i.type}`)
   );
@@ -208,6 +208,28 @@ export function populateBacklog(): BoardItem[] {
       )
     )
     .run();
+
+  // Collapse duplicate 42 items (Start/Continue/Finish variants of the same project)
+  const all42 = db
+    .select()
+    .from(planItems)
+    .where(and(eq(planItems.weeklyPlanId, sentinelId), eq(planItems.type, "42")))
+    .all();
+  const groups42 = new Map<string, typeof all42>();
+  for (const item of all42) {
+    const base = normalizeTitle(item.title);
+    const arr = groups42.get(base) ?? [];
+    arr.push(item);
+    groups42.set(base, arr);
+  }
+  for (const [, group] of groups42) {
+    if (group.length <= 1) continue;
+    const statusRank: Record<string, number> = { done: 3, in_progress: 2, todo: 1, backlog: 0 };
+    group.sort((a, b) => (statusRank[b.boardStatus ?? "backlog"] ?? 0) - (statusRank[a.boardStatus ?? "backlog"] ?? 0));
+    for (const dup of group.slice(1)) {
+      db.delete(planItems).where(eq(planItems.id, dup.id)).run();
+    }
+  }
 
   // Update briefing
   const briefingItems = allRecs.slice(0, 8).map((r) => ({
@@ -355,7 +377,8 @@ export function initializeBoard(): BoardData {
       .all();
 
     for (const item of items) {
-      const key = `${item.title}::${item.type}`;
+      const normTitle = item.title.replace(/^(Start|Finish|Continue|Work on)\s+/i, "");
+      const key = `${normTitle}::${item.type}`;
       if (seenTitles.has(key)) continue;
       seenTitles.add(key);
 

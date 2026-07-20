@@ -618,12 +618,9 @@ export function DetailPane({
             <span className="text-[15px] font-mono border border-border rounded-sm px-1.5 py-0.5">/wk</span>
           ) : (
             <Badge
+              variant="outline"
               className="text-[15px] font-bold uppercase tracking-wider px-2 py-0.5"
-              style={{
-                backgroundColor: isEpic ? platformColor : "transparent",
-                color: isEpic ? "#fff" : platformColor,
-                border: isEpic ? "none" : `1px solid ${platformColor}`,
-              }}
+              style={{ borderColor: platformColor, color: platformColor }}
             >
               {depthLabel}
             </Badge>
@@ -632,11 +629,6 @@ export function DetailPane({
             <Badge variant="outline" className="text-[15px] font-bold px-1.5 py-0" style={{ borderColor: platformColor, color: platformColor }}>
               {platformLabel}
             </Badge>
-          )}
-          {isIssue && parentChain.length > 0 && (
-            <span className="text-[14px] text-muted-foreground">
-              in {parentChain[parentChain.length - 1].title}
-            </span>
           )}
         </div>
 

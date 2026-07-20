@@ -20,7 +20,7 @@ export function PacingAlerts({ goals }: { goals: GoalSlim[] }) {
 
   return (
     <div className="space-y-1.5">
-      <span className="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">
+      <span className="section-label">
         Pacing Alerts
       </span>
       {behind.map((goal) => {

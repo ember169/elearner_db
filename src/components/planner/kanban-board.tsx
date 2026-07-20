@@ -535,6 +535,12 @@ function BoardCard({
         )}
       </div>
 
+      {item.why && (
+        <p className="text-[12px] text-muted-foreground leading-snug pl-2 mt-0.5 line-clamp-2">
+          {item.why}
+        </p>
+      )}
+
       {/* Bottom row */}
       <div className="flex items-center gap-1 mt-1.5 pl-2">
         <Clock className="h-[10px] w-[10px] text-muted-foreground/60" />

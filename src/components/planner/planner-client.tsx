@@ -133,17 +133,16 @@ export function PlannerClient({
       if (mentorData.warnings) setDeadlineWarnings(mentorData.warnings);
       if (mentorData.deadlinePressure) setDeadlineUrgency(mentorData.deadlinePressure.urgency);
 
-      const res = await fetch("/api/board", {
+      await fetch("/api/board", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "populate" }),
       });
-      const data = await res.json();
-      setItems((prev) => [...prev, ...data.items]);
 
-      // Refetch briefing
+      // Refetch full board (including cleaned-up duplicates)
       const boardRes = await fetch("/api/board");
       const board = await boardRes.json();
+      setItems(board.items);
       setBriefing(board.mentorBriefing);
       setCollapsedBriefing(board.collapsedBriefing);
     } catch (e) {
@@ -203,6 +202,7 @@ export function PlannerClient({
       </div>
 
       {/* Mentor briefing + Side project (desktop) */}
+      <p className="section-label mb-2 hidden md:block">Briefing</p>
       <div className="hidden md:grid md:grid-cols-2 gap-3">
         <div
           className="rounded-sm px-4 py-3"
@@ -370,6 +370,7 @@ export function PlannerClient({
       )}
 
       {/* Desktop: Kanban Board */}
+      <p className="section-label mb-2 hidden md:block">Board</p>
       <div className="hidden md:block">
         <StatusKanbanBoard
           items={items}

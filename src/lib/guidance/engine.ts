@@ -633,25 +633,41 @@ export function generateRecommendations(
   }
 
   // 5. HTB Machine recommendations — 1-2 retired boxes matching weak areas
+  const areaToSkills: Record<string, string[]> = {};
+  for (const [skill, area] of Object.entries(SKILL_TO_HTB_MACHINE_AREA)) {
+    (areaToSkills[area] ??= []).push(skill);
+  }
   const machinePicks = pickHtbMachines(skillProfile, 2, machineFloors);
   for (const machine of machinePicks) {
     const hours = machine.difficulty === "Hard" ? 8 : machine.difficulty === "Medium" ? 5 : 3;
+    const matchedSkills = (areaToSkills[machine.area] ?? []).filter((s) => (skillProfile[s] ?? 0) < 2);
+    const relatedProject = ftProgress.availableProjects.find((p) =>
+      p.skills.some((s) => matchedSkills.includes(s))
+    );
+    const reason = relatedProject
+      ? `Retired ${machine.difficulty} box — strengthen ${matchedSkills[0] ?? machine.area} for upcoming "${relatedProject.name}".`
+      : matchedSkills.length > 0
+        ? `Retired ${machine.difficulty} box — strengthen ${matchedSkills[0]} (current gap).`
+        : `Retired ${machine.difficulty} box — practice ${machine.area} skills.`;
     recs.push({
       priority: "medium",
       platform: "htb",
       title: `HTB Machine: ${machine.name}`,
-      reason: `Retired ${machine.difficulty} box — practice ${machine.area} skills.`,
+      reason,
       estimatedHours: hours,
+      skills: matchedSkills,
       ref: machine.name,
       link: htbMachineLink(machine.name),
     });
   }
 
-  // Deduplicate by title
+  // Deduplicate by normalized title (collapse Start/Finish/Continue/Work on variants)
+  const normalizeRec = (t: string) => t.replace(/^(Start|Finish|Continue|Work on)\s+/i, "");
   const seen = new Set<string>();
   return recs.filter((r) => {
-    if (seen.has(r.title)) return false;
-    seen.add(r.title);
+    const key = `${normalizeRec(r.title)}::${r.platform}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
     return true;
   });
 }

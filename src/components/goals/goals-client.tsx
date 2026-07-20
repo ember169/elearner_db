@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -60,6 +60,32 @@ export function GoalsClient({
   const [mobilePane, setMobilePane] = useState<"nav" | "create" | "edit">("nav");
   const [mobileCreateParent, setMobileCreateParent] = useState<GoalWithPacing | undefined>();
   const [mobileEditGoal, setMobileEditGoal] = useState<GoalWithPacing | null>(null);
+
+  const [treeWidth, setTreeWidth] = useState(() => {
+    try {
+      const stored = localStorage.getItem("learnerdb-tree-width");
+      return stored ? Math.max(160, Math.min(400, parseInt(stored, 10))) : 200;
+    } catch { return 200; }
+  });
+  const dragRef = useRef<{ startX: number; startWidth: number } | null>(null);
+
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    e.preventDefault();
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    dragRef.current = { startX: e.clientX, startWidth: treeWidth };
+  }, [treeWidth]);
+
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    if (!dragRef.current) return;
+    const newWidth = Math.max(160, Math.min(400, dragRef.current.startWidth + (e.clientX - dragRef.current.startX)));
+    setTreeWidth(newWidth);
+  }, []);
+
+  const handlePointerUp = useCallback(() => {
+    if (!dragRef.current) return;
+    dragRef.current = null;
+    localStorage.setItem("learnerdb-tree-width", String(treeWidth));
+  }, [treeWidth]);
 
   const selectedGoal = selectedId ? findGoalById(selectedId, goals) : null;
 
@@ -146,6 +172,13 @@ export function GoalsClient({
           onNewGoal={handleNewGoal}
           onSuggest={() => { setSelectedId(null); setRightPane({ mode: "suggest" }); }}
           on42Plan={() => setShow42Dialog(true)}
+          width={treeWidth}
+        />
+        <div
+          className="w-1 cursor-col-resize bg-transparent hover:bg-primary/20 active:bg-primary/30 transition-colors flex-shrink-0"
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
         />
 
         {rightPane.mode === "create" ? (

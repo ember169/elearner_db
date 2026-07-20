@@ -168,6 +168,7 @@ export function GoalsTree({
   onNewGoal,
   onSuggest,
   on42Plan,
+  width,
 }: {
   goals: GoalWithPacing[];
   selectedId: number | null;
@@ -175,6 +176,7 @@ export function GoalsTree({
   onNewGoal: () => void;
   onSuggest?: () => void;
   on42Plan?: () => void;
+  width?: number;
 }) {
   const [expanded, setExpanded] = useState<Record<number, boolean>>(() => {
     try {
@@ -233,7 +235,7 @@ export function GoalsTree({
   })();
 
   return (
-    <div className="flex flex-col h-full w-[200px] border-r border-border">
+    <div className="flex flex-col h-full flex-shrink-0 border-r border-border" style={{ width: width ?? 200 }}>
       <div className="px-3 pt-4 pb-2">
         <h3 className="text-[18px] font-bold leading-tight">Goals</h3>
         <p className="text-[15px] text-muted-foreground mt-0.5">

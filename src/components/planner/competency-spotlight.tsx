@@ -21,7 +21,7 @@ export function CompetencySpotlight({ competencies }: { competencies: Competency
 
   return (
     <div className="rounded-sm border border-border px-5 py-4">
-      <p className="text-[14px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+      <p className="section-label mb-3">
         Biggest gaps
       </p>
       <div className="space-y-2.5">
