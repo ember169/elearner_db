@@ -133,3 +133,61 @@ export function isAboveHtbFloor(
   if (tierIdx === -1 || floorIdx === -1) return true;
   return tierIdx >= floorIdx;
 }
+
+const HTB_MACHINE_DIFF_ORDER = ["Easy", "Medium", "Hard", "Insane"] as const;
+
+const LEVEL_TO_HTB_MACHINE_FLOOR_IDX: number[] = [
+  0, // 0: Easy
+  0, // 1: Easy
+  0, // 2: Easy
+  1, // 3: Medium
+  2, // 4: Hard
+  3, // 5: Insane
+];
+
+const COMPETENCY_TO_HTB_MACHINE_AREA: Record<string, string[]> = {
+  "linux-admin": ["Linux & systems"],
+  "containers-infra": ["Linux & systems"],
+  "win-internals": ["Windows internals & maldev"],
+  "maldev-techniques": ["Windows internals & maldev"],
+  "evasion": ["Windows internals & maldev"],
+  "net-fundamentals": ["Networking"],
+  "net-attacks": ["Networking"],
+  "web-fundamentals": ["Web"],
+  "web-security": ["Web"],
+  "reverse-engineering": ["Reverse engineering & binary"],
+  "binexp": ["Reverse engineering & binary"],
+  "ad-fundamentals": ["Active Directory"],
+  "crypto": ["Crypto & forensics basics"],
+  "forensics": ["Crypto & forensics basics"],
+};
+
+export function htbMachineDifficultyFloors(
+  signals: Record<string, SignalResult>
+): Record<string, (typeof HTB_MACHINE_DIFF_ORDER)[number]> {
+  const floors: Record<string, (typeof HTB_MACHINE_DIFF_ORDER)[number]> = {};
+
+  for (const [compId, areas] of Object.entries(COMPETENCY_TO_HTB_MACHINE_AREA)) {
+    const level = signals[compId]?.autoLevel ?? 0;
+    const idx = LEVEL_TO_HTB_MACHINE_FLOOR_IDX[Math.min(level, 5)];
+    const diff = HTB_MACHINE_DIFF_ORDER[idx];
+    for (const area of areas) {
+      const current = floors[area];
+      if (!current || HTB_MACHINE_DIFF_ORDER.indexOf(diff) > HTB_MACHINE_DIFF_ORDER.indexOf(current)) {
+        floors[area] = diff;
+      }
+    }
+  }
+
+  return floors;
+}
+
+export function isAboveHtbMachineDifficulty(
+  difficulty: string,
+  floor: string
+): boolean {
+  const diffIdx = HTB_MACHINE_DIFF_ORDER.indexOf(difficulty as (typeof HTB_MACHINE_DIFF_ORDER)[number]);
+  const floorIdx = HTB_MACHINE_DIFF_ORDER.indexOf(floor as (typeof HTB_MACHINE_DIFF_ORDER)[number]);
+  if (diffIdx === -1 || floorIdx === -1) return true;
+  return diffIdx >= floorIdx;
+}

@@ -15,8 +15,8 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/", label: "Planner", icon: CalendarDays },
-  { href: "/progress", label: "Progress", icon: Map },
   { href: "/goals", label: "Goals", icon: Target },
+  { href: "/progress", label: "Progress", icon: Map },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
@@ -71,7 +71,7 @@ export function Sidebar() {
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 flex w-12 flex-col items-center border-r border-border bg-sidebar transition-transform duration-200 md:translate-x-0",
+          "fixed inset-y-0 left-0 z-40 flex w-14 flex-col items-center border-r border-border bg-sidebar transition-transform duration-200 md:translate-x-0",
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
@@ -94,7 +94,7 @@ export function Sidebar() {
                 onClick={() => setMobileOpen(false)}
                 title={item.label}
                 className={cn(
-                  "flex h-[34px] w-[34px] items-center justify-center rounded-sm transition-colors",
+                  "flex h-[40px] w-[40px] items-center justify-center rounded-sm transition-colors",
                   isActive
                     ? "bg-[oklch(0.82_0.055_80/0.1)]"
                     : "hover:bg-[rgba(237,232,220,0.05)]"
@@ -102,7 +102,7 @@ export function Sidebar() {
               >
                 <item.icon
                   className={cn(
-                    "h-4 w-4",
+                    "h-5 w-5",
                     isActive
                       ? "text-[oklch(0.82_0.055_80)]"
                       : "text-[rgba(237,232,220,0.35)] hover:text-[rgba(237,232,220,0.7)]"

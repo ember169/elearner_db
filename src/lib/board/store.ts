@@ -47,7 +47,8 @@ function resolveLink(type: string, ref?: string): string | undefined {
     case "thm":
       return `https://tryhackme.com/room/${ref}`;
     case "htb":
-      return `https://academy.hackthebox.com/module/details/${ref}`;
+      if (/^\d+$/.test(ref)) return `https://academy.hackthebox.com/module/details/${ref}`;
+      return `https://app.hackthebox.com/machines/${ref}`;
     case "rootme":
       return `https://www.root-me.org/en/Challenges/${encodeURIComponent(ref)}/`;
     default:
@@ -196,6 +197,17 @@ export function populateBacklog(): BoardItem[] {
       .get();
     newItems.push(item);
   }
+
+  // Purge stale THM backlog items so HTB equivalents can replace them
+  db.delete(planItems)
+    .where(
+      and(
+        eq(planItems.weeklyPlanId, sentinelId),
+        eq(planItems.type, "thm"),
+        ne(planItems.boardStatus, "done")
+      )
+    )
+    .run();
 
   // Update briefing
   const briefingItems = allRecs.slice(0, 8).map((r) => ({

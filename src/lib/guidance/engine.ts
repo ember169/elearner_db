@@ -24,6 +24,7 @@ import {
 } from "./ft-project-tree";
 import { THM_ROOM_CATEGORIES, THM_ROOM_CATALOG } from "./thm-room-categories";
 import { HTB_ACADEMY_MODULES, type HtbModule } from "@/lib/mentor/htb-academy-catalog";
+import { HTB_MACHINES, type HtbMachine, htbMachineLink } from "@/lib/mentor/htb-machine-catalog";
 import { syncGoalValues, computeCadencePacing } from "@/lib/goals/metrics";
 import { computeCompetencySignals } from "@/lib/mentor/competency-signals";
 import {
@@ -31,6 +32,8 @@ import {
   htbTierFloors,
   isAboveFloor,
   isAboveHtbFloor,
+  htbMachineDifficultyFloors,
+  isAboveHtbMachineDifficulty,
 } from "@/lib/planning/cross-platform-level";
 
 export type PlatformSnapshot = {
@@ -450,6 +453,7 @@ export function generateRecommendations(
   const signals = computeCompetencySignals(snapshot, ftProgress);
   const thmFloors = thmDifficultyFloors(signals);
   const htbFloors = htbTierFloors(signals);
+  const machineFloors = htbMachineDifficultyFloors(signals);
 
   // 1. In-progress 42 projects should be finished first
   for (const slug of ftProgress.inProgressProjects) {
@@ -628,6 +632,21 @@ export function generateRecommendations(
     }
   }
 
+  // 5. HTB Machine recommendations — 1-2 retired boxes matching weak areas
+  const machinePicks = pickHtbMachines(skillProfile, 2, machineFloors);
+  for (const machine of machinePicks) {
+    const hours = machine.difficulty === "Hard" ? 8 : machine.difficulty === "Medium" ? 5 : 3;
+    recs.push({
+      priority: "medium",
+      platform: "htb",
+      title: `HTB Machine: ${machine.name}`,
+      reason: `Retired ${machine.difficulty} box — practice ${machine.area} skills.`,
+      estimatedHours: hours,
+      ref: machine.name,
+      link: htbMachineLink(machine.name),
+    });
+  }
+
   // Deduplicate by title
   const seen = new Set<string>();
   return recs.filter((r) => {
@@ -653,6 +672,15 @@ const SKILL_TO_HTB_AREA: Record<string, string> = {
   "reverse-engineering": "Reverse engineering & binary",
   "web-security": "Web",
   forensics: "Forensics & incident response",
+};
+
+const SKILL_TO_HTB_MACHINE_AREA: Record<string, string> = {
+  security: "Linux & systems",
+  networking: "Networking",
+  "reverse-engineering": "Reverse engineering & binary",
+  "web-security": "Web",
+  forensics: "Crypto & forensics basics",
+  cryptography: "Crypto & forensics basics",
 };
 
 const SKILL_TO_ROOTME_CATEGORY: Record<string, string> = {
@@ -724,6 +752,36 @@ function pickHtbModules(
       const bMatch = weakAreas.includes(b.area) ? 0 : 1;
       if (aMatch !== bMatch) return aMatch - bMatch;
       return tierWeight[a.tier] - tierWeight[b.tier];
+    })
+    .slice(0, count);
+}
+
+function pickHtbMachines(
+  skillProfile: Record<string, number>,
+  count: number,
+  competencyFloors?: Record<string, string>
+): HtbMachine[] {
+  const floors = competencyFloors ?? {};
+
+  const available = HTB_MACHINES.filter((m) => {
+    if (!m.retired) return false;
+    const floor = floors[m.area];
+    if (floor && !isAboveHtbMachineDifficulty(m.difficulty, floor)) return false;
+    return true;
+  });
+
+  const weakAreas = Object.entries(skillProfile)
+    .filter(([, v]) => v < 2)
+    .map(([k]) => SKILL_TO_HTB_MACHINE_AREA[k])
+    .filter(Boolean);
+
+  const diffWeight = { Easy: 0, Medium: 1, Hard: 2, Insane: 3 };
+  return [...available]
+    .sort((a, b) => {
+      const aMatch = weakAreas.includes(a.area) ? 0 : 1;
+      const bMatch = weakAreas.includes(b.area) ? 0 : 1;
+      if (aMatch !== bMatch) return aMatch - bMatch;
+      return diffWeight[a.difficulty] - diffWeight[b.difficulty];
     })
     .slice(0, count);
 }

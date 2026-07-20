@@ -283,7 +283,9 @@ function resolveLink(type: string, ref?: string): string | undefined {
   if (!ref) return undefined;
   switch (type) {
     case "thm": return `https://tryhackme.com/room/${ref}`;
-    case "htb": return `https://academy.hackthebox.com/module/details/${ref}`;
+    case "htb":
+      if (/^\d+$/.test(ref)) return `https://academy.hackthebox.com/module/details/${ref}`;
+      return `https://app.hackthebox.com/machines/${ref}`;
     case "rootme": return `https://www.root-me.org/en/Challenges/${encodeURIComponent(ref)}/`;
     default: return undefined;
   }
@@ -399,11 +401,11 @@ export function createMonthPlan(weekStarts: string[]): WeekPlanWithItems[] {
         budgets[w] -= hours;
       }
     } else if (platformRecs.length > 0) {
-      const platforms = [...new Set(platformRecs.map((r) => r.platform))];
+      const platforms = [...new Set(platformRecs.map((r) => r.platform))]
+        .map(p => p === "thm" ? "htb" : p);
       const plat = platforms[w % platforms.length];
       const label =
-        plat === "thm" ? "Complete a THM room"
-        : plat === "htb" ? "Complete an HTB module"
+        plat === "htb" ? "Complete an HTB challenge"
         : "Root-me challenges";
       const goalMatch = goals.find((g) => g.category === plat);
       const why = goalMatch?.pacing

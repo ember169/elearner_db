@@ -73,7 +73,7 @@ const STATUS_STYLES: Record<string, StatusMeta> = {
     icon: Circle,
     color: "var(--muted-foreground)",
     borderColor: "var(--border)",
-    bg: "color-mix(in oklch, var(--muted) 40%, transparent)",
+    bg: "transparent",
   },
   blocked: {
     icon: Pause,
@@ -155,7 +155,6 @@ export function StatusKanbanBoard({
       return;
     }
 
-    // Enforce: items stay in their category lane
     if (targetLane !== (item.category ?? "42")) {
       targetLane = item.category ?? "42";
     }
@@ -165,7 +164,6 @@ export function StatusKanbanBoard({
     if (currentCol !== targetCol) {
       onItemUpdate(itemId, { boardStatus: targetCol });
     } else {
-      // Reorder within same cell
       const siblings = cellItems(targetCol, targetLane);
       const overItemId = overId.startsWith("item-")
         ? parseInt(overId.replace("item-", ""))
@@ -183,7 +181,6 @@ export function StatusKanbanBoard({
     ? items.find((i) => `item-${i.id}` === activeId)
     : null;
 
-  // Column totals
   const colTotals = COLUMNS.map((col) => {
     const colItems = items.filter((i) => (i.boardStatus ?? "backlog") === col.id);
     return {
@@ -203,16 +200,16 @@ export function StatusKanbanBoard({
       <div
         className="grid"
         style={{
-          gridTemplateColumns: "72px repeat(4, 1fr)",
+          gridTemplateColumns: "80px repeat(4, 1fr)",
           gridTemplateRows: "auto repeat(3, auto)",
-          gap: "1px",
-          background: "var(--border)",
-          borderRadius: "4px",
+          gap: "0",
+          borderRadius: "12px",
           overflow: "hidden",
+          border: "1px solid var(--border)",
         }}
       >
         {/* Top-left corner */}
-        <div style={{ background: "var(--background)", padding: "6px" }} />
+        <div style={{ background: "var(--card)", padding: "8px" }} />
 
         {/* Column headers */}
         {COLUMNS.map((col, ci) => {
@@ -220,16 +217,15 @@ export function StatusKanbanBoard({
           return (
             <div
               key={col.id}
-              className="flex items-center justify-center gap-1.5 py-2 px-2"
+              className="flex items-center gap-2 py-3 px-3"
               style={{
-                background:
-                  col.id === "in_progress"
-                    ? "color-mix(in oklch, var(--primary) 4%, var(--background))"
-                    : "var(--background)",
+                background: "var(--card)",
+                borderBottom: "2px solid var(--border)",
+                borderLeft: "1px solid var(--border)",
               }}
             >
               <ColIcon
-                className="h-3.5 w-3.5"
+                className="h-4 w-4"
                 style={{
                   color:
                     col.id === "in_progress"
@@ -239,11 +235,19 @@ export function StatusKanbanBoard({
                         : "var(--muted-foreground)",
                 }}
               />
-              <span className="text-[14px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <span
+                className="text-[13px] font-bold uppercase tracking-wider"
+                style={{
+                  color:
+                    col.id === "in_progress"
+                      ? "var(--primary)"
+                      : "var(--muted-foreground)",
+                }}
+              >
                 {col.label}
               </span>
               {colTotals[ci].count > 0 && (
-                <span className="text-[15px] text-muted-foreground/60 tabular-nums">
+                <span className="text-[12px] text-muted-foreground/50 tabular-nums">
                   {colTotals[ci].count} · {colTotals[ci].hours.toFixed(0)}h
                 </span>
               )}
@@ -256,16 +260,20 @@ export function StatusKanbanBoard({
           <Fragment key={lane.id}>
             {/* Lane label */}
             <div
-              className="flex items-start justify-center pt-3 px-1"
-              style={{ background: "var(--background)" }}
+              className="flex items-start justify-center pt-4 px-1"
+              style={{
+                background: "var(--card)",
+                borderTop: "1px solid var(--border)",
+                borderBottom: "1px solid var(--border)",
+              }}
             >
-              <div className="flex flex-col items-center gap-1">
+              <div className="flex flex-col items-center gap-1.5">
                 <div
-                  className="w-2 h-2 rounded-full"
+                  className="w-2.5 h-2.5 rounded-full"
                   style={{ background: lane.color }}
                 />
                 <span
-                  className="text-[15px] font-bold uppercase tracking-wider"
+                  className="text-[13px] font-bold uppercase tracking-wider"
                   style={{
                     color: lane.color,
                     writingMode: "vertical-lr",
@@ -318,12 +326,15 @@ function BoardCell({
   return (
     <div
       ref={setNodeRef}
-      className={`flex flex-col gap-[3px] p-1.5 ${items.length > 0 ? "min-h-[60px]" : "min-h-[32px]"}`}
+      className="flex flex-col gap-2 p-2"
       style={{
+        minHeight: items.length > 0 ? "80px" : "48px",
         background: isOver
-          ? "color-mix(in oklch, var(--primary) 8%, var(--background))"
-          : "var(--background)",
+          ? "color-mix(in oklch, var(--primary) 8%, var(--card))"
+          : "color-mix(in oklch, var(--muted) 20%, var(--background))",
         transition: "background 150ms ease",
+        borderTop: "1px solid var(--border)",
+        borderLeft: "1px solid var(--border)",
       }}
     >
       <SortableContext
@@ -399,25 +410,31 @@ function BoardCard({
 
   return (
     <div
-      className="px-2 py-1.5 rounded-sm relative group"
+      className="kanban-card px-3 py-2.5 rounded-lg relative group overflow-hidden"
       style={{
-        border: `1px solid ${statusStyle.borderColor}`,
-        background: overlay
-          ? "var(--card)"
-          : statusStyle.bg,
+        border: "1px solid var(--border)",
+        background: overlay ? "var(--card)" : "var(--card)",
         cursor: overlay ? "grabbing" : "grab",
-        opacity: done && !overlay ? 0.6 : 1,
-        boxShadow: overlay ? "0 4px 12px rgba(0,0,0,0.3)" : undefined,
+        opacity: done && !overlay ? 0.55 : 1,
+        boxShadow: overlay
+          ? "0 8px 20px rgba(0,0,0,0.35)"
+          : "0 1px 3px rgba(0,0,0,0.12)",
       }}
     >
+      {/* Left accent bar */}
+      <div
+        className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full"
+        style={{ background: platformColor }}
+      />
+
       {/* Top row */}
-      <div className="flex items-center gap-1 mb-0.5">
+      <div className="flex items-center gap-1.5 mb-1 pl-2">
         <StatusIcon
-          className="h-2.5 w-2.5 shrink-0"
+          className="h-3 w-3 shrink-0"
           style={{ color: statusStyle.color }}
         />
         <span
-          className="text-[14px] font-bold uppercase px-1 rounded-sm"
+          className="text-[11px] font-bold uppercase px-1.5 py-0.5 rounded"
           style={{
             color: platformColor,
             background: `color-mix(in oklch, ${platformColor} 12%, transparent)`,
@@ -428,7 +445,7 @@ function BoardCard({
 
         {(item.status === "blocked" || item.status === "stuck") && (
           <span
-            className="text-[15px] font-semibold uppercase px-1 rounded-sm ml-auto"
+            className="text-[11px] font-semibold uppercase px-1.5 py-0.5 rounded ml-auto"
             style={{
               color: statusStyle.color,
               background: `color-mix(in oklch, ${statusStyle.color} 12%, transparent)`,
@@ -451,7 +468,7 @@ function BoardCard({
               {moveActions.map((a) => (
                 <DropdownMenuItem
                   key={a.id}
-                  className="text-[15px]"
+                  className="text-[13px]"
                   onClick={(e) => {
                     e.stopPropagation();
                     onItemUpdate(item.id, { boardStatus: a.id });
@@ -461,7 +478,7 @@ function BoardCard({
                 </DropdownMenuItem>
               ))}
               <DropdownMenuItem
-                className="text-[15px]"
+                className="text-[13px]"
                 onClick={(e) => {
                   e.stopPropagation();
                   onItemUpdate(item.id, { status: "blocked" });
@@ -470,7 +487,7 @@ function BoardCard({
                 Mark blocked
               </DropdownMenuItem>
               <DropdownMenuItem
-                className="text-[15px]"
+                className="text-[13px]"
                 onClick={(e) => {
                   e.stopPropagation();
                   onItemUpdate(item.id, { status: "stuck" });
@@ -484,49 +501,51 @@ function BoardCard({
       </div>
 
       {/* Title */}
-      {item.goalId ? (
-        <a
-          href={`/goals?goal=${item.goalId}`}
-          className="text-[14px] font-medium leading-[1.3] hover:underline block"
-          style={{
-            color: "var(--foreground)",
-            textDecoration: done ? "line-through" : undefined,
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {item.title}
-        </a>
-      ) : item.link ? (
-        <a
-          href={item.link}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-[14px] font-medium leading-[1.3] text-primary hover:underline block"
-          onClick={(e) => e.stopPropagation()}
-          style={{ textDecoration: done ? "line-through" : undefined }}
-        >
-          {item.title}
-        </a>
-      ) : (
-        <p
-          className="text-[14px] font-medium leading-[1.3]"
-          style={{ textDecoration: done ? "line-through" : undefined }}
-        >
-          {item.title}
-        </p>
-      )}
+      <div className="pl-2">
+        {item.goalId ? (
+          <a
+            href={`/goals?goal=${item.goalId}`}
+            className="text-[14px] font-medium leading-snug hover:underline block"
+            style={{
+              color: "var(--foreground)",
+              textDecoration: done ? "line-through" : undefined,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {item.title}
+          </a>
+        ) : item.link ? (
+          <a
+            href={item.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[14px] font-medium leading-snug text-primary hover:underline block"
+            onClick={(e) => e.stopPropagation()}
+            style={{ textDecoration: done ? "line-through" : undefined }}
+          >
+            {item.title}
+          </a>
+        ) : (
+          <p
+            className="text-[14px] font-medium leading-snug"
+            style={{ textDecoration: done ? "line-through" : undefined }}
+          >
+            {item.title}
+          </p>
+        )}
+      </div>
 
       {/* Bottom row */}
-      <div className="flex items-center gap-1 mt-0.5">
-        <Clock className="h-[9px] w-[9px] text-muted-foreground" />
-        <span className="text-[15px] text-muted-foreground tabular-nums">
+      <div className="flex items-center gap-1 mt-1.5 pl-2">
+        <Clock className="h-[10px] w-[10px] text-muted-foreground/60" />
+        <span className="text-[12px] text-muted-foreground/60 tabular-nums">
           {(item.estimatedHours ?? 2) < 1
             ? `${((item.estimatedHours ?? 2) * 60).toFixed(0)}min`
             : `${(item.estimatedHours ?? 2).toFixed(0)}h`}
         </span>
         {item.status === "blocked" && item.blockedReason && (
           <span
-            className="text-[14px] ml-1 truncate"
+            className="text-[12px] ml-1 truncate"
             style={{ color: "var(--status-blocked)", maxWidth: "80px" }}
           >
             {item.blockedReason}
