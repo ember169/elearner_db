@@ -53,12 +53,6 @@ interface CompetencyEntry {
 
 interface ProgressClientProps {
   ft: FtProfileData | null;
-  thm: {
-    username: string;
-    rank: number | null;
-    roomsCompleted: number | null;
-    streak: number | null;
-  } | null;
   htb: {
     username: string;
     rank: string | null;
@@ -91,7 +85,6 @@ const LEVEL_LABELS = ["None", "Basics", "Familiar", "Proficient", "Strong", "Exp
 
 export function ProgressClient({
   ft,
-  thm,
   htb,
   maldev,
   rootme,
@@ -192,18 +185,12 @@ export function ProgressClient({
 
       {/* Platform cards — all time view */}
       {period === "all" && (
-        <div className="grid gap-2.5 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="grid gap-2.5 grid-cols-2 sm:grid-cols-4">
           <PlatformCard
             color={PLATFORM_COLORS["42"]}
             name="42 Paris"
             value={ft ? (ft.level ?? 0).toFixed(1) : "—"}
             detail={ft ? `Level · ${ft.correctionPoints ?? 0} corr` : "Not connected"}
-          />
-          <PlatformCard
-            color={PLATFORM_COLORS.thm}
-            name="TryHackMe"
-            value={thm ? `Top ${thm.rank ?? "?"}%` : "—"}
-            detail={thm ? `${thm.roomsCompleted ?? 0} rooms · ${thm.streak ?? 0}d streak` : "Not connected"}
           />
           <PlatformCard
             color={PLATFORM_COLORS.htb}

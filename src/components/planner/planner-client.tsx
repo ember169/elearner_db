@@ -128,6 +128,15 @@ export function PlannerClient({
     if (data.side_project) setSideProject(data.side_project);
   }
 
+  async function handleDeleteItem(id: number) {
+    setItems((prev) => prev.filter((i) => i.id !== id));
+    await fetch("/api/board", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "delete", id }),
+    });
+  }
+
   async function handleRegenerate() {
     setRegenerating(true);
     try {
@@ -386,6 +395,7 @@ export function PlannerClient({
           items={items}
           onItemUpdate={handleItemUpdate}
           onReorder={handleReorder}
+          onDelete={handleDeleteItem}
         />
       </div>
 

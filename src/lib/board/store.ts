@@ -6,6 +6,7 @@ import {
   flattenGoals,
   type Recommendation,
 } from "@/lib/guidance/engine";
+import { FT_COMMON_CORE } from "@/lib/guidance/ft-project-tree";
 import { getMainDeadline } from "@/lib/planning/backward-planner";
 import { WEEKLY_HOURS_BUDGET } from "@/lib/planning/rule-engine";
 
@@ -145,6 +146,26 @@ export function populateBacklog(): BoardItem[] {
     .all();
   const normalizeTitle = (t: string) =>
     t.replace(/^(Start|Finish|Continue|Work on)\s+/i, "");
+
+  // Strip verb prefixes from existing items
+  for (const item of existing) {
+    const clean = normalizeTitle(item.title);
+    if (clean !== item.title) {
+      db.update(planItems).set({ title: clean }).where(eq(planItems.id, item.id)).run();
+      item.title = clean;
+    }
+  }
+
+  // Refresh 42 project hours from the project tree (fixes stale weekly-allocation values)
+  for (const item of existing) {
+    if (item.type !== "42") continue;
+    const project = FT_COMMON_CORE.find((p) => p.name === item.title);
+    if (project && project.estimatedHours !== item.estimatedHours) {
+      db.update(planItems).set({ estimatedHours: project.estimatedHours }).where(eq(planItems.id, item.id)).run();
+      item.estimatedHours = project.estimatedHours;
+    }
+  }
+
   const existingKeys = new Set(
     existing.map((i) => `${normalizeTitle(i.title)}::${i.type}`)
   );
@@ -346,6 +367,22 @@ export function initializeBoard(): BoardData {
     .all();
 
   if (existingItems.length > 0) {
+    // Strip verb prefixes and refresh stale hours on every load
+    const normalizeT = (t: string) => t.replace(/^(Start|Finish|Continue|Work on)\s+/i, "");
+    for (const item of existingItems) {
+      const clean = normalizeT(item.title);
+      const updates: Record<string, unknown> = {};
+      if (clean !== item.title) updates.title = clean;
+      if (item.type === "42") {
+        const project = FT_COMMON_CORE.find((p) => p.name === clean);
+        if (project && project.estimatedHours !== item.estimatedHours) {
+          updates.estimatedHours = project.estimatedHours;
+        }
+      }
+      if (Object.keys(updates).length > 0) {
+        db.update(planItems).set(updates).where(eq(planItems.id, item.id)).run();
+      }
+    }
     return loadBoard();
   }
 
@@ -444,6 +481,10 @@ export function archiveDone(): number {
   }
 
   return doneItems.length;
+}
+
+export function deleteBoardItem(id: number): void {
+  db.delete(planItems).where(eq(planItems.id, id)).run();
 }
 
 export function addBoardItem(data: {

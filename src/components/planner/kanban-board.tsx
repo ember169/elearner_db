@@ -28,6 +28,7 @@ import {
   Inbox,
   ListTodo,
   Play,
+  Trash2,
   CheckCircle2,
 } from "lucide-react";
 import { PLATFORM_COLORS, PLATFORM_LABELS } from "@/lib/platform-colors";
@@ -103,10 +104,12 @@ export function StatusKanbanBoard({
   items,
   onItemUpdate,
   onReorder,
+  onDelete,
 }: {
   items: PlanItemData[];
   onItemUpdate: (id: number, updates: Record<string, unknown>) => void;
   onReorder: (id: number, boardStatus: string, category: string, sortOrder: number) => void;
+  onDelete?: (id: number) => void;
 }) {
   const dndId = useId();
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -296,6 +299,7 @@ export function StatusKanbanBoard({
                   items={cItems}
                   isDone={col.id === "done"}
                   onItemUpdate={onItemUpdate}
+                  onDelete={onDelete}
                 />
               );
             })}
@@ -315,11 +319,13 @@ function BoardCell({
   items,
   isDone,
   onItemUpdate,
+  onDelete,
 }: {
   cellId: string;
   items: PlanItemData[];
   isDone: boolean;
   onItemUpdate: (id: number, updates: Record<string, unknown>) => void;
+  onDelete?: (id: number) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: cellId });
 
@@ -347,6 +353,7 @@ function BoardCell({
             item={item}
             isDone={isDone}
             onItemUpdate={onItemUpdate}
+            onDelete={onDelete}
           />
         ))}
       </SortableContext>
@@ -358,10 +365,12 @@ function SortableBoardCard({
   item,
   isDone,
   onItemUpdate,
+  onDelete,
 }: {
   item: PlanItemData;
   isDone: boolean;
   onItemUpdate: (id: number, updates: Record<string, unknown>) => void;
+  onDelete?: (id: number) => void;
 }) {
   const {
     attributes,
@@ -380,7 +389,7 @@ function SortableBoardCard({
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <BoardCard item={item} isDone={isDone} onItemUpdate={onItemUpdate} />
+      <BoardCard item={item} isDone={isDone} onItemUpdate={onItemUpdate} onDelete={onDelete} />
     </div>
   );
 }
@@ -390,11 +399,13 @@ function BoardCard({
   overlay,
   isDone,
   onItemUpdate,
+  onDelete,
 }: {
   item: PlanItemData;
   overlay?: boolean;
   isDone?: boolean;
   onItemUpdate?: (id: number, updates: Record<string, unknown>) => void;
+  onDelete?: (id: number) => void;
 }) {
   const statusStyle = getStatusStyle(item.status);
   const StatusIcon = statusStyle.icon;
@@ -495,6 +506,18 @@ function BoardCard({
               >
                 Mark stuck
               </DropdownMenuItem>
+              {onDelete && (
+                <DropdownMenuItem
+                  className="text-[13px] text-destructive"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(item.id);
+                  }}
+                >
+                  <Trash2 className="h-3 w-3 mr-1.5" />
+                  Remove
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         )}

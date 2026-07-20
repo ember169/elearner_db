@@ -7,6 +7,7 @@ import {
   reorderItem,
   addBoardItem,
   archiveDone,
+  deleteBoardItem,
   type BoardStatus,
   type BoardCategory,
   BOARD_STATUSES,
@@ -76,6 +77,15 @@ export async function POST(request: Request) {
     reorderItem(id, boardStatus, category, sortOrder);
     const board = loadBoard();
     return NextResponse.json(board);
+  }
+
+  if (body.action === "delete") {
+    const { id } = body;
+    if (!id) {
+      return NextResponse.json({ error: "id required" }, { status: 400 });
+    }
+    deleteBoardItem(id);
+    return NextResponse.json({ ok: true });
   }
 
   if (body.action === "archive-done") {

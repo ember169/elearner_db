@@ -465,7 +465,7 @@ export function generateRecommendations(
       recs.push({
         priority: "high",
         platform: "42",
-        title: `Finish ${project.name}`,
+        title: project.name,
         reason: "Currently in progress — completing this unblocks the next circle.",
         estimatedHours: project.estimatedHours,
         skills: project.skills,
@@ -483,9 +483,14 @@ export function generateRecommendations(
     recs.push({
       priority: hasUrgent42Goal ? "high" : "medium",
       platform: "42",
-      title: `Start ${project.name}`,
+      title: project.name,
       reason: project.group
-        ? `Available in Circle ${project.circle} (choose one from group).`
+        ? (() => {
+            const siblings = FT_COMMON_CORE
+              .filter((p) => p.group === project.group && p.slug !== project.slug)
+              .map((p) => p.name);
+            return `Available in Circle ${project.circle} — or pick ${siblings.join(" / ")} instead.`;
+          })()
         : `Next available project in Circle ${project.circle}.`,
       estimatedHours: project.estimatedHours,
       skills: project.skills,
@@ -561,7 +566,7 @@ export function generateRecommendations(
       recs.push({
         priority: goal.pacing.onTrack ? "low" : "medium",
         platform: "maldev",
-        title: "Continue maldev elearning",
+        title: "Maldev elearning",
         reason: `${goal.pacing.requiredPace} needed. Currently at ${(goal.currentValue ?? 0).toFixed(0)}%.`,
       });
     }

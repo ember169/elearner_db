@@ -1,7 +1,6 @@
 import { db } from "@/lib/db";
 import {
   ftProfile,
-  thmProfile,
   htbProfile,
   maldevProfile,
   rootmeProfile,
@@ -18,7 +17,6 @@ export const dynamic = "force-dynamic";
 
 export default function ProgressPage() {
   const ft = db.select().from(ftProfile).limit(1).all()[0] ?? null;
-  const thm = db.select().from(thmProfile).limit(1).all()[0] ?? null;
   const htb = db.select().from(htbProfile).limit(1).all()[0] ?? null;
   const maldev = db.select().from(maldevProfile).limit(1).all()[0] ?? null;
   const rootme = db.select().from(rootmeProfile).limit(1).all()[0] ?? null;
@@ -55,7 +53,6 @@ export default function ProgressPage() {
   return (
     <ProgressClient
       ft={ft}
-      thm={thm}
       htb={htb}
       maldev={maldev}
       rootme={rootme}
