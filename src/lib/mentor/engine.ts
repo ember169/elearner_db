@@ -760,8 +760,13 @@ const SIDE_PROJECT_TEMPLATES: SideProjectTemplate[] = [
   },
 ];
 
-function pickSideProject(scheduledItems: MentorFocus[], objective: string): SideProject {
-  const template = SIDE_PROJECT_TEMPLATES.find((t) => t.match(scheduledItems));
+export function pickSideProject(scheduledItems: MentorFocus[], objective: string, excludeTitle?: string): SideProject {
+  const matching = SIDE_PROJECT_TEMPLATES.filter((t) => t.match(scheduledItems));
+  const candidates = excludeTitle
+    ? matching.filter((t) => t.title !== excludeTitle)
+    : matching;
+  const template = candidates[0]
+    ?? (excludeTitle ? SIDE_PROJECT_TEMPLATES.find((t) => t.title !== excludeTitle) : undefined);
   if (template) {
     return {
       title: template.title,

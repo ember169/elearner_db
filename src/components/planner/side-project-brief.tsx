@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { RefreshCw } from "lucide-react";
 
 type SideProject = {
   title: string;
@@ -12,8 +13,9 @@ type SideProject = {
   capstone_connection?: string;
 };
 
-export function SideProjectBrief({ project, weekLabel }: { project: SideProject; weekLabel?: string }) {
+export function SideProjectBrief({ project, weekLabel, onRefresh }: { project: SideProject; weekLabel?: string; onRefresh?: () => void }) {
   const [expanded, setExpanded] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const totalHours = project.steps?.reduce((s, step) => s + step.estimatedHours, 0) ?? 0;
   const stepCount = project.steps?.length ?? 0;
 
@@ -36,12 +38,27 @@ export function SideProjectBrief({ project, weekLabel }: { project: SideProject;
               {project.capstone_connection && ` · feeds into ${project.capstone_connection.split(" ").slice(0, 4).join(" ")}`}
             </p>
           </div>
-          <button
-            onClick={() => setExpanded(!expanded)}
-            className="text-[15px] text-muted-foreground hover:text-foreground transition-colors shrink-0"
-          >
-            {expanded ? "Collapse" : "Expand"} {expanded ? "↑" : "↓"}
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            {onRefresh && (
+              <button
+                onClick={async () => {
+                  setRefreshing(true);
+                  try { await onRefresh(); } finally { setRefreshing(false); }
+                }}
+                disabled={refreshing}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                title="Suggest a different project"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+              </button>
+            )}
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="text-[15px] text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {expanded ? "Collapse" : "Expand"} {expanded ? "↑" : "↓"}
+            </button>
+          </div>
         </div>
 
         {!expanded && project.skills && project.skills.length > 0 && (

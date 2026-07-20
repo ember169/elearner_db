@@ -118,6 +118,16 @@ export function PlannerClient({
     []
   );
 
+  async function handleRefreshSideProject() {
+    const res = await fetch("/api/mentor/side-project", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ excludeTitle: sideProject?.title }),
+    });
+    const data = await res.json();
+    if (data.side_project) setSideProject(data.side_project);
+  }
+
   async function handleRegenerate() {
     setRegenerating(true);
     try {
@@ -262,7 +272,7 @@ export function PlannerClient({
         </div>
 
         {sideProject ? (
-          <SideProjectBrief project={sideProject} />
+          <SideProjectBrief project={sideProject} onRefresh={handleRefreshSideProject} />
         ) : (
           <div
             className="rounded-sm border border-border px-4 py-4 flex items-center justify-center"
