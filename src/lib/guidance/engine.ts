@@ -520,7 +520,7 @@ export function generateRecommendations(
       const htbPicks = pickHtbModules(skillProfile, 2, htbFloors);
       if (htbPicks.length > 0) {
         for (const mod of htbPicks) {
-          const tierHours = { Fundamental: 2, Easy: 3, Medium: 5, Hard: 8 };
+          const tierHours = { Fundamental: 6, Easy: 8, Medium: 12, Hard: 16 };
           recs.push({
             priority: goal.pacing.onTrack ? "medium" : "high",
             platform: "htb",
@@ -555,7 +555,7 @@ export function generateRecommendations(
           platform: "htb",
           title: `HTB: ${mod.name}`,
           reason: `${goal.pacing.requiredPace} needed for "${goal.title}".`,
-          estimatedHours: mod.tier === "Hard" ? 6 : mod.tier === "Medium" ? 4 : 3,
+          estimatedHours: ({ Fundamental: 6, Easy: 8, Medium: 12, Hard: 16 })[mod.tier],
           ref: mod.id,
           link: `https://academy.hackthebox.com/module/details/${mod.id}`,
         });
@@ -581,7 +581,7 @@ export function generateRecommendations(
         if (platformSuggestion === "htb") {
           const mod = pickHtbModuleForSkill(snapshot, skill, htbFloors);
           if (mod) {
-            const tierHours = { Fundamental: 2, Easy: 3, Medium: 5, Hard: 8 };
+            const tierHours = { Fundamental: 6, Easy: 8, Medium: 12, Hard: 16 };
             recs.push({
               priority: "low",
               platform: "htb",

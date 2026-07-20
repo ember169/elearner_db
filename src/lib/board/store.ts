@@ -7,7 +7,10 @@ import {
   type Recommendation,
 } from "@/lib/guidance/engine";
 import { FT_COMMON_CORE } from "@/lib/guidance/ft-project-tree";
+import { HTB_ACADEMY_MODULES } from "@/lib/mentor/htb-academy-catalog";
 import { getMainDeadline } from "@/lib/planning/backward-planner";
+
+const HTB_TIER_HOURS: Record<string, number> = { Fundamental: 6, Easy: 8, Medium: 12, Hard: 16 };
 import { WEEKLY_HOURS_BUDGET } from "@/lib/planning/rule-engine";
 
 export type BoardItem = typeof planItems.$inferSelect;
@@ -156,13 +159,19 @@ export function populateBacklog(): BoardItem[] {
     }
   }
 
-  // Refresh 42 project hours from the project tree (fixes stale weekly-allocation values)
+  // Refresh hours from source catalogs (fixes stale weekly-allocation values)
   for (const item of existing) {
-    if (item.type !== "42") continue;
-    const project = FT_COMMON_CORE.find((p) => p.name === item.title);
-    if (project && project.estimatedHours !== item.estimatedHours) {
-      db.update(planItems).set({ estimatedHours: project.estimatedHours }).where(eq(planItems.id, item.id)).run();
-      item.estimatedHours = project.estimatedHours;
+    let correctHours: number | undefined;
+    if (item.type === "42") {
+      const project = FT_COMMON_CORE.find((p) => p.name === item.title);
+      if (project) correctHours = project.estimatedHours;
+    } else if (item.type === "htb" && item.title.startsWith("HTB: ")) {
+      const mod = HTB_ACADEMY_MODULES.find((m) => m.name === item.title.replace(/^HTB: /, ""));
+      if (mod) correctHours = HTB_TIER_HOURS[mod.tier];
+    }
+    if (correctHours !== undefined && correctHours !== item.estimatedHours) {
+      db.update(planItems).set({ estimatedHours: correctHours }).where(eq(planItems.id, item.id)).run();
+      item.estimatedHours = correctHours;
     }
   }
 
@@ -377,6 +386,12 @@ export function initializeBoard(): BoardData {
         const project = FT_COMMON_CORE.find((p) => p.name === clean);
         if (project && project.estimatedHours !== item.estimatedHours) {
           updates.estimatedHours = project.estimatedHours;
+        }
+      } else if (item.type === "htb" && clean.startsWith("HTB: ")) {
+        const modName = clean.replace(/^HTB: /, "");
+        const mod = HTB_ACADEMY_MODULES.find((m) => m.name === modName);
+        if (mod && HTB_TIER_HOURS[mod.tier] !== item.estimatedHours) {
+          updates.estimatedHours = HTB_TIER_HOURS[mod.tier];
         }
       }
       if (Object.keys(updates).length > 0) {
