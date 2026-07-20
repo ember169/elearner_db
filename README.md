@@ -15,9 +15,9 @@ Personal learning dashboard that aggregates progress across five platforms and g
 
 | Page | What it shows |
 |------|--------------|
-| **Planner** (`/`) | Kanban board with weekly schedule (drag-and-drop), mentor briefing, deadline warnings, platform pulse bar, competency spotlight, side project card |
+| **Planner** (`/`) | Status-based kanban board (Backlog → To Do → In Progress → Done), mentor briefing, deadline warnings, competency spotlight, side project card with refresh button |
 | **Progress** (`/progress`) | Platform stat cards with 30-day deltas, competency map (20 areas), 42 Holy Graph (circle progress), activity chart, milestones timeline |
-| **Goals** (`/goals`) | Trackable targets with auto-sync from platform data, pacing analysis, suggested goals from competency gaps |
+| **Goals** (`/goals`) | Trackable targets with auto-sync from platform data, pacing analysis, suggested goals from competency gaps, resizable tree/detail split pane |
 | **Settings** (`/settings`) | Platform credentials, AI mentor config, 42 deadline planner with backward scheduling, sync controls |
 
 ## Stack

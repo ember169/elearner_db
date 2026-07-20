@@ -154,21 +154,20 @@ The main dashboard. Combines a mentor briefing with a Kanban-style weekly schedu
 
 **Client features** (`src/components/planner/planner-client.tsx`):
 
-- **Header**: "Planner" title, "Week N . Mon DD - Mon DD . {objective}" subtitle, week navigation arrows (Wk N-1 / **Wk N** / Wk N+1), Regenerate button.
-- **Mentor briefing** (collapsible): gold M avatar + narrative text. Collapse state persisted in localStorage.
+- **Header**: "Planner" title, objective subtitle, hours gauge, Regenerate button.
+- **Briefing section** (section-label "BRIEFING"): collapsible mentor briefing (gold M avatar + narrative text, collapse state persisted in localStorage) + side project card side by side.
 - **Deadline warnings**: urgency-colored banner (red=critical, amber=elevated) showing backward plan warnings when 42 deadline pressure is non-normal.
-- **Pulse bar** (`pulse-bar.tsx`): horizontal status bar with live platform stats (42 level, THM rank/rooms, HTB rank/owns, RM score, Maldev %) and 30-day deltas. Sync button. Weekly budget gauge (Xh / 35h).
-- **Kanban board** (`kanban-board.tsx`): CSS Grid with 8 columns (Backlog + Mon-Sun). Cards are draggable via @dnd-kit. Each card shows: status icon, platform badge, title (linked if applicable), estimated hours. Card states: pending, active, done (green), blocked (yellow + reason), stuck (red + attempt count), rolled over (dashed border + source week). Today column highlighted with a star.
-- **Hints bar**: drag instructions, status toggle hint, goal coverage summary.
-- **Side project** (`side-project-brief.tsx`): expandable card with LLM-generated project (title, steps with hours, prerequisites, skills, capstone connection).
-- **Competency spotlight** (`competency-spotlight.tsx`): top 3 weakest competencies with 5-segment level bars.
-- **Pinned tasks**: compact task list with add/complete/delete controls.
+- **Board section** (section-label "BOARD"): status-based kanban board (`kanban-board.tsx`) with 4 columns (Backlog, To Do, In Progress, Done), grouped by category (42, Cybersec, Maldev). Cards are draggable via @dnd-kit. Each card shows: status icon, platform badge, title (linked if applicable), `why` subtitle (recommendation context), estimated hours. Cards persist across sessions via a board sentinel plan in the database.
+- **Side project** (`side-project-brief.tsx`): expandable card with project suggestion (title, steps with hours, prerequisites, skills, capstone connection). Refresh button cycles through alternative project templates without regenerating the full plan (via `POST /api/mentor/side-project`).
+- **Competency spotlight** (`competency-spotlight.tsx`): top 3 weakest competencies with 5-segment level bars (section-label "BIGGEST GAPS").
+- **Pacing alerts** (`pacing-alerts.tsx`): behind-pace goals listed with days remaining (section-label "PACING ALERTS").
 
 **Mobile** (`mobile-views.tsx`): segmented toggle between Today (action cards with Done/Stuck buttons), Full week (vertical day list with swipe navigation), and Backlog (grouped by status with Schedule/Retry/Drop actions).
 
 **Regenerate flow**:
 1. POST `/api/mentor` -- rule engine builds deterministic schedule, LLM generates narrative (or fallback)
-2. POST `/api/week` with action "reroll" -- creates new week plan from mentor output, auto-distributes items across days
+2. POST `/api/board` with action "populate" -- runs guidance engine, adds new recommendations to backlog, deduplicates (normalizes verb prefixes: Start/Finish/Continue/Work on), purges stale items
+3. GET `/api/board` -- refetch full board state including cleaned-up duplicates
 
 ### Progress (`/progress`)
 
@@ -193,7 +192,7 @@ Goal management with two goal types, hierarchical goals, and auto-tracking via a
 
 **Layout** (`src/app/goals/layout.tsx`): removes default padding so the split panel fills the viewport.
 
-**Client container** (`src/components/goals/goals-client.tsx`): responsive layout — desktop split panel (`hidden md:flex`) and mobile drill-down (`md:hidden`). Desktop: `GoalsTree` (200px left panel) + right pane (flex-1) that switches between `DetailPane`, `CreateForm` (new), and `CreateForm` (edit). Mobile: `GoalsMobile` drill-down with separate create/edit states. Both share dialogs (Generate42, Suggest, Delete confirmation). Manages selection state via `selectedId`, right pane mode via discriminated union (`RightPane`), and delete confirmation dialog.
+**Client container** (`src/components/goals/goals-client.tsx`): responsive layout — desktop split panel (`hidden md:flex`) and mobile drill-down (`md:hidden`). Desktop: `GoalsTree` (resizable left panel, 160-400px via drag handle, width persisted to localStorage) + right pane (flex-1) that switches between `DetailPane`, `CreateForm` (new), `CreateForm` (edit), and `SuggestPane`. Mobile: `GoalsMobile` drill-down with separate create/edit states. Both share dialogs (Generate42, Suggest, Delete confirmation). Manages selection state via `selectedId`, right pane mode via discriminated union (`RightPane`), and delete confirmation dialog.
 
 **Goals tree** (`src/components/goals/goals-tree.tsx`):
 - Header: "Goals" h3 + "N active · N behind" subtitle
@@ -205,9 +204,10 @@ Goal management with two goal types, hierarchical goals, and auto-tracking via a
 - Bottom action bar: Suggest (opens LLM suggest dialog), 42 plan (opens generate/sync dialog), + New buttons
 
 **Detail pane** (`src/components/goals/detail-pane.tsx`): specialized views per goal type:
-- **Epic (D1)**: EPIC badge, dual progress cards (metric total + child completion rollup with platform-colored progress bars), pacing row (days left / required pace / current pace), sortable ISSUES list with "+ Add issue" button, actions bar
-- **Issue (D2)**: ISSUE badge with "in {parent}" context, 3-column stat cards (Tasks N/N, Days left, Est. effort), TASKS list with ft_slug display, "+ Add task" button
+- **Epic (D1)**: outlined EPIC badge, dual progress cards (metric total + child completion rollup with platform-colored progress bars), pacing row (days left / required pace / current pace), sortable ISSUES list with "+ Add issue" button, actions bar
+- **Issue (D2)**: outlined ISSUE badge, 3-column stat cards (Tasks N/N, Days left, Est. effort), TASKS list with ft_slug display, "+ Add task" button
 - **Task (D3)**: clickable breadcrumb chain to parent/grandparent, checkbox + title, metadata grid (Status, Platform, Project/ft_slug, Deadline, Auto-complete), green "Mark complete" button
+- All depth badges (EPIC/ISSUE/TASK) use uniform outlined style with platform-colored border and text.
 - **Cadence (D4)**: `/wk` mono badge, big 44px number with platform color, progress bar, target status text, metadata grid (Platform, Metric, Rate)
 - **Standalone Goal**: GOAL badge, single progress card, pacing row, description
 - **Common elements**: parent breadcrumb navigation (click to navigate), status badge (On track/Behind pace/Completed), `MoveToSelect` component for reparenting via dropdown, `SortableChildrenList` with drag-and-drop reordering (GripVertical handle, @dnd-kit DndContext + SortableContext + DragOverlay, PATCHes sortOrder on drop, page reload), `ChildRowContent` with click-to-navigate + reopen button for completed items, deadline warnings (amber ⚠ icon when child deadline exceeds parent deadline)
@@ -279,6 +279,18 @@ Returns: `{ plan, stale, hasKey, briefing, collapsedBriefing, deadlinePressure, 
 
 Returns the current saved plan via `loadCurrentPlan()`.
 
+### `POST /api/mentor/side-project`
+
+Regenerates just the side project without touching the rest of the plan. Body: `{ excludeTitle?: string }`. When `excludeTitle` is provided, cycles to the next matching template (or falls through to any template if only one matches). Returns: `{ side_project }`.
+
+### `GET/POST/PATCH /api/board`
+
+Board management for the persistent kanban board. Uses a sentinel plan row (`weekStart = "board"`) to store items across sessions.
+
+- **GET**: returns `{ items, mentorBriefing, collapsedBriefing }`. On first call, migrates items from legacy weekly plans (deduplicating by normalized title) and populates with fresh recommendations.
+- **POST**: `{ action: "populate" }` runs the guidance engine, adds new recommendations to backlog (deduplicating with normalized verb prefixes), purges stale THM items, collapses duplicate 42 project variants, updates the briefing. `{ action: "reorder", id, boardStatus, category, sortOrder }` reorders an item within its column/category.
+- **PATCH**: `{ id, ...updates }` updates a single board item (boardStatus, status, sortOrder, goalId, blockedReason, description).
+
 ### `GET /api/week?week=YYYY-MM-DD`
 
 Returns the week plan for a given Monday (defaults to current week). Creates the plan from mentor output if it doesn't exist. Includes all plan items.
@@ -349,7 +361,7 @@ Triggers a full platform sync across all configured platforms. Returns sync resu
 
 ### `POST /api/sync/test`
 
-Tests connectivity for a single platform. Body: `{ platform, ...overrides }`. Supported: 42, thm, htb, rootme, maldev, llm.
+Tests connectivity for a single platform. Body: `{ platform, ...overrides }`. Supported: 42, thm, htb, rootme, maldev, llm. HTB validation uses `/api/v4/user/info` (matching the sync module).
 
 ### `POST/PATCH/DELETE /api/checklist`
 
@@ -380,6 +392,8 @@ Orchestrates all platform data into actionable recommendations.
    - Goal deadline pressure (boost items for urgent goals)
    - 42 project availability (next in dependency graph)
    - Skill gap analysis
+   - HTB retired machine matching (area-to-skill mapping with related 42 project context)
+   - Normalized title dedup (collapses Start/Finish/Continue/Work on variants)
 
 **Output**: `GuidanceResult` with snapshot, goals, ftProgress, skillProfile, recommendations.
 
@@ -440,6 +454,8 @@ LLM integration for narrative generation. Two modes:
 2. **Full plan mode** (legacy): `generateMentorPlan(ctx, config)` -- asks the LLM to produce the entire structured plan (focus items, competencies, side project). Preserved for backward compatibility.
 
 Both modes support Anthropic API and OpenAI-compatible endpoints (for local LLMs). Template-based fallbacks exist for when no LLM is configured.
+
+**Side project templates** (`pickSideProject()`): 6 templates matched against the current focus items (minishell → reverse shell, philosophers → keylogger, cpp → port scanner, thm/htb → recon automation, netpractice → subnet calculator, maldev → process injector). The `excludeTitle` parameter cycles to alternative templates when the user requests a different suggestion.
 
 ### Competency System
 
@@ -510,6 +526,22 @@ Key functions: `getAvailableProjects(completedSlugs)` respects prerequisites and
 - Areas: Foundations, Recon, Web security, Exploitation, Active Directory, SOC/Blue team, Low-level/maldev-adjacent
 - Tiers: Fundamental, Easy, Medium, Hard
 - Optional learning path associations
+
+### HTB Retired Machines
+
+**File**: `src/lib/mentor/htb-machine-catalog.ts`
+
+35 curated retired HackTheBox machines for recommendation. Each entry includes:
+- Name, OS, difficulty (Easy/Medium/Hard), area (networking, web, AD, etc.)
+- Mapped to competency areas via `SKILL_TO_HTB_MACHINE_AREA` for skill-gap-based recommendations
+- Difficulty floor filtering via `isAboveHtbMachineDifficulty()` prevents recommending boxes below the student's skill level
+- Recommendation reason includes matched weak skills and related upcoming 42 projects
+
+### Rule-Based Goal Suggestions
+
+**File**: `src/lib/goals/rule-based-suggest.ts`
+
+20 hardcoded goal tree templates keyed to competency IDs. `suggestRuleBased()` selects the template matching the student's weakest competency that doesn't duplicate an existing goal. Each template defines an Epic → Issues → Tasks hierarchy with deadlines computed from `monthOffset`. Used as the default "quick" mode for goal suggestions; LLM mode (`POST /api/goals/suggest` with `mode: "auto"`) generates custom trees instead.
 
 ---
 
