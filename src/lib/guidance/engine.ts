@@ -700,6 +700,7 @@ const SKILL_TO_HTB_MACHINE_AREA: Record<string, string> = {
   networking: "Networking",
   "reverse-engineering": "Reverse engineering & binary",
   "web-security": "Web",
+  "win-internals": "Windows exploitation",
   forensics: "Crypto & forensics basics",
   cryptography: "Crypto & forensics basics",
 };

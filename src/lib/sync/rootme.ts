@@ -108,16 +108,19 @@ export async function syncRootMe(config: Config) {
       let category = v.rubrique ?? v.category ?? null;
       let score = v.score ?? 0;
 
-      // Fetch challenge details if title is missing
-      if (!v.titre && challengeId) {
+      // Fetch challenge details if category or score is missing
+      if ((!category || !score) && challengeId) {
         try {
-          const challenge = await rootmeFetch(
+          const raw = await rootmeFetch(
             config,
             `/challenges/${challengeId}`
           );
-          title = challenge.titre ?? title;
-          category = challenge.rubrique ?? category;
-          score = challenge.score ?? score;
+          const challenge = Array.isArray(raw) ? raw[0] : raw;
+          if (challenge) {
+            title = challenge.titre ?? title;
+            category = challenge.rubrique ?? category;
+            score = Number(challenge.score) || score;
+          }
         } catch {}
       }
 

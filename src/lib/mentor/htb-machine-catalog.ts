@@ -18,11 +18,11 @@ export const HTB_MACHINES: HtbMachine[] = [
   { id: 215, name: "Postman", os: "Linux", difficulty: "Easy", area: "Linux & systems", retired: true, tags: ["redis", "ssh-key-cracking", "webmin", "service-misconfiguration"] },
   { id: 217, name: "Traverxec", os: "Linux", difficulty: "Easy", area: "Linux & systems", retired: true, tags: ["nostromo", "ssh-key-cracking", "journalctl", "gtfobins"] },
 
-  // ── Windows internals & maldev ──────────────────────────────────────────
-  { id: 2, name: "Legacy", os: "Windows", difficulty: "Easy", area: "Windows internals & maldev", retired: true, tags: ["ms08-067", "smb"] },
-  { id: 13, name: "Grandpa", os: "Windows", difficulty: "Easy", area: "Windows internals & maldev", retired: true, tags: ["webdav", "iis6", "cve-2017-7269", "token-impersonation"] },
-  { id: 14, name: "Granny", os: "Windows", difficulty: "Easy", area: "Windows internals & maldev", retired: true, tags: ["webdav", "iis6", "put-upload", "token-kidnapping"] },
-  { id: 51, name: "Blue", os: "Windows", difficulty: "Easy", area: "Windows internals & maldev", retired: true, tags: ["eternalblue", "ms17-010", "smb"] },
+  // ── Windows exploitation ─────────────────────────────────────────────────
+  { id: 2, name: "Legacy", os: "Windows", difficulty: "Easy", area: "Windows exploitation", retired: true, tags: ["ms08-067", "smb"] },
+  { id: 13, name: "Grandpa", os: "Windows", difficulty: "Easy", area: "Windows exploitation", retired: true, tags: ["webdav", "iis6", "cve-2017-7269", "token-impersonation"] },
+  { id: 14, name: "Granny", os: "Windows", difficulty: "Easy", area: "Windows exploitation", retired: true, tags: ["webdav", "iis6", "put-upload", "token-kidnapping"] },
+  { id: 51, name: "Blue", os: "Windows", difficulty: "Easy", area: "Windows exploitation", retired: true, tags: ["eternalblue", "ms17-010", "smb"] },
 
   // ── Networking ──────────────────────────────────────────────────────────
   { id: 11, name: "Cronos", os: "Linux", difficulty: "Medium", area: "Networking", retired: true, tags: ["dns-zone-transfer", "sqli", "command-injection", "cron"] },
