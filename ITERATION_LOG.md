@@ -135,3 +135,8 @@ Tracks what was found and changed in each iteration, with commit hashes for roll
 **Finding:** Briefing "Alongside" section showed two HTB modules (both networking-related): "Introduction to Networking, Network Enumeration with Nmap". The `sidePicks` logic took the first 2 non-42 items regardless of platform, missing the opportunity to show cross-platform diversity.
 **Changes:**
 - `store.ts`: Rewrote `sidePicks` to prefer one item per platform before filling remaining slots. Now shows "Introduction to Networking, ELF x86 - Stack buffer overflow basic 3" — one HTB + one RM challenge.
+
+## Iteration 22 — `93ae342`
+**Finding:** `ReferenceError: isSolved is not defined` crashed the HomePage SSR rendering on every page load. Previously attributed to stale Turbopack cache, but persisted even after `rm -rf .next`. The function was renamed to `isRmTitleSolved` in iteration 4, but Turbopack's SSR compilation pipeline still referenced the old name — a Turbopack-internal bug.
+**Changes:**
+- `rootme-challenge-catalog.ts`: Added `export const isSolved = isRmTitleSolved` alias after the function definition. Eliminates the SSR crash without changing functionality.
