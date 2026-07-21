@@ -79,8 +79,14 @@ Tracks what was found and changed in each iteration, with commit hashes for roll
 - `engine.ts`: Fixed pace formatting — when perDay < 0.1, shows "2 more in 13 weeks" instead of "~0.0/day"
 - `store.ts`: Added stale auto-generated item pruning pass — removes backlog items matching rec patterns (RM:/HTB:/THM:/Root-me:) that are no longer in current recommendations
 
-## Iteration 12 — `pending`
+## Iteration 12 — `7fe4093`
 **Finding:** (1) Briefing claimed "it completes Circle 2 and unlocks the next" when the user is 3/7 in Circle 2 — completing one project doesn't complete the circle. (2) Shell skill mapped to "Linux & systems" HTB area, picking "File Transfers" (file transfer techniques during pentesting) instead of the much more relevant "Introduction to Bash Scripting" in "Scripting & automation".
 **Changes:**
 - `store.ts`: Changed briefing circle text from "it completes Circle N and unlocks the next" to "it moves you forward in Circle N"
 - `engine.ts`: Changed `SKILL_TO_HTB_AREA["shell"]` from "Linux & systems" to "Scripting & automation" — now picks "Introduction to Bash Scripting" for upcoming Minishell
+
+## Iteration 13 — `pending`
+**Finding:** (1) Briefing said "Then Philosophers" but Philosophers was already in the "done" column on the board — engine doesn't check board state. (2) Board items from old recs had stale `goalId: null` even when current recs carry goalIds (e.g. HTB networking items should link to THM cadence goal).
+**Changes:**
+- `store.ts`: Briefing generation now excludes recs matching items already "done" on the board — "Then Philosophers" becomes "Then Minishell"
+- `store.ts`: Reason/priority refresh pass now also syncs `goalId` from current recommendations to existing board items

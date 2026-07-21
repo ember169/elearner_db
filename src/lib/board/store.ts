@@ -225,6 +225,7 @@ export function populateBacklog(
     const updates: Record<string, unknown> = {};
     if (rec.reason && rec.reason !== item.why) updates.why = rec.reason;
     if (rec.priority && rec.priority !== item.priority) updates.priority = rec.priority;
+    if (rec.goalId && rec.goalId !== item.goalId) updates.goalId = rec.goalId;
     if (Object.keys(updates).length > 0) {
       db.update(planItems).set(updates).where(eq(planItems.id, item.id)).run();
     }
@@ -414,10 +415,19 @@ export function populateBacklog(
     }
   }
 
-  // Update briefing — use LLM override if provided, else template
+  // Update briefing — exclude items already done on the board
+  const doneKeys = new Set(
+    db.select().from(planItems)
+      .where(and(eq(planItems.weeklyPlanId, sentinelId), eq(planItems.boardStatus, "done")))
+      .all()
+      .map((i) => `${normalizeTitle(i.title)}::${i.type}`)
+  );
+  const briefingRecs = allRecs
+    .filter((r) => !doneKeys.has(`${normalizeTitle(r.title)}::${r.platform}`))
+    .slice(0, 8);
   const { mentorBriefing, collapsedBriefing } = mentorBriefingOverride
     ? { mentorBriefing: mentorBriefingOverride, collapsedBriefing: collapsedBriefingOverride ?? mentorBriefingOverride }
-    : generateBriefing(allRecs.slice(0, 8).map((r) => ({
+    : generateBriefing(briefingRecs.map((r) => ({
         type: r.platform,
         title: r.title,
         priority: r.priority,
