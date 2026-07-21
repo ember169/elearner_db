@@ -196,8 +196,9 @@ export function computeBackwardPlan(
     );
   }
 
-  // Per-circle warnings for big projects
+  // Per-circle warnings for big projects (only current + next circle)
   for (const plan of circlePlans) {
+    if (plan.circle > firstIncomplete + 1) continue;
     for (const proj of plan.projects) {
       if (proj.hours >= 100) {
         const weeksNeeded = proj.hours / weeklyBudget42;

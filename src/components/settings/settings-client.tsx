@@ -207,6 +207,7 @@ export function SettingsClient({
       router.refresh();
     } catch (e) {
       alert(e instanceof Error ? e.message : "Failed to save settings.");
+    } finally {
       setSaving(false);
     }
   }
@@ -219,6 +220,7 @@ export function SettingsClient({
       router.refresh();
     } catch (e) {
       alert(e instanceof Error ? e.message : "Sync failed.");
+    } finally {
       setSyncing(false);
     }
   }

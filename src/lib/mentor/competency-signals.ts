@@ -41,6 +41,7 @@ export function computeCompetencySignals(
   const htbOwns =
     (snapshot.htb.profile?.systemOwns ?? 0) + (snapshot.htb.profile?.userOwns ?? 0);
   const rmCounts = snapshot.rootme.categoryCounts;
+  const rmWeighted = snapshot.rootme.categoryWeightedCounts;
 
   const out: Record<string, SignalResult> = {};
 
@@ -82,9 +83,10 @@ export function computeCompetencySignals(
       } else if (signal.startsWith("rm:")) {
         const cat = signal.slice(3);
         const c = rmCounts[cat] ?? 0;
+        const w = rmWeighted[cat] ?? 0;
         if (c > 0) {
-          level = Math.max(level, bucket(c, [1, 3, 7, 15]));
-          evidence.push(`${c} Root-me ${cat}`);
+          level = Math.max(level, bucket(w, [1, 5, 12, 25]));
+          evidence.push(`${c} Root-me ${cat} (weight ${w.toFixed(1)})`);
         }
       } else if (signal.startsWith("thm:")) {
         const cat = signal.slice(4);

@@ -1,5 +1,6 @@
 import { COMPETENCIES } from "@/lib/mentor/competency-map";
 import type { SignalResult } from "@/lib/mentor/competency-signals";
+import { getRootmeChallengesByCategory } from "@/lib/mentor/rootme-challenge-catalog";
 
 type SuggestedTask = { title: string; ftSlug?: string; description?: string };
 type SuggestedIssue = {
@@ -31,6 +32,35 @@ type Template = {
   issues: { title: string; monthOffset: number; tasks: SuggestedTask[] }[];
   reasoning: string;
 };
+
+function catalogTasks(category: string, count: number): SuggestedTask[] {
+  const challenges = getRootmeChallengesByCategory(category).slice(0, count);
+  if (challenges.length === 0) {
+    return [{ title: `Solve ${count} Root-me '${category}' challenges` }];
+  }
+  return challenges.map((ch) => ({
+    title: `RM: ${ch.title} (${ch.score}pts)`,
+    description: ch.description,
+  }));
+}
+
+function crackingTasks(): SuggestedTask[] {
+  return [
+    ...catalogTasks("Cracking", 3),
+    ...catalogTasks("App - Système", 2),
+  ];
+}
+
+function webTasks(): SuggestedTask[] {
+  return [
+    ...catalogTasks("Web - Serveur", 3),
+    ...catalogTasks("Web - Client", 2),
+  ];
+}
+
+function binexpTasks(): SuggestedTask[] {
+  return catalogTasks("App - Système", 4);
+}
 
 const TEMPLATES: Record<string, Template> = {
   "c-core": {
@@ -249,10 +279,7 @@ const TEMPLATES: Record<string, Template> = {
       {
         title: "Root-me cracking challenges",
         monthOffset: 1,
-        tasks: [
-          { title: "Solve 5 Root-me 'Cracking' challenges (ELF basics)", description: "https://www.root-me.org/en/Challenges/Cracking/" },
-          { title: "Solve 3 Root-me 'App - Système' challenges", description: "https://www.root-me.org/en/Challenges/App-System/" },
-        ],
+        tasks: crackingTasks(),
       },
       {
         title: "Binary analysis with Ghidra",
@@ -446,10 +473,7 @@ const TEMPLATES: Record<string, Template> = {
       {
         title: "Root-me web exploitation",
         monthOffset: 2,
-        tasks: [
-          { title: "Solve 5 Root-me 'Web - Serveur' challenges", description: "https://www.root-me.org/en/Challenges/Web-Server/" },
-          { title: "Solve 3 Root-me 'Web - Client' challenges", description: "https://www.root-me.org/en/Challenges/Web-Client/" },
-        ],
+        tasks: webTasks(),
       },
       {
         title: "Web exploit development",
@@ -639,14 +663,8 @@ const TEMPLATES: Record<string, Template> = {
         title: "Stack-based exploitation",
         monthOffset: 2,
         tasks: [
-          {
-            title:
-              "Solve 5 Root-me 'App - Système' challenges (buffer overflow)",
-          },
-          { title: "Write shellcode for x86-64 Linux" },
-          {
-            title: "Exploit a binary with NX enabled (ROP chain)",
-          },
+          ...binexpTasks(),
+          { title: "Exploit a binary with NX enabled (ROP chain)" },
         ],
       },
       {

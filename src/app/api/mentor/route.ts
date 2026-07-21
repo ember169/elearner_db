@@ -32,6 +32,7 @@ export async function POST() {
   let briefing: string;
   let collapsedBriefing: string;
   let sideProject: MentorPlan["side_project"] = undefined;
+  let briefingSource: "llm" | "fallback" = "fallback";
 
   if (canGenerate) {
     try {
@@ -39,8 +40,9 @@ export async function POST() {
       briefing = narrative.briefing;
       collapsedBriefing = narrative.collapsed_briefing;
       sideProject = narrative.side_project;
+      briefingSource = "llm";
     } catch (e) {
-      // LLM failed — use template-based fallback for narrative
+      console.error("Mentor LLM failed:", e instanceof Error ? e.message : e);
       const fallback = generateFallbackNarrative(ruleOutput.focus, config.objective);
       briefing = fallback.briefing;
       collapsedBriefing = fallback.collapsed_briefing;
@@ -62,7 +64,7 @@ export async function POST() {
     focus: ruleOutput.focus,
     competencies: ruleOutput.competencies,
     side_project: sideProject,
-    fallback: !canGenerate,
+    fallback: briefingSource === "fallback",
   };
 
   savePlan(plan, config.objective);
@@ -73,6 +75,7 @@ export async function POST() {
     hasKey: canGenerate,
     briefing,
     collapsedBriefing,
+    briefingSource,
     deadlinePressure: ruleOutput.deadlinePressure,
     weeklyBudget: ruleOutput.weeklyBudget,
     warnings: ruleOutput.warnings,

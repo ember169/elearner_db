@@ -25,6 +25,7 @@ import {
 import { THM_ROOM_CATEGORIES, THM_ROOM_CATALOG } from "./thm-room-categories";
 import { HTB_ACADEMY_MODULES, type HtbModule } from "@/lib/mentor/htb-academy-catalog";
 import { HTB_MACHINES, type HtbMachine, htbMachineLink } from "@/lib/mentor/htb-machine-catalog";
+import { pickRootmeChallenges } from "@/lib/mentor/rootme-challenge-catalog";
 import { syncGoalValues, computeCadencePacing } from "@/lib/goals/metrics";
 import { computeCompetencySignals } from "@/lib/mentor/competency-signals";
 import {
@@ -54,6 +55,8 @@ export type PlatformSnapshot = {
     profile: typeof rootmeProfile.$inferSelect | null;
     challengesSolved: number;
     categoryCounts: Record<string, number>;
+    categoryWeightedCounts: Record<string, number>;
+    solvedTitles: Set<string>;
   };
   maldev: {
     profile: typeof maldevProfile.$inferSelect | null;
@@ -117,6 +120,14 @@ export type GuidanceResult = {
   recommendations: Recommendation[];
 };
 
+function rmScoreWeight(score: number): number {
+  if (score >= 100) return 2.0;
+  if (score >= 70) return 1.5;
+  if (score >= 40) return 1.0;
+  if (score >= 20) return 0.6;
+  return 0.3;
+}
+
 export function gatherSnapshot(): PlatformSnapshot {
   const ft = {
     profile: db.select().from(ftProfile).limit(1).all()[0] ?? null,
@@ -138,15 +149,22 @@ export function gatherSnapshot(): PlatformSnapshot {
   const rmProfile = db.select().from(rootmeProfile).limit(1).all()[0] ?? null;
   const rmChallenges = db.select().from(rootmeChallenges).all();
   const categoryCounts: Record<string, number> = {};
+  const categoryWeightedCounts: Record<string, number> = {};
+  const solvedTitles = new Set<string>();
   for (const ch of rmChallenges) {
     const cat = ch.category ?? "Other";
     categoryCounts[cat] = (categoryCounts[cat] ?? 0) + 1;
+    const weight = rmScoreWeight(ch.score ?? 0);
+    categoryWeightedCounts[cat] = (categoryWeightedCounts[cat] ?? 0) + weight;
+    solvedTitles.add(ch.title.toLowerCase());
   }
 
   const rootme = {
     profile: rmProfile,
     challengesSolved: rmChallenges.length,
     categoryCounts,
+    categoryWeightedCounts,
+    solvedTitles,
   };
 
   const maldev = {
@@ -503,16 +521,32 @@ export function generateRecommendations(
     if (!goal.pacing || goal.pacing.percentComplete >= 100) continue;
 
     if (goal.category === "rootme" && goal.pacing.daysRemaining < 90) {
-      const weakCategories = findWeakRootmeCategories(snapshot.rootme.categoryCounts);
+      const relevantCats = goalToRootmeCategories(goal.title);
+      const weakCategories = findWeakRootmeCategories(snapshot.rootme.categoryCounts, relevantCats);
       if (weakCategories.length > 0) {
-        recs.push({
-          priority: goal.pacing.onTrack ? "medium" : "high",
-          platform: "rootme",
-          title: `Focus on Root-me: ${weakCategories[0]}`,
-          reason: `${goal.pacing.requiredPace} needed for "${goal.title}". ${weakCategories[0]} has few solves — good for quick points.`,
-          estimatedHours: 3,
-          ref: weakCategories[0],
-        });
+        const picks = pickRootmeChallenges(weakCategories[0], snapshot.rootme.solvedTitles, 2);
+        if (picks.length > 0) {
+          for (const ch of picks) {
+            recs.push({
+              priority: goal.pacing.onTrack ? "medium" : "high",
+              platform: "rootme",
+              title: `RM: ${ch.title}`,
+              reason: `${ch.category} (${ch.score}pts) — ${ch.description}`,
+              estimatedHours: ch.score >= 40 ? 3 : ch.score >= 20 ? 2 : 1,
+              ref: ch.category,
+              link: `https://www.root-me.org/en/Challenges/${encodeURIComponent(ch.category)}/`,
+            });
+          }
+        } else {
+          recs.push({
+            priority: goal.pacing.onTrack ? "medium" : "high",
+            platform: "rootme",
+            title: `Root-me: ${weakCategories[0]} challenges`,
+            reason: `${goal.pacing.requiredPace} needed for "${goal.title}". ${weakCategories[0]} has few solves.`,
+            estimatedHours: 3,
+            ref: weakCategories[0],
+          });
+        }
       }
     }
 
@@ -623,15 +657,30 @@ export function generateRecommendations(
           }
         } else if (platformSuggestion === "rootme") {
           const cat = skillToRootmeCategory(skill);
-          recs.push({
-            priority: "low",
-            platform: "rootme",
-            title: `Root-me: ${cat} challenges`,
-            reason: `Build ${skill} skills for upcoming "${project.name}".`,
-            estimatedHours: 3,
-            skills: [skill],
-            ref: cat,
-          });
+          const picks = pickRootmeChallenges(cat, snapshot.rootme.solvedTitles, 1);
+          if (picks.length > 0) {
+            const ch = picks[0];
+            recs.push({
+              priority: "low",
+              platform: "rootme",
+              title: `RM: ${ch.title}`,
+              reason: `Build ${skill} for "${project.name}" — ${ch.description}`,
+              estimatedHours: ch.score >= 40 ? 3 : ch.score >= 20 ? 2 : 1,
+              skills: [skill],
+              ref: ch.category,
+              link: `https://www.root-me.org/en/Challenges/${encodeURIComponent(ch.category)}/`,
+            });
+          } else {
+            recs.push({
+              priority: "low",
+              platform: "rootme",
+              title: `Root-me: ${cat} challenges`,
+              reason: `Build ${skill} skills for upcoming "${project.name}".`,
+              estimatedHours: 3,
+              skills: [skill],
+              ref: cat,
+            });
+          }
         }
       }
     }
@@ -846,7 +895,34 @@ function skillToRootmeCategory(skill: string): string {
   return SKILL_TO_ROOTME_CATEGORY[skill] ?? "App - Système";
 }
 
-function findWeakRootmeCategories(categoryCounts: Record<string, number>): string[] {
+const GOAL_TITLE_TO_ROOTME: Record<string, string[]> = {
+  "reverse": ["Cracking", "App - Système"],
+  "cracking": ["Cracking"],
+  "web": ["Web - Client", "Web - Serveur"],
+  "crypto": ["Cryptanalyse"],
+  "forensic": ["Forensique"],
+  "network": ["Réseau"],
+  "stegano": ["Stéganographie"],
+  "script": ["App - Script"],
+  "malware": ["Cracking", "App - Système"],
+  "binary": ["App - Système", "Cracking"],
+};
+
+function goalToRootmeCategories(goalTitle: string): string[] {
+  const lower = goalTitle.toLowerCase();
+  const cats = new Set<string>();
+  for (const [keyword, categories] of Object.entries(GOAL_TITLE_TO_ROOTME)) {
+    if (lower.includes(keyword)) {
+      for (const c of categories) cats.add(c);
+    }
+  }
+  return cats.size > 0 ? [...cats] : [];
+}
+
+function findWeakRootmeCategories(
+  categoryCounts: Record<string, number>,
+  relevantCategories?: string[]
+): string[] {
   const allCategories = [
     "Web - Client",
     "Web - Serveur",
@@ -861,7 +937,11 @@ function findWeakRootmeCategories(categoryCounts: Record<string, number>): strin
     "Réaliste",
   ];
 
-  return allCategories
+  const candidates = relevantCategories && relevantCategories.length > 0
+    ? allCategories.filter((cat) => relevantCategories.includes(cat))
+    : allCategories;
+
+  return candidates
     .filter((cat) => (categoryCounts[cat] ?? 0) < 3)
     .slice(0, 3);
 }

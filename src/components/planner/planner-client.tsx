@@ -41,6 +41,8 @@ export function PlannerClient({
   const [collapsedBriefing, setCollapsedBriefing] = useState(initialCollapsed);
   const [sideProject, setSideProject] = useState(initialSideProject);
   const [regenerating, setRegenerating] = useState(false);
+  const [regenStep, setRegenStep] = useState<string | null>(null);
+  const [briefingSource, setBriefingSource] = useState<"llm" | "fallback" | null>(null);
   const [deadlineWarnings, setDeadlineWarnings] = useState<string[]>([]);
   const [deadlineUrgency, setDeadlineUrgency] = useState<string>("normal");
 
@@ -139,6 +141,8 @@ export function PlannerClient({
 
   async function handleRegenerate() {
     setRegenerating(true);
+    setRegenStep("Generating mentor plan...");
+    setBriefingSource(null);
     try {
       const mentorRes = await fetch("/api/mentor", { method: "POST" });
       const mentorData = await mentorRes.json();
@@ -151,7 +155,9 @@ export function PlannerClient({
       }
       if (mentorData.warnings) setDeadlineWarnings(mentorData.warnings);
       if (mentorData.deadlinePressure) setDeadlineUrgency(mentorData.deadlinePressure.urgency);
+      if (mentorData.briefingSource) setBriefingSource(mentorData.briefingSource);
 
+      setRegenStep("Populating board...");
       await fetch("/api/board", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -162,7 +168,7 @@ export function PlannerClient({
         }),
       });
 
-      // Refetch full board (including cleaned-up duplicates)
+      setRegenStep("Refreshing...");
       const boardRes = await fetch("/api/board");
       const board = await boardRes.json();
       setItems(board.items);
@@ -172,6 +178,7 @@ export function PlannerClient({
       alert(e instanceof Error ? e.message : "Regeneration failed.");
     } finally {
       setRegenerating(false);
+      setRegenStep(null);
     }
   }
 
@@ -219,7 +226,7 @@ export function PlannerClient({
             <RefreshCw
               className={`h-3 w-3 mr-1 ${regenerating ? "animate-spin" : ""}`}
             />
-            {regenerating ? "..." : "Regenerate"}
+            {regenerating ? (regenStep ?? "...") : "Regenerate"}
           </Button>
         </div>
       </div>
@@ -270,6 +277,11 @@ export function PlannerClient({
               </button>
             )}
           </div>
+          {briefingSource === "fallback" && hasKey && (
+            <p className="text-[13px] text-muted-foreground mt-1.5 pl-8 opacity-70">
+              Rule-based fallback — LLM unavailable
+            </p>
+          )}
           {!hasKey && (
             <p className="text-[15px] text-muted-foreground mt-2 pl-8">
               Rule-based plan —{" "}

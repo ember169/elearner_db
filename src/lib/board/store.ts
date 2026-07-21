@@ -138,11 +138,13 @@ export function populateBacklog(
 
   const slugToGoalId = new Map<string, number>();
   const categoryToGoalId = new Map<string, number>();
+  const rootmeGoals: { id: number; title: string }[] = [];
   for (const g of allGoals) {
     if (g.ftSlug) slugToGoalId.set(g.ftSlug, g.id);
     if (g.category && !categoryToGoalId.has(g.category)) {
       categoryToGoalId.set(g.category, g.id);
     }
+    if (g.category === "rootme") rootmeGoals.push({ id: g.id, title: g.title });
   }
 
   const existing = db
@@ -205,10 +207,32 @@ export function populateBacklog(
     if (existingKeys.has(key)) continue;
 
     const category = categoryFromType(rec.platform);
-    const goalId =
-      (rec.ref ? slugToGoalId.get(rec.ref) : undefined) ??
-      categoryToGoalId.get(rec.platform) ??
-      null;
+    let goalId =
+      (rec.ref ? slugToGoalId.get(rec.ref) : undefined) ?? null;
+
+    if (!goalId && rec.platform === "rootme" && rec.ref) {
+      const refLower = rec.ref.toLowerCase();
+      const ROOTME_REF_KEYWORDS: Record<string, string[]> = {
+        "cracking": ["reverse", "cracking", "binary"],
+        "app - système": ["reverse", "binary", "system"],
+        "web - client": ["web"],
+        "web - serveur": ["web"],
+        "cryptanalyse": ["crypto"],
+        "forensique": ["forensic"],
+        "réseau": ["network"],
+        "stéganographie": ["stegano"],
+      };
+      const keywords = ROOTME_REF_KEYWORDS[refLower] ?? [];
+      const match = rootmeGoals.find((g) => {
+        const t = g.title.toLowerCase();
+        return keywords.some((kw) => t.includes(kw));
+      });
+      goalId = match?.id ?? null;
+    }
+
+    if (!goalId) {
+      goalId = categoryToGoalId.get(rec.platform) ?? null;
+    }
 
     const item = db
       .insert(planItems)

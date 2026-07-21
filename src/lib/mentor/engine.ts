@@ -661,12 +661,20 @@ export function generateFallbackNarrative(
   objective: string
 ): NarrativeOutput {
   const high = scheduledItems.filter((f) => f.priority === "high");
-  const first = high[0]?.title ?? scheduledItems[0]?.title ?? "your tasks";
-  const second = (high[1] ?? scheduledItems.find((f) => f.priority !== "high"))?.title;
+  const firstItem = high[0] ?? scheduledItems[0];
+  const first = firstItem?.title ?? "your tasks";
+  const secondItem = high[1] ?? scheduledItems.find((f) => f.priority !== "high");
+  const second = secondItem?.title;
   const platforms = [...new Set(scheduledItems.map((f) => f.type))];
 
-  let briefing = `Focus on ${first} this week — it's your top priority toward ${objective.split(",")[0]?.trim() ?? "your objective"}.`;
-  if (second) briefing += ` Then move to ${second}.`;
+  const stripDot = (s: string) => s.replace(/\.+$/, "");
+  let briefing = `Focus on ${first} this week`;
+  if (firstItem?.why) briefing += ` — ${stripDot(firstItem.why)}`;
+  else briefing += ` — it's your top priority toward ${objective.split(",")[0]?.trim() ?? "your objective"}`;
+  briefing += ".";
+  if (second) {
+    briefing += secondItem?.why ? ` Then ${second} — ${stripDot(secondItem.why)}.` : ` Then move to ${second}.`;
+  }
   if (platforms.length > 2) briefing += ` Mix in practice across ${platforms.length} platforms to keep building breadth.`;
 
   const collapsed = second ? `${first}, then ${second}` : first;

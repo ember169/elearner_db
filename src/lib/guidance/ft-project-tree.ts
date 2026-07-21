@@ -136,7 +136,7 @@ export const FT_COMMON_CORE: FtProject[] = [
     skills: ["c", "algorithms", "string-manipulation"],
     description:
       "Timed exam: C function exercises covering strings, arrays, and basic algorithms.",
-    estimatedHours: 4,
+    estimatedHours: 13,
   },
 
   // --- Circle 3 ---
@@ -176,7 +176,7 @@ export const FT_COMMON_CORE: FtProject[] = [
     skills: ["c", "string-manipulation", "programming-fundamentals"],
     description:
       "Timed exam: get_next_line and mini_paint/micro_paint exercises.",
-    estimatedHours: 4,
+    estimatedHours: 13,
   },
 
   // --- Circle 4 ---
@@ -279,7 +279,7 @@ export const FT_COMMON_CORE: FtProject[] = [
     skills: ["c", "cpp", "algorithms", "programming-fundamentals"],
     description:
       "Timed exam: microshell — a simplified shell in C.",
-    estimatedHours: 4,
+    estimatedHours: 13,
   },
 
   // --- Circle 5 ---
@@ -369,7 +369,7 @@ export const FT_COMMON_CORE: FtProject[] = [
     skills: ["cpp", "algorithms", "programming-fundamentals"],
     description:
       "Timed exam: C++ module exercises covering containers, iterators, and algorithms.",
-    estimatedHours: 4,
+    estimatedHours: 13,
   },
 
   {
@@ -418,7 +418,7 @@ export const FT_COMMON_CORE: FtProject[] = [
     skills: ["c", "networking", "sockets", "multiplexing"],
     description:
       "Timed exam: mini_serv — a minimal server handling multiple clients.",
-    estimatedHours: 4,
+    estimatedHours: 13,
   },
 ];
 

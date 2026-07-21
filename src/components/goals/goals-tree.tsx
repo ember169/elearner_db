@@ -54,7 +54,10 @@ function TreeItem({
           isCompleted && "opacity-40"
         )}
         style={{ paddingLeft }}
-        onClick={() => onSelect(goal.id)}
+        onClick={() => {
+          onSelect(goal.id);
+          if (hasChildren && !isExpanded) onToggle(goal.id);
+        }}
       >
         {depth === 0 && (
           <span
