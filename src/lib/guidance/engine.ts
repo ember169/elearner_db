@@ -488,6 +488,15 @@ export function generateRecommendations(
   const htbFloors = htbTierFloors(signals);
   const machineFloors = htbMachineDifficultyFloors(signals);
 
+  // Map 42 project slugs to their milestone goal IDs
+  const slugToGoalId = new Map<string, number>();
+  for (const g of goalsWithPacing) {
+    if (g.ftSlug) slugToGoalId.set(g.ftSlug, g.id);
+    for (const c of g.children) {
+      if (c.ftSlug) slugToGoalId.set(c.ftSlug, c.id);
+    }
+  }
+
   // 1. In-progress 42 projects should be finished first
   for (const slug of ftProgress.inProgressProjects) {
     // A project can be both validated and in-progress (e.g. a redo) — don't
@@ -503,6 +512,7 @@ export function generateRecommendations(
         estimatedHours: project.estimatedHours,
         skills: project.skills,
         ref: project.slug,
+        goalId: slugToGoalId.get(project.slug),
       });
     }
   }
@@ -528,6 +538,7 @@ export function generateRecommendations(
       estimatedHours: project.estimatedHours,
       skills: project.skills,
       ref: project.slug,
+      goalId: slugToGoalId.get(project.slug),
     });
   }
 

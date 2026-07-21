@@ -96,3 +96,9 @@ Tracks what was found and changed in each iteration, with commit hashes for roll
 **Changes:**
 - `goals-tree.tsx`: `flatCount()` now only counts top-level goals (from the `goals` array root) instead of recursively walking children
 - `goals-mobile.tsx`: Same fix for `activeCount` and `behindGoals` — only counts/filters top-level goals
+
+## Iteration 15 — `8dfbf3e`
+**Finding:** Two issues: (1) Board backlog order didn't match briefing priority — Minishell appeared above Exam Rank 02 even though briefing says "Finish Exam Rank 02 first." Items kept their creation-time sortOrder forever. (2) `behindGoals` in goals-tree.tsx still used a recursive walk with `children.length === 0` filter, inconsistent with the `flatCount()` fix from iter 14.
+**Changes:**
+- `store.ts`: Added backlog re-sort pass after cleanup — sets `sortOrder` on all backlog items to match recommendation priority order from the engine
+- `goals-tree.tsx`: Replaced recursive `behindGoals` walk with simple `goals.filter()` matching `flatCount()` logic
