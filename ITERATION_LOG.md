@@ -85,8 +85,14 @@ Tracks what was found and changed in each iteration, with commit hashes for roll
 - `store.ts`: Changed briefing circle text from "it completes Circle N and unlocks the next" to "it moves you forward in Circle N"
 - `engine.ts`: Changed `SKILL_TO_HTB_AREA["shell"]` from "Linux & systems" to "Scripting & automation" — now picks "Introduction to Bash Scripting" for upcoming Minishell
 
-## Iteration 13 — `pending`
+## Iteration 13 — `845c9e9`
 **Finding:** (1) Briefing said "Then Philosophers" but Philosophers was already in the "done" column on the board — engine doesn't check board state. (2) Board items from old recs had stale `goalId: null` even when current recs carry goalIds (e.g. HTB networking items should link to THM cadence goal).
 **Changes:**
 - `store.ts`: Briefing generation now excludes recs matching items already "done" on the board — "Then Philosophers" becomes "Then Minishell"
 - `store.ts`: Reason/priority refresh pass now also syncs `goalId` from current recommendations to existing board items
+
+## Iteration 14 — `pending`
+**Finding:** Goals page shows "35 active · 2 behind" — the count walks ALL children including every individual 42 project milestone. Showing "3 active · 3 behind" (top-level only) is much more useful. Same issue in mobile view.
+**Changes:**
+- `goals-tree.tsx`: `flatCount()` now only counts top-level goals (from the `goals` array root) instead of recursively walking children
+- `goals-mobile.tsx`: Same fix for `activeCount` and `behindGoals` — only counts/filters top-level goals

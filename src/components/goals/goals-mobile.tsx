@@ -190,27 +190,14 @@ function MobileGoalsList({
   onSuggest: () => void;
   onNewGoal: () => void;
 }) {
-  const behindGoals: GoalWithPacing[] = [];
-  function findBehind(g: GoalWithPacing) {
-    if (
-      g.status === "active" &&
-      g.pacing &&
-      !g.pacing.onTrack &&
-      g.pacing.percentComplete < 100 &&
-      g.children.length === 0
-    ) {
-      behindGoals.push(g);
-    }
-    g.children.forEach(findBehind);
-  }
-  goals.forEach(findBehind);
+  const behindGoals = goals.filter(
+    (g) => g.status === "active" && g.pacing && !g.pacing.onTrack && g.pacing.percentComplete < 100
+  );
 
   let activeCount = 0;
-  function countActive(g: GoalWithPacing) {
+  for (const g of goals) {
     if (g.status === "active") activeCount++;
-    g.children.forEach(countActive);
   }
-  goals.forEach(countActive);
 
   return (
     <div className="flex flex-col h-full">

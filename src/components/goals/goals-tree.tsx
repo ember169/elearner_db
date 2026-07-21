@@ -201,16 +201,14 @@ export function GoalsTree({
   function flatCount(tree: GoalWithPacing[]): { active: number; behind: number } {
     let active = 0;
     let behind = 0;
-    function walk(g: GoalWithPacing) {
+    for (const g of tree) {
       if (g.status === "active") {
         active++;
-        if (g.pacing && !g.pacing.onTrack && g.pacing.percentComplete < 100 && g.children.length === 0) {
+        if (g.pacing && !g.pacing.onTrack && g.pacing.percentComplete < 100) {
           behind++;
         }
       }
-      g.children.forEach(walk);
     }
-    tree.forEach(walk);
     return { active, behind };
   }
 
