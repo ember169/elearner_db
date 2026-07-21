@@ -25,7 +25,7 @@ import {
 import { THM_ROOM_CATEGORIES, THM_ROOM_CATALOG } from "./thm-room-categories";
 import { HTB_ACADEMY_MODULES, type HtbModule } from "@/lib/mentor/htb-academy-catalog";
 import { HTB_MACHINES, type HtbMachine, htbMachineLink } from "@/lib/mentor/htb-machine-catalog";
-import { pickRootmeChallenges } from "@/lib/mentor/rootme-challenge-catalog";
+import { pickRootmeChallenges, pickRootmeChallengeForSkill, isRmTitleSolved } from "@/lib/mentor/rootme-challenge-catalog";
 import { syncGoalValues, computeCadencePacing } from "@/lib/goals/metrics";
 import { computeCompetencySignals } from "@/lib/mentor/competency-signals";
 import {
@@ -528,7 +528,7 @@ export function generateRecommendations(
       if (!aligned) continue;
       for (const ch of aligned) {
         if (alignmentRecs.length >= 4) break;
-        if (ch.rmTitle && snapshot.rootme.solvedTitles.has(ch.rmTitle)) continue;
+        if (ch.rmTitle && isRmTitleSolved(ch.rmTitle, snapshot.rootme.solvedTitles)) continue;
         alignmentRecs.push({
           priority: "medium",
           platform: ch.platform,
@@ -751,9 +751,8 @@ export function generateRecommendations(
           }
         } else if (platformSuggestion === "rootme") {
           const cat = skillToRootmeCategory(skill);
-          const picks = pickRootmeChallenges(cat, snapshot.rootme.solvedTitles, 1);
-          if (picks.length > 0) {
-            const ch = picks[0];
+          const ch = pickRootmeChallengeForSkill(cat, skill, snapshot.rootme.solvedTitles);
+          if (ch) {
             recs.push({
               priority: "low",
               platform: "rootme",

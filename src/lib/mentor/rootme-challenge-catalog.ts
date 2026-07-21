@@ -84,6 +84,27 @@ export const ROOTME_CHALLENGE_CATALOG: RootmeChallenge[] = [
   { id: 604, title: "Logs analysis - web attack", category: "Forensique", score: 25, skills: ["log-analysis", "web", "forensics"], description: "Analyze web server logs to identify an attack." },
 ];
 
+const RM_TITLE_ALIASES: Record<string, string[]> = {
+  "elf x86 - basic": ["elf x86 - basique"],
+  "ftp - authentication": ["ftp - authentification"],
+  "telnet - authentication": ["telnet - authentification"],
+  "sql injection - authentication": ["sql injection - authentification"],
+  "javascript - authentication": ["javascript - authentification"],
+  "javascript - authentication 2": ["javascript - authentification 2"],
+};
+
+export function isRmTitleSolved(catalogTitle: string, solvedTitles: Set<string>): boolean {
+  const lower = catalogTitle.toLowerCase();
+  if (solvedTitles.has(lower)) return true;
+  const aliases = RM_TITLE_ALIASES[lower];
+  if (aliases) {
+    for (const alias of aliases) {
+      if (solvedTitles.has(alias)) return true;
+    }
+  }
+  return false;
+}
+
 export function getRootmeChallengesByCategory(category: string): RootmeChallenge[] {
   return ROOTME_CHALLENGE_CATALOG.filter((c) => c.category === category)
     .sort((a, b) => a.score - b.score);
@@ -94,7 +115,7 @@ export function getUnsolvedRootmeChallenges(
   solvedTitles: Set<string>
 ): RootmeChallenge[] {
   return getRootmeChallengesByCategory(category)
-    .filter((c) => !solvedTitles.has(c.title.toLowerCase()));
+    .filter((c) => !isRmTitleSolved(c.title, solvedTitles));
 }
 
 export function pickRootmeChallenges(
@@ -103,4 +124,33 @@ export function pickRootmeChallenges(
   count: number = 3
 ): RootmeChallenge[] {
   return getUnsolvedRootmeChallenges(category, solvedTitles).slice(0, count);
+}
+
+const SKILL_TO_CHALLENGE_TAGS: Record<string, string[]> = {
+  threading: ["race-condition", "toctou"],
+  concurrency: ["race-condition", "toctou"],
+  "process-management": ["shellcode", "environment"],
+  shell: ["command-injection"],
+  http: ["http", "headers", "cookies"],
+  cryptography: ["cipher", "hash", "encoding"],
+  "reverse-engineering": ["elf", "ghidra", "x86", "x64"],
+  networking: ["ftp", "dns", "pcap", "wireshark"],
+  docker: ["docker", "layers"],
+  forensics: ["forensics", "log-analysis", "steganography"],
+};
+
+export function pickRootmeChallengeForSkill(
+  category: string,
+  skill: string,
+  solvedTitles: Set<string>,
+): RootmeChallenge | undefined {
+  const unsolved = getUnsolvedRootmeChallenges(category, solvedTitles);
+  const tags = SKILL_TO_CHALLENGE_TAGS[skill];
+  if (tags) {
+    const match = unsolved.find((c) =>
+      c.skills.some((s) => tags.includes(s))
+    );
+    if (match) return match;
+  }
+  return unsolved[0];
 }
