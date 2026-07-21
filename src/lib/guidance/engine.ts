@@ -638,7 +638,7 @@ export function generateRecommendations(
             priority: goal.pacing.onTrack ? "medium" : "high",
             platform: "htb",
             title: `HTB: ${mod.name}`,
-            reason: `${mod.area} — deeper alternative to THM rooms.`,
+            reason: `${mod.name} (${mod.tier}) — deeper alternative to THM rooms.`,
             estimatedHours: tierHours[mod.tier],
             ref: mod.id,
             link: `https://academy.hackthebox.com/module/details/${mod.id}`,
@@ -746,6 +746,7 @@ export function generateRecommendations(
           const mod = pickHtbModuleForSkill(snapshot, skill, htbFloors);
           if (mod) {
             const tierHours = { Fundamental: 6, Easy: 8, Medium: 12, Hard: 16 };
+            const projectGoalId = slugToGoalId.get(project.slug);
             recs.push({
               priority: "low",
               platform: "htb",
@@ -754,6 +755,7 @@ export function generateRecommendations(
               estimatedHours: tierHours[mod.tier],
               skills: [skill],
               ref: mod.id,
+              goalId: projectGoalId,
               link: `https://academy.hackthebox.com/module/details/${mod.id}`,
             });
           } else {
@@ -767,6 +769,7 @@ export function generateRecommendations(
                 estimatedHours: room.difficulty === "hard" ? 4 : room.difficulty === "medium" ? 3 : 2,
                 skills: [skill],
                 ref: room.code,
+                goalId: slugToGoalId.get(project.slug),
                 link: `https://tryhackme.com/room/${room.code}`,
               });
             }
@@ -782,6 +785,7 @@ export function generateRecommendations(
               estimatedHours: room.difficulty === "hard" ? 4 : room.difficulty === "medium" ? 3 : 2,
               skills: [skill],
               ref: room.code,
+              goalId: slugToGoalId.get(project.slug),
               link: `https://tryhackme.com/room/${room.code}`,
             });
           }
@@ -797,6 +801,7 @@ export function generateRecommendations(
               estimatedHours: ch.score >= 40 ? 3 : ch.score >= 20 ? 2 : 1,
               skills: [skill],
               ref: ch.category,
+              goalId: slugToGoalId.get(project.slug),
               link: `https://www.root-me.org/en/Challenges/${encodeURIComponent(ch.category)}/`,
             });
             alreadyRecTitles.add(ch.title.toLowerCase());
@@ -814,6 +819,7 @@ export function generateRecommendations(
                 estimatedHours: 3,
                 skills: [skill],
                 ref: cat,
+                goalId: slugToGoalId.get(project.slug),
               });
             }
           }
