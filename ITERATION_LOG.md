@@ -107,3 +107,8 @@ Tracks what was found and changed in each iteration, with commit hashes for roll
 **Finding:** 11 of 15 recommendations had no `goalId`, meaning board items couldn't link back to their parent goal. 42 project recommendations (Sections 1 & 2) should link to their milestone goals (e.g. Exam Rank 02 → goal 30, Philosophers → goal 32, Minishell → goal 33).
 **Changes:**
 - `engine.ts`: Built `slugToGoalId` map from `goalsWithPacing` using `ftSlug`. Set `goalId` on Section 1 (in-progress) and Section 2 (next available) 42 project recommendations. Reduced unlinked recs from 11 to 8.
+
+## Iteration 17 — `7802c14`
+**Finding:** Board cards for available 42 projects showed generic "Next available project in Circle N" as their reason text. This doesn't help the user decide what to work on — they already know projects are available.
+**Changes:**
+- `engine.ts`: Section 2 now uses `project.description` for non-group projects (e.g. "Timed exam: C function exercises covering strings, arrays, and basic algorithms (Circle 2)"), falling back to the generic text only when no description exists
