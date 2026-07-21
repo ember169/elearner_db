@@ -38,6 +38,7 @@ export function SuggestDialog({
 }) {
   const [suggestion, setSuggestion] = useState<GoalSuggestion | null>(null);
   const [resultMode, setResultMode] = useState<string | null>(null);
+  const [llmError, setLlmError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [applying, setApplying] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,6 +49,7 @@ export function SuggestDialog({
     setError(null);
     setSuggestion(null);
     setResultMode(null);
+    setLlmError(null);
     try {
       const res = await fetch("/api/goals/suggest", {
         method: "POST",
@@ -61,6 +63,7 @@ export function SuggestDialog({
       }
       setSuggestion(data.suggestion);
       setResultMode(data.mode ?? "unknown");
+      setLlmError(data.llmError ?? null);
       setSelectedIssues(new Set(data.suggestion.issues.map((_: SuggestedIssue, i: number) => i)));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Network error.");
@@ -154,6 +157,11 @@ export function SuggestDialog({
 
         {suggestion && (
           <div className="space-y-3">
+            {llmError && (
+              <p className="text-[12px] text-muted-foreground/70 px-2 py-1 rounded-sm" style={{ background: "color-mix(in oklch, var(--status-warning) 8%, transparent)" }}>
+                LLM failed: {llmError.length > 100 ? llmError.slice(0, 100) + "..." : llmError}
+              </p>
+            )}
             <div className="flex items-center gap-2">
               <p className="text-[15px] text-muted-foreground italic flex-1">
                 &ldquo;{suggestion.reasoning}&rdquo;

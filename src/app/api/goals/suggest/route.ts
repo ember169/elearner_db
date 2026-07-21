@@ -237,6 +237,6 @@ Suggest a new learning goal tree targeting the student's weakest competencies.
     }
     console.error("[suggest] LLM failed, falling back to rule-based:", msg);
     const suggestion = suggestRuleBased(signals, existingGoalTitles);
-    return NextResponse.json({ suggestion, mode: "rule-based" });
+    return NextResponse.json({ suggestion, mode: "rule-based", llmError: msg });
   }
 }

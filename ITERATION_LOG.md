@@ -140,3 +140,33 @@ Tracks what was found and changed in each iteration, with commit hashes for roll
 **Finding:** `ReferenceError: isSolved is not defined` crashed the HomePage SSR rendering on every page load. Previously attributed to stale Turbopack cache, but persisted even after `rm -rf .next`. The function was renamed to `isRmTitleSolved` in iteration 4, but Turbopack's SSR compilation pipeline still referenced the old name — a Turbopack-internal bug.
 **Changes:**
 - `rootme-challenge-catalog.ts`: Added `export const isSolved = isRmTitleSolved` alias after the function definition. Eliminates the SSR crash without changing functionality.
+
+## Iteration 23 — Goal Suggestion Investigation
+
+### Finding 1: Rule-based suggestions ignore prerequisites
+`suggestRuleBased()` ranks all 20 competencies by level, picks candidates at `minLevel` or `minLevel + 1`, then randomly selects a template. When most competencies are at 0/5, ALL templates are equally weighted — including AV/EDR Evasion, Malware Development, and Active Directory Attacks. A beginner gets tasks like "Implement direct syscalls to bypass userland hooks" and "Build a payload that unhooks ntdll.dll" with zero foundation in C, Windows internals, or basic exploitation.
+
+**Root cause:** No prerequisite logic exists. Templates for advanced topics are treated identically to foundational ones.
+
+### Finding 2: LLM generation silently falls back
+Config: `provider: "local"`, `baseUrl: "http://fedora-server:8000"`, `model: "gemma-4-26B-A4B-it-GGUF"`. Since `baseUrl` is set, `canGenerate = true` and the LLM path is always attempted. The local model returns `401: {"detail":"Invalid token payload"}`, triggering a silent fallback to rule-based. The UI shows "RULE-BASED" badge but gives no indication LLM was tried and failed.
+
+### Changes:
+- `rule-based-suggest.ts`: Added `requires?: string[]` field to `Template` type. 11 templates now declare prerequisite competencies that must be at level >= 1:
+  - `evasion` requires `["win-internals", "maldev-techniques"]`
+  - `maldev-techniques` requires `["c-core", "win-internals"]`
+  - `win-internals` requires `["c-core"]`
+  - `c-systems` requires `["c-core"]`
+  - `cpp-oop` requires `["c-core"]`
+  - `binexp` requires `["c-core"]`
+  - `ad-fundamentals` requires `["net-fundamentals"]`
+  - `net-attacks` requires `["net-fundamentals"]`
+  - `web-security` requires `["web-fundamentals"]`
+  - `containers-infra` requires `["linux-admin"]`
+  - `recon-osint` requires `["net-fundamentals"]`
+- `rule-based-suggest.ts`: Added prerequisite check in candidate selection loop — templates with unmet prerequisites are filtered out
+- `route.ts`: LLM fallback now returns `llmError` in the response JSON
+- `suggest-pane.tsx`: Shows warning banner with LLM error message when present
+- `suggest-dialog.tsx`: Same LLM error display
+
+**Verification:** 10 consecutive rule-based suggestions produced only appropriate templates: C++ Module Progression, Networking Foundations, Reverse Engineering, Web Development, Digital Forensics, Security Scripting. No AV/EDR Evasion, Malware Development, Windows Internals, AD Attacks, Binary Exploitation, or other advanced topics appeared. LLM error message now visible in UI: "LLM failed: Local LLM error 401: {"detail":"Invalid token payload"}".

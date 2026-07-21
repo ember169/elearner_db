@@ -31,6 +31,7 @@ type Template = {
   epic: { title: string; platform: string };
   issues: { title: string; monthOffset: number; tasks: SuggestedTask[] }[];
   reasoning: string;
+  requires?: string[];
 };
 
 function catalogTasks(category: string, count: number): SuggestedTask[] {
@@ -94,6 +95,7 @@ const TEMPLATES: Record<string, Template> = {
       "C fundamentals underpin everything in systems programming and maldev — solidify these first.",
   },
   "c-systems": {
+    requires: ["c-core"],
     epic: { title: "Unix Systems Programming", platform: "42" },
     issues: [
       {
@@ -178,8 +180,10 @@ const TEMPLATES: Record<string, Template> = {
     ],
     reasoning:
       "C++ OOP skills expand your tooling capabilities — many security tools and implants use C++.",
+    requires: ["c-core"],
   },
   "win-internals": {
+    requires: ["c-core"],
     epic: { title: "Windows Internals Deep Dive", platform: "maldev" },
     issues: [
       {
@@ -210,6 +214,7 @@ const TEMPLATES: Record<string, Template> = {
       "Windows internals are the foundation of malware development — PE format and Win32 API unlock injection techniques.",
   },
   "maldev-techniques": {
+    requires: ["c-core", "win-internals"],
     epic: { title: "Malware Development Fundamentals", platform: "maldev" },
     issues: [
       {
@@ -272,6 +277,7 @@ const TEMPLATES: Record<string, Template> = {
     ],
     reasoning:
       "Evasion is where maldev meets real-world impact — static and runtime techniques are essential for red team ops.",
+    requires: ["win-internals", "maldev-techniques"],
   },
   "reverse-engineering": {
     epic: { title: "Reverse Engineering Proficiency", platform: "rootme" },
@@ -361,6 +367,7 @@ const TEMPLATES: Record<string, Template> = {
     ],
     reasoning:
       "Containers are everywhere in modern infrastructure — understanding them unlocks new attack surfaces.",
+    requires: ["linux-admin"],
   },
   "net-fundamentals": {
     epic: { title: "Networking Foundations for Pentesting", platform: "42" },
@@ -427,6 +434,7 @@ const TEMPLATES: Record<string, Template> = {
     ],
     reasoning:
       "Network enumeration is the entry point to every engagement — HTB machines provide realistic practice.",
+    requires: ["net-fundamentals"],
   },
   "web-fundamentals": {
     epic: { title: "Web Development for Security", platform: "42" },
@@ -492,6 +500,7 @@ const TEMPLATES: Record<string, Template> = {
     ],
     reasoning:
       "Web security is a critical attack surface — practical HTB and Root-me challenges build real exploitation skills.",
+    requires: ["web-fundamentals"],
   },
   "ad-fundamentals": {
     epic: { title: "Active Directory Attack Path", platform: "htb" },
@@ -524,6 +533,7 @@ const TEMPLATES: Record<string, Template> = {
     ],
     reasoning:
       "Active Directory is in nearly every enterprise — mastering AD attacks is essential for internal pentests.",
+    requires: ["net-fundamentals"],
   },
   "recon-osint": {
     epic: { title: "Reconnaissance and OSINT Skills", platform: "htb" },
@@ -558,6 +568,7 @@ const TEMPLATES: Record<string, Template> = {
     ],
     reasoning:
       "Good recon wins engagements before exploitation starts — build systematic enumeration skills.",
+    requires: ["net-fundamentals"],
   },
   crypto: {
     epic: {
@@ -682,6 +693,7 @@ const TEMPLATES: Record<string, Template> = {
     ],
     reasoning:
       "Binary exploitation is a high-value skill for red team — Root-me and HTB offer progressive difficulty.",
+    requires: ["c-core"],
   },
 };
 
@@ -729,6 +741,7 @@ export function suggestRuleBased(
     if (comp.level > minLevel + 1) break;
     const tmpl = TEMPLATES[comp.id];
     if (!tmpl) continue;
+    if (tmpl.requires?.some((reqId) => (signals[reqId]?.autoLevel ?? 0) < 1)) continue;
     const epicLower = tmpl.epic.title.toLowerCase();
     const duplicate = existingLower.some(
       (t) => t.includes(epicLower) || epicLower.includes(t),

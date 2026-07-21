@@ -32,6 +32,7 @@ export function SuggestPane({
 }) {
   const [suggestion, setSuggestion] = useState<GoalSuggestion | null>(null);
   const [resultMode, setResultMode] = useState<string | null>(null);
+  const [llmError, setLlmError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [applying, setApplying] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +46,7 @@ export function SuggestPane({
     setError(null);
     setSuggestion(null);
     setResultMode(null);
+    setLlmError(null);
     try {
       const res = await fetch("/api/goals/suggest", {
         method: "POST",
@@ -58,6 +60,7 @@ export function SuggestPane({
       }
       setSuggestion(data.suggestion);
       setResultMode(data.mode ?? "unknown");
+      setLlmError(data.llmError ?? null);
       setSelectedIssues(new Set(data.suggestion.issues.map((_: SuggestedIssue, i: number) => i)));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Network error.");
@@ -196,6 +199,14 @@ export function SuggestPane({
         {/* Suggestion result */}
         {suggestion && (
           <div className="space-y-4">
+            {llmError && (
+              <div className="flex items-start gap-2 rounded-sm border border-border px-3 py-2" style={{ background: "color-mix(in oklch, var(--status-warning) 8%, transparent)", borderColor: "color-mix(in oklch, var(--status-warning) 30%, transparent)" }}>
+                <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" style={{ color: "var(--status-warning)" }} />
+                <p className="text-[13px] text-muted-foreground">
+                  LLM failed: {llmError.length > 120 ? llmError.slice(0, 120) + "..." : llmError}
+                </p>
+              </div>
+            )}
             {/* Reasoning */}
             <div className="rounded-sm border border-border px-4 py-3" style={{ background: "var(--card)" }}>
               <p className="text-[14px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
