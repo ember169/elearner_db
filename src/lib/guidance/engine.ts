@@ -585,7 +585,7 @@ export function generateRecommendations(
           priority: goal.pacing.onTrack ? "medium" : "high",
           platform: "rootme",
           title: `Root-me: ${weakCategories[0]} challenges`,
-          reason: `${goal.pacing.requiredPace} needed for "${goal.title}". ${weakCategories[0]} has few solves.`,
+          reason: `${goal.pacing.requiredPace} for "${goal.title}". ${weakCategories[0]} has few solves.`,
           estimatedHours: 3,
           ref: weakCategories[0],
           goalId: goal.id,
@@ -603,7 +603,7 @@ export function generateRecommendations(
             priority: goal.pacing.onTrack ? "medium" : "high",
             platform: "htb",
             title: `HTB: ${mod.name}`,
-            reason: `${goal.pacing.requiredPace} needed for "${goal.title}".`,
+            reason: `${goal.pacing.requiredPace} for "${goal.title}".`,
             estimatedHours: tierHours[mod.tier],
             ref: mod.id,
             link: `https://academy.hackthebox.com/module/details/${mod.id}`,
@@ -618,7 +618,7 @@ export function generateRecommendations(
             priority: goal.pacing.onTrack ? "medium" : "high",
             platform: "thm",
             title: `THM: ${room.name}`,
-            reason: `${goal.pacing.requiredPace} needed for "${goal.title}".`,
+            reason: `${goal.pacing.requiredPace} for "${goal.title}".`,
             estimatedHours: room.difficulty === "hard" ? 4 : room.difficulty === "medium" ? 3 : 2,
             ref: room.code,
             link: `https://tryhackme.com/room/${room.code}`,
@@ -636,7 +636,7 @@ export function generateRecommendations(
           priority: goal.pacing.onTrack ? "medium" : "high",
           platform: "htb",
           title: `HTB: ${mod.name}`,
-          reason: `${goal.pacing.requiredPace} needed for "${goal.title}".`,
+          reason: `${goal.pacing.requiredPace} for "${goal.title}".`,
           estimatedHours: ({ Fundamental: 6, Easy: 8, Medium: 12, Hard: 16 })[mod.tier],
           ref: mod.id,
           link: `https://academy.hackthebox.com/module/details/${mod.id}`,
@@ -651,9 +651,52 @@ export function generateRecommendations(
         priority: goal.pacing.onTrack ? "low" : "medium",
         platform: "maldev",
         title: "Maldev elearning",
-        reason: `${goal.pacing.requiredPace} needed. Currently at ${(goal.currentValue ?? 0).toFixed(0)}%.`,
+        reason: `${goal.pacing.requiredPace}. Currently at ${(goal.currentValue ?? 0).toFixed(0)}%.`,
         goalId: goal.id,
       });
+    }
+
+    if (goal.category === "general" && goal.pacing.daysRemaining < 120) {
+      const rmCats = goalToRootmeCategories(goal.title);
+      if (rmCats.length > 0) {
+        for (const cat of rmCats) {
+          const picks = pickRootmeChallenges(cat, snapshot.rootme.solvedTitles, 1);
+          if (picks.length > 0) {
+            const ch = picks[0];
+            recs.push({
+              priority: goal.pacing.onTrack ? "low" : "medium",
+              platform: "rootme",
+              title: `RM: ${ch.title}`,
+              reason: `${ch.category} (${ch.score}pts) — supports "${goal.title}" goal.`,
+              estimatedHours: ch.score >= 40 ? 3 : ch.score >= 20 ? 2 : 1,
+              ref: ch.category,
+              link: `https://www.root-me.org/en/Challenges/${encodeURIComponent(ch.category)}/`,
+              goalId: goal.id,
+            });
+            break;
+          }
+        }
+      }
+      const htbAreas = goalToHtbAreas(goal.title);
+      if (htbAreas.length > 0) {
+        const htbPick = HTB_ACADEMY_MODULES
+          .filter((m) => htbAreas.includes(m.area) && !recommendedHtbModuleIds.has(m.id))
+          .filter((m) => { const f = htbFloors[m.area]; return !f || isAboveHtbFloor(m.tier, f); })
+          .sort((a, b) => ({ Fundamental: 0, Easy: 1, Medium: 2, Hard: 3 })[a.tier] - ({ Fundamental: 0, Easy: 1, Medium: 2, Hard: 3 })[b.tier])[0];
+        if (htbPick) {
+          recs.push({
+            priority: goal.pacing.onTrack ? "low" : "medium",
+            platform: "htb",
+            title: `HTB: ${htbPick.name}`,
+            reason: `Supports "${goal.title}" goal — ${htbPick.area} module.`,
+            estimatedHours: ({ Fundamental: 6, Easy: 8, Medium: 12, Hard: 16 })[htbPick.tier],
+            ref: htbPick.id,
+            link: `https://academy.hackthebox.com/module/details/${htbPick.id}`,
+            goalId: goal.id,
+          });
+          recommendedHtbModuleIds.add(htbPick.id);
+        }
+      }
     }
   }
 
@@ -715,7 +758,7 @@ export function generateRecommendations(
               priority: "low",
               platform: "rootme",
               title: `RM: ${ch.title}`,
-              reason: `Build ${skill} for "${project.name}" — ${ch.description}`,
+              reason: `${ch.category} (${ch.score}pts) — builds ${skill} for upcoming "${project.name}".`,
               estimatedHours: ch.score >= 40 ? 3 : ch.score >= 20 ? 2 : 1,
               skills: [skill],
               ref: ch.category,
@@ -738,11 +781,13 @@ export function generateRecommendations(
   }
 
   // 5. HTB Machine recommendations — 1-2 retired boxes matching weak areas
+  // Gate: skip if the user hasn't completed any HTB boxes yet (Academy first)
+  const htbOwns = (snapshot.htb.profile?.systemOwns ?? 0) + (snapshot.htb.profile?.userOwns ?? 0);
   const areaToSkills: Record<string, string[]> = {};
   for (const [skill, area] of Object.entries(SKILL_TO_HTB_MACHINE_AREA)) {
     (areaToSkills[area] ??= []).push(skill);
   }
-  const machinePicks = pickHtbMachines(skillProfile, 2, machineFloors);
+  const machinePicks = htbOwns > 0 ? pickHtbMachines(skillProfile, 2, machineFloors) : [];
   for (const machine of machinePicks) {
     const hours = machine.difficulty === "Hard" ? 8 : machine.difficulty === "Medium" ? 5 : 3;
     const matchedSkills = (areaToSkills[machine.area] ?? []).filter((s) => (skillProfile[s] ?? 0) < 2);
@@ -794,6 +839,7 @@ const SKILL_TO_HTB_AREA: Record<string, string> = {
   "web-security": "Web",
   forensics: "Crypto & forensics basics",
   docker: "Linux & systems",
+  sockets: "Networking",
   "system-administration": "Linux & systems",
 };
 
@@ -815,6 +861,7 @@ const SKILL_TO_ROOTME_CATEGORY: Record<string, string> = {
   security: "App - Système",
   networking: "Réseau",
   http: "Web - Serveur",
+  sockets: "Réseau",
   threading: "App - Système",
   concurrency: "App - Système",
   "process-management": "App - Système",
@@ -964,7 +1011,38 @@ const GOAL_TITLE_TO_ROOTME: Record<string, string[]> = {
   "script": ["App - Script"],
   "malware": ["Cracking", "App - Système"],
   "binary": ["App - Système", "Cracking"],
+  "c++": ["Cracking"],
+  "oop": ["Cracking"],
+  "low-level": ["App - Système", "Cracking"],
 };
+
+const GOAL_TITLE_TO_HTB_AREA: Record<string, string[]> = {
+  "reverse": ["Low-level & C"],
+  "binary": ["Low-level & C"],
+  "c++": ["Low-level & C"],
+  "oop": ["Low-level & C"],
+  "low-level": ["Low-level & C"],
+  "web": ["Web"],
+  "network": ["Networking"],
+  "crypto": ["Crypto & forensics basics"],
+  "forensic": ["Crypto & forensics basics"],
+  "linux": ["Linux & systems"],
+  "windows": ["Windows internals & maldev"],
+  "active directory": ["Active Directory"],
+  "malware": ["Windows internals & maldev"],
+  "scripting": ["Scripting & automation"],
+};
+
+function goalToHtbAreas(goalTitle: string): string[] {
+  const lower = goalTitle.toLowerCase();
+  const areas = new Set<string>();
+  for (const [keyword, areaList] of Object.entries(GOAL_TITLE_TO_HTB_AREA)) {
+    if (lower.includes(keyword)) {
+      for (const a of areaList) areas.add(a);
+    }
+  }
+  return areas.size > 0 ? [...areas] : [];
+}
 
 function goalToRootmeCategories(goalTitle: string): string[] {
   const lower = goalTitle.toLowerCase();
