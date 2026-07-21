@@ -217,23 +217,9 @@ export function GoalsTree({
   const epics = goals.filter((g) => g.children.length > 0);
   const standalone = goals.filter((g) => g.children.length === 0);
 
-  const behindGoals = (() => {
-    const result: GoalWithPacing[] = [];
-    function walk(g: GoalWithPacing) {
-      if (
-        g.status === "active" &&
-        g.pacing &&
-        !g.pacing.onTrack &&
-        g.pacing.percentComplete < 100 &&
-        g.children.length === 0
-      ) {
-        result.push(g);
-      }
-      g.children.forEach(walk);
-    }
-    goals.forEach(walk);
-    return result;
-  })();
+  const behindGoals = goals.filter(
+    (g) => g.status === "active" && g.pacing && !g.pacing.onTrack && g.pacing.percentComplete < 100
+  );
 
   return (
     <div className="flex flex-col h-full flex-shrink-0 border-r border-border" style={{ width: width ?? 200 }}>

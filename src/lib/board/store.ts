@@ -415,6 +415,32 @@ export function populateBacklog(
     }
   }
 
+  // Re-sort backlog items to match recommendation priority
+  const recOrder = new Map(
+    allRecs.map((r, i) => [`${normalizeTitle(r.title)}::${r.platform}`, i])
+  );
+  const backlogItems = db
+    .select()
+    .from(planItems)
+    .where(
+      and(
+        eq(planItems.weeklyPlanId, sentinelId),
+        eq(planItems.boardStatus, "backlog")
+      )
+    )
+    .all();
+  backlogItems.sort((a, b) => {
+    const aIdx = recOrder.get(`${normalizeTitle(a.title)}::${a.type}`) ?? 999;
+    const bIdx = recOrder.get(`${normalizeTitle(b.title)}::${b.type}`) ?? 999;
+    return aIdx - bIdx;
+  });
+  for (let i = 0; i < backlogItems.length; i++) {
+    db.update(planItems)
+      .set({ sortOrder: i })
+      .where(eq(planItems.id, backlogItems[i].id))
+      .run();
+  }
+
   // Update briefing — exclude items already done on the board
   const doneKeys = new Set(
     db.select().from(planItems)
