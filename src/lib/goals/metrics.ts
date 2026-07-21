@@ -63,8 +63,57 @@ export function syncGoalValues() {
   const parentIds = new Set(
     activeGoals.filter((g) => g.parentGoalId).map((g) => g.parentGoalId)
   );
+
+  // Auto-complete 42 milestone goals when the project is validated
+  const validatedSlugs = new Set(
+    db.select().from(ftProjects).all()
+      .filter((p) => p.validated)
+      .map((p) => {
+        const raw = (p.slug ?? p.name).toLowerCase().replace(/[^a-z0-9_]/g, "");
+        return raw.replace(/^42cursus/, "");
+      })
+  );
   for (const goal of activeGoals) {
+    if (!goal.ftSlug) continue;
     if (parentIds.has(goal.id)) continue;
+    const slug = goal.ftSlug.toLowerCase().replace(/[^a-z0-9_]/g, "");
+    if (validatedSlugs.has(slug) && goal.currentValue !== 1) {
+      db.update(goals)
+        .set({ currentValue: 1, status: "completed" })
+        .where(eq(goals.id, goal.id))
+        .run();
+    }
+  }
+
+  // Sync circle/parent goal progress from children
+  const allGoals = db.select().from(goals).all();
+  const completedIds = new Set(allGoals.filter((g) => g.status === "completed").map((g) => g.id));
+  for (const goal of allGoals) {
+    if (goal.status === "completed") continue;
+    const children = allGoals.filter((g) => g.parentGoalId === goal.id);
+    if (children.length === 0) continue;
+    const doneCount = children.filter((c) => c.status === "completed" || completedIds.has(c.id)).length;
+    if (doneCount === children.length) {
+      db.update(goals)
+        .set({ status: "completed", currentValue: doneCount })
+        .where(eq(goals.id, goal.id))
+        .run();
+      completedIds.add(goal.id);
+    } else if (doneCount !== goal.currentValue) {
+      db.update(goals)
+        .set({ currentValue: doneCount })
+        .where(eq(goals.id, goal.id))
+        .run();
+    }
+  }
+
+  // Sync metric-based goals
+  const stillActive = db.select().from(goals).where(eq(goals.status, "active")).all();
+  const stillParentIds = new Set(
+    stillActive.filter((g) => g.parentGoalId).map((g) => g.parentGoalId)
+  );
+  for (const goal of stillActive) {
+    if (stillParentIds.has(goal.id)) continue;
     if (!goal.metricSource) continue;
     const value = resolveMetricValue(goal.metricSource);
     if (value !== null && value !== goal.currentValue) {
