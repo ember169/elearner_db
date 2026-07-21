@@ -130,3 +130,8 @@ Tracks what was found and changed in each iteration, with commit hashes for roll
 **Changes:**
 - `engine.ts`: Section 4 skill-gap recs now carry `goalId: slugToGoalId.get(project.slug)` for all platform types (HTB, THM, Root-me). Items 11-12 now link to goal 33 (Minishell).
 - `engine.ts`: Section 3 THM handler HTB module reason changed from `${mod.area}` to `${mod.name} (${mod.tier})` — now shows "Introduction to Networking (Fundamental)" vs "Network Enumeration with Nmap (Easy)"
+
+## Iteration 21 — `f8936a9`
+**Finding:** Briefing "Alongside" section showed two HTB modules (both networking-related): "Introduction to Networking, Network Enumeration with Nmap". The `sidePicks` logic took the first 2 non-42 items regardless of platform, missing the opportunity to show cross-platform diversity.
+**Changes:**
+- `store.ts`: Rewrote `sidePicks` to prefer one item per platform before filling remaining slots. Now shows "Introduction to Networking, ELF x86 - Stack buffer overflow basic 3" — one HTB + one RM challenge.

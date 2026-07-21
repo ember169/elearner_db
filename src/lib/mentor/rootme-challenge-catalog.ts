@@ -105,6 +105,9 @@ export function isRmTitleSolved(catalogTitle: string, solvedTitles: Set<string>)
   return false;
 }
 
+// Turbopack SSR chunks reference the old name; keep alias to prevent ReferenceError
+export const isSolved = isRmTitleSolved;
+
 export function getRootmeChallengesByCategory(category: string): RootmeChallenge[] {
   return ROOTME_CHALLENGE_CATALOG.filter((c) => c.category === category)
     .sort((a, b) => a.score - b.score);
