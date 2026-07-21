@@ -143,8 +143,12 @@ export function pickRootmeChallengeForSkill(
   category: string,
   skill: string,
   solvedTitles: Set<string>,
+  excludeTitles?: Set<string>,
 ): RootmeChallenge | undefined {
-  const unsolved = getUnsolvedRootmeChallenges(category, solvedTitles);
+  let unsolved = getUnsolvedRootmeChallenges(category, solvedTitles);
+  if (excludeTitles) {
+    unsolved = unsolved.filter((c) => !excludeTitles.has(c.title.toLowerCase()));
+  }
   const tags = SKILL_TO_CHALLENGE_TAGS[skill];
   if (tags) {
     const match = unsolved.find((c) =>

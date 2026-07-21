@@ -527,7 +527,7 @@ export function generateRecommendations(
       const aligned = PROJECT_CHALLENGE_ALIGNMENT[project.slug];
       if (!aligned) continue;
       for (const ch of aligned) {
-        if (alignmentRecs.length >= 4) break;
+        if (alignmentRecs.length >= 5) break;
         if (ch.rmTitle && isRmTitleSolved(ch.rmTitle, snapshot.rootme.solvedTitles)) continue;
         alignmentRecs.push({
           priority: "medium",
@@ -539,7 +539,7 @@ export function generateRecommendations(
           link: ch.link,
         });
       }
-      if (alignmentRecs.length >= 4) break;
+      if (alignmentRecs.length >= 5) break;
     }
     recs.push(...alignmentRecs);
   }
@@ -701,6 +701,7 @@ export function generateRecommendations(
   }
 
   // 4. Skill-gap based: if upcoming 42 projects need skills the user is weak in
+  const alreadyRecTitles = new Set(recs.filter((r) => r.platform === "rootme").map((r) => r.title.replace(/^RM: /, "").toLowerCase()));
   for (const project of ftProgress.availableProjects.slice(0, 5)) {
     for (const skill of project.skills) {
       const level = skillProfile[skill] ?? 0;
@@ -751,7 +752,7 @@ export function generateRecommendations(
           }
         } else if (platformSuggestion === "rootme") {
           const cat = skillToRootmeCategory(skill);
-          const ch = pickRootmeChallengeForSkill(cat, skill, snapshot.rootme.solvedTitles);
+          const ch = pickRootmeChallengeForSkill(cat, skill, snapshot.rootme.solvedTitles, alreadyRecTitles);
           if (ch) {
             recs.push({
               priority: "low",
@@ -813,12 +814,16 @@ export function generateRecommendations(
   // Deduplicate by normalized title (collapse Start/Finish/Continue/Work on variants)
   const normalizeRec = (t: string) => t.replace(/^(Start|Finish|Continue|Work on)\s+/i, "");
   const seen = new Set<string>();
-  return recs.filter((r) => {
+  const deduped = recs.filter((r) => {
     const key = `${normalizeRec(r.title)}::${r.platform}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
   });
+
+  const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
+  deduped.sort((a, b) => (priorityOrder[a.priority] ?? 1) - (priorityOrder[b.priority] ?? 1));
+  return deduped;
 }
 
 const SKILL_TO_THM_CATEGORY: Record<string, string> = {
@@ -828,6 +833,7 @@ const SKILL_TO_THM_CATEGORY: Record<string, string> = {
   "reverse-engineering": "reverse",
   "web-security": "web",
   forensics: "forensics",
+  shell: "misc",
 };
 
 const SKILL_TO_HTB_AREA: Record<string, string> = {
@@ -839,6 +845,7 @@ const SKILL_TO_HTB_AREA: Record<string, string> = {
   forensics: "Crypto & forensics basics",
   docker: "Linux & systems",
   sockets: "Networking",
+  shell: "Linux & systems",
   "system-administration": "Linux & systems",
 };
 
