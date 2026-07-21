@@ -81,7 +81,7 @@ function generateBriefing(
 
   const firstReason = high[0]?.reason ?? items[0]?.reason ?? "";
   const circleMatch = firstReason.match(/Circle (\d+)/);
-  const whyFirst = firstReason.includes("in progress")
+  const whyFirst = firstReason.toLowerCase().includes("in progress")
     ? "it's already in progress"
     : circleMatch
       ? `it moves you forward in Circle ${circleMatch[1]}`

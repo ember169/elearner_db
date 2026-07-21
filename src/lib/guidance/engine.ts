@@ -508,7 +508,9 @@ export function generateRecommendations(
         priority: "high",
         platform: "42",
         title: project.name,
-        reason: "Currently in progress — completing this unblocks the next circle.",
+        reason: project.description
+          ? `In progress — ${project.description.replace(/\.$/, "").toLowerCase()}.`
+          : `In progress — Circle ${project.circle} project.`,
         estimatedHours: project.estimatedHours,
         skills: project.skills,
         ref: project.slug,
