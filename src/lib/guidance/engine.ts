@@ -227,10 +227,12 @@ export function analyzeGoals(): GoalWithPacing[] {
       if (remaining > 0 && daysRemaining > 0) {
         const perDay = remaining / daysRemaining;
         const perWeek = perDay * 7;
-        if (perWeek < 1) {
+        if (perWeek >= 1) {
+          requiredPace = `~${perWeek.toFixed(1)}/week`;
+        } else if (perDay >= 0.1) {
           requiredPace = `~${perDay.toFixed(1)}/day`;
         } else {
-          requiredPace = `~${perWeek.toFixed(1)}/week`;
+          requiredPace = `${remaining} more in ${Math.ceil(daysRemaining / 7)} weeks`;
         }
       } else if (remaining <= 0) {
         requiredPace = "Complete!";
@@ -616,7 +618,7 @@ export function generateRecommendations(
             priority: goal.pacing.onTrack ? "medium" : "high",
             platform: "htb",
             title: `HTB: ${mod.name}`,
-            reason: `${goal.pacing.requiredPace} for "${goal.title}".`,
+            reason: `${mod.area} — deeper alternative to THM rooms.`,
             estimatedHours: tierHours[mod.tier],
             ref: mod.id,
             link: `https://academy.hackthebox.com/module/details/${mod.id}`,
