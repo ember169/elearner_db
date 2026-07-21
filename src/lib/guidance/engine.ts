@@ -534,7 +534,9 @@ export function generateRecommendations(
               .map((p) => p.name);
             return `Available in Circle ${project.circle} — or pick ${siblings.join(" / ")} instead.`;
           })()
-        : `Next available project in Circle ${project.circle}.`,
+        : project.description
+          ? `${project.description.replace(/\.$/, "")} (Circle ${project.circle}).`
+          : `Next available project in Circle ${project.circle}.`,
       estimatedHours: project.estimatedHours,
       skills: project.skills,
       ref: project.slug,
