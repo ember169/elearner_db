@@ -8,6 +8,7 @@ import {
 } from "@/lib/guidance/engine";
 import { FT_COMMON_CORE } from "@/lib/guidance/ft-project-tree";
 import { HTB_ACADEMY_MODULES } from "@/lib/mentor/htb-academy-catalog";
+import { isRmTitleSolved } from "@/lib/mentor/rootme-challenge-catalog";
 import { getMainDeadline } from "@/lib/planning/backward-planner";
 
 const HTB_TIER_HOURS: Record<string, number> = { Fundamental: 6, Easy: 8, Medium: 12, Hard: 16 };
@@ -67,38 +68,41 @@ function categoryFromType(type: string): BoardCategory {
 }
 
 function generateBriefing(
-  items: { type: string; title: string; priority: string }[]
+  items: { type: string; title: string; priority: string; reason?: string }[]
 ): { mentorBriefing: string; collapsedBriefing: string } {
   const high = items.filter((f) => f.priority === "high");
   const rest = items.filter((f) => f.priority !== "high");
-  const platforms = [...new Set(rest.map((f) => f.type))];
-  const platformLabels: Record<string, string> = {
-    "42": "42",
-    thm: "THM",
-    htb: "HTB",
-    rootme: "RM",
-    maldev: "maldev",
-    "side-project": "side project",
-    skill: "skill-building",
-  };
 
   const rawFirst = high[0]?.title ?? items[0]?.title ?? "your tasks";
   const first = /^(Finish|Start|Continue)\s/i.test(rawFirst)
     ? rawFirst
     : `Finish ${rawFirst}`;
   const second = (high[1] ?? rest[0])?.title;
-  const fills = platforms
-    .filter((p) => p !== high[0]?.type)
-    .map((p) => platformLabels[p] ?? p)
+
+  const firstReason = high[0]?.reason ?? items[0]?.reason ?? "";
+  const circleMatch = firstReason.match(/Circle (\d+)/);
+  const whyFirst = firstReason.includes("in progress")
+    ? "it's already in progress"
+    : circleMatch
+      ? `it completes Circle ${circleMatch[1]} and unlocks the next`
+      : firstReason.includes("needed for")
+        ? "it keeps your cadence on track"
+        : firstReason.includes("goal")
+          ? "it keeps your goal on track"
+          : "it's highest priority right now";
+
+  const sidePicks = rest
+    .filter((r) => r.type !== (high[0]?.type ?? items[0]?.type))
+    .map((r) => r.title.replace(/^(RM|HTB|THM): /, ""))
     .slice(0, 2);
 
-  let briefing = `${first} first — it feeds into what comes next.`;
+  let briefing = `${first} first — ${whyFirst}.`;
   if (second) briefing += ` Then ${second}.`;
-  if (fills.length) briefing += ` Fill gaps with ${fills.join(" + ")}.`;
+  if (sidePicks.length) briefing += ` Alongside: ${sidePicks.join(", ")}.`;
 
   let collapsed = first;
   if (second) collapsed += `, then ${second}.`;
-  if (fills.length) collapsed += ` Fill with ${fills.join(" + ")}.`;
+  if (sidePicks.length) collapsed += ` + ${sidePicks.join(", ")}.`;
 
   return { mentorBriefing: briefing, collapsedBriefing: collapsed };
 }
@@ -180,6 +184,15 @@ export function populateBacklog(
     }
   }
 
+  // Fix stale "needed needed" double-word in existing reason text
+  for (const item of existing) {
+    if (item.why && /needed needed/.test(item.why)) {
+      const fixed = item.why.replace(/needed needed/g, "needed");
+      db.update(planItems).set({ why: fixed }).where(eq(planItems.id, item.id)).run();
+      item.why = fixed;
+    }
+  }
+
   const existingKeys = new Set(
     existing.map((i) => `${normalizeTitle(i.title)}::${i.type}`)
   );
@@ -197,6 +210,22 @@ export function populateBacklog(
     const prev = bestByBase.get(base);
     if (!prev || (priorityRank[rec.priority] ?? 0) > (priorityRank[prev.priority] ?? 0)) {
       bestByBase.set(base, rec);
+    }
+  }
+
+  // Refresh reason/priority on existing backlog items from current recommendations
+  const existingByKey = new Map(
+    existing.map((i) => [`${normalizeTitle(i.title)}::${i.type}`, i])
+  );
+  for (const rec of bestByBase.values()) {
+    const key = `${normalizeTitle(rec.title)}::${rec.platform}`;
+    const item = existingByKey.get(key);
+    if (!item || item.boardStatus !== "backlog") continue;
+    const updates: Record<string, unknown> = {};
+    if (rec.reason && rec.reason !== item.why) updates.why = rec.reason;
+    if (rec.priority && rec.priority !== item.priority) updates.priority = rec.priority;
+    if (Object.keys(updates).length > 0) {
+      db.update(planItems).set(updates).where(eq(planItems.id, item.id)).run();
     }
   }
 
@@ -291,6 +320,56 @@ export function populateBacklog(
     }
   }
 
+  // Auto-complete solved Root-me backlog items
+  const solvedTitles = guidance.snapshot.rootme.solvedTitles;
+  const allRm = db
+    .select()
+    .from(planItems)
+    .where(
+      and(
+        eq(planItems.weeklyPlanId, sentinelId),
+        eq(planItems.type, "rootme"),
+        eq(planItems.boardStatus, "backlog")
+      )
+    )
+    .all();
+  for (const item of allRm) {
+    const challengeTitle = item.title.replace(/^RM: /, "");
+    if (isRmTitleSolved(challengeTitle, solvedTitles)) {
+      db.update(planItems)
+        .set({ boardStatus: "done", status: "done", completedAt: new Date().toISOString() })
+        .where(eq(planItems.id, item.id))
+        .run();
+    }
+  }
+
+  // Collapse duplicate RM items (short title vs full catalog title)
+  const allRmItems = db
+    .select()
+    .from(planItems)
+    .where(and(eq(planItems.weeklyPlanId, sentinelId), eq(planItems.type, "rootme")))
+    .all();
+  const rmNormalize = (title: string) =>
+    title
+      .replace(/^RM: /, "")
+      .replace(/^(ELF x86|ELF x64|PE x86|PE DotNet|ELF C\+\+|ELF MIPS|ELF ARM|PYC|PHP)\s*-\s*/i, "")
+      .toLowerCase()
+      .trim();
+  const rmGroups = new Map<string, typeof allRmItems>();
+  for (const item of allRmItems) {
+    const key = rmNormalize(item.title);
+    const arr = rmGroups.get(key) ?? [];
+    arr.push(item);
+    rmGroups.set(key, arr);
+  }
+  for (const [, group] of rmGroups) {
+    if (group.length <= 1) continue;
+    group.sort((a, b) => b.title.length - a.title.length);
+    for (const dup of group.slice(1)) {
+      db.delete(planItems).where(eq(planItems.id, dup.id)).run();
+    }
+  }
+
   // Update briefing — use LLM override if provided, else template
   const { mentorBriefing, collapsedBriefing } = mentorBriefingOverride
     ? { mentorBriefing: mentorBriefingOverride, collapsedBriefing: collapsedBriefingOverride ?? mentorBriefingOverride }
@@ -298,6 +377,7 @@ export function populateBacklog(
         type: r.platform,
         title: r.title,
         priority: r.priority,
+        reason: r.reason,
       })));
   db.update(weeklyPlans)
     .set({ mentorBriefing, collapsedBriefing })
