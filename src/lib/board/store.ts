@@ -91,8 +91,9 @@ function generateBriefing(
           ? "it keeps your goal on track"
           : "it's highest priority right now";
 
-  const sidePicks = rest
-    .filter((r) => r.type !== (high[0]?.type ?? items[0]?.type))
+  const firstType = high[0]?.type ?? items[0]?.type;
+  const sidePicks = [...high.slice(1), ...rest]
+    .filter((r) => r.type !== firstType)
     .map((r) => r.title.replace(/^(RM|HTB|THM): /, ""))
     .slice(0, 2);
 

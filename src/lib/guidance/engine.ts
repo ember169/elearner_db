@@ -764,6 +764,7 @@ export function generateRecommendations(
               ref: ch.category,
               link: `https://www.root-me.org/en/Challenges/${encodeURIComponent(ch.category)}/`,
             });
+            alreadyRecTitles.add(ch.title.toLowerCase());
           } else {
             recs.push({
               priority: "low",
