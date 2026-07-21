@@ -102,3 +102,8 @@ Tracks what was found and changed in each iteration, with commit hashes for roll
 **Changes:**
 - `store.ts`: Added backlog re-sort pass after cleanup — sets `sortOrder` on all backlog items to match recommendation priority order from the engine
 - `goals-tree.tsx`: Replaced recursive `behindGoals` walk with simple `goals.filter()` matching `flatCount()` logic
+
+## Iteration 16 — `26c9f63`
+**Finding:** 11 of 15 recommendations had no `goalId`, meaning board items couldn't link back to their parent goal. 42 project recommendations (Sections 1 & 2) should link to their milestone goals (e.g. Exam Rank 02 → goal 30, Philosophers → goal 32, Minishell → goal 33).
+**Changes:**
+- `engine.ts`: Built `slugToGoalId` map from `goalsWithPacing` using `ftSlug`. Set `goalId` on Section 1 (in-progress) and Section 2 (next available) 42 project recommendations. Reduced unlinked recs from 11 to 8.
