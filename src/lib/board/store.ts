@@ -127,7 +127,10 @@ export function loadBoard(): BoardData {
   };
 }
 
-export function populateBacklog(): BoardItem[] {
+export function populateBacklog(
+  mentorBriefingOverride?: string,
+  collapsedBriefingOverride?: string
+): BoardItem[] {
   const sentinelId = getOrCreateSentinelPlan();
   const guidance = runGuidanceEngine();
   const allRecs = guidance.recommendations;
@@ -261,13 +264,14 @@ export function populateBacklog(): BoardItem[] {
     }
   }
 
-  // Update briefing
-  const briefingItems = allRecs.slice(0, 8).map((r) => ({
-    type: r.platform,
-    title: r.title,
-    priority: r.priority,
-  }));
-  const { mentorBriefing, collapsedBriefing } = generateBriefing(briefingItems);
+  // Update briefing — use LLM override if provided, else template
+  const { mentorBriefing, collapsedBriefing } = mentorBriefingOverride
+    ? { mentorBriefing: mentorBriefingOverride, collapsedBriefing: collapsedBriefingOverride ?? mentorBriefingOverride }
+    : generateBriefing(allRecs.slice(0, 8).map((r) => ({
+        type: r.platform,
+        title: r.title,
+        priority: r.priority,
+      })));
   db.update(weeklyPlans)
     .set({ mentorBriefing, collapsedBriefing })
     .where(eq(weeklyPlans.id, sentinelId))

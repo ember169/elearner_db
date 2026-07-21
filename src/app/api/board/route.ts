@@ -41,7 +41,7 @@ export async function POST(request: Request) {
   const body = await request.json();
 
   if (body.action === "populate") {
-    const newItems = populateBacklog();
+    const newItems = populateBacklog(body.mentorBriefing, body.collapsedBriefing);
     return NextResponse.json({ items: newItems });
   }
 

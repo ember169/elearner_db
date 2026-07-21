@@ -155,15 +155,19 @@ export function PlannerClient({
       await fetch("/api/board", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "populate" }),
+        body: JSON.stringify({
+          action: "populate",
+          mentorBriefing: mentorData.briefing,
+          collapsedBriefing: mentorData.collapsedBriefing,
+        }),
       });
 
       // Refetch full board (including cleaned-up duplicates)
       const boardRes = await fetch("/api/board");
       const board = await boardRes.json();
       setItems(board.items);
-      setBriefing(board.mentorBriefing);
-      setCollapsedBriefing(board.collapsedBriefing);
+      setBriefing(mentorData.briefing ?? board.mentorBriefing);
+      setCollapsedBriefing(mentorData.collapsedBriefing ?? board.collapsedBriefing);
     } catch (e) {
       alert(e instanceof Error ? e.message : "Regeneration failed.");
     } finally {
