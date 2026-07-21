@@ -92,10 +92,22 @@ function generateBriefing(
           : "it's highest priority right now";
 
   const firstType = high[0]?.type ?? items[0]?.type;
-  const sidePicks = [...high.slice(1), ...rest]
-    .filter((r) => r.type !== firstType)
-    .map((r) => r.title.replace(/^(RM|HTB|THM): /, ""))
-    .slice(0, 2);
+  const sidePool = [...high.slice(1), ...rest].filter((r) => r.type !== firstType);
+  const sidePicks: string[] = [];
+  const seenTypes = new Set<string>();
+  for (const r of sidePool) {
+    if (!seenTypes.has(r.type)) {
+      seenTypes.add(r.type);
+      sidePicks.push(r.title.replace(/^(RM|HTB|THM): /, ""));
+      if (sidePicks.length >= 2) break;
+    }
+  }
+  if (sidePicks.length < 2) {
+    for (const r of sidePool) {
+      const t = r.title.replace(/^(RM|HTB|THM): /, "");
+      if (!sidePicks.includes(t)) { sidePicks.push(t); break; }
+    }
+  }
 
   let briefing = `${first} first — ${whyFirst}.`;
   if (second) briefing += ` Then ${second}.`;

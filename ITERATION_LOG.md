@@ -112,3 +112,21 @@ Tracks what was found and changed in each iteration, with commit hashes for roll
 **Finding:** Board cards for available 42 projects showed generic "Next available project in Circle N" as their reason text. This doesn't help the user decide what to work on — they already know projects are available.
 **Changes:**
 - `engine.ts`: Section 2 now uses `project.description` for non-group projects (e.g. "Timed exam: C function exercises covering strings, arrays, and basic algorithms (Circle 2)"), falling back to the generic text only when no description exists
+
+## Iteration 18 — `9a4b03e`
+**Finding:** Two issues: (1) Section 1 in-progress reason was generic "Currently in progress — completing this unblocks the next circle" — same problem as iter 17 but for in-progress items. (2) Briefing `whyFirst` checked `firstReason.includes("in progress")` (lowercase) but the new Section 1 reason starts with capital "In progress", causing the briefing to miss the in-progress detection.
+**Changes:**
+- `engine.ts`: Section 1 now uses `project.description` for reason text: `In progress — ${description}.` with fallback to `In progress — Circle N project.`
+- `store.ts`: Changed `firstReason.includes("in progress")` to `firstReason.toLowerCase().includes("in progress")` for case-insensitive matching
+
+## Iteration 19 — `b870de1`
+**Finding:** Board-done 42 projects (e.g. Philosophers) were still recommended by the engine and referenced in skill-gap reasons ("builds threading for upcoming Philosophers"). The engine only checked ft_projects validation status, not board state, so manually-completed board items reappeared as recommendations.
+**Changes:**
+- `engine.ts`: Added optional `boardDoneSlugs` parameter to `generateRecommendations()` and `runGuidanceEngine()`. Sections 2, 4, and HTB machines now use a filtered `available` list that excludes board-done projects.
+- `store.ts`: `populateBacklog()` now collects done 42 project slugs from the board and passes them to the engine. Reduced backlog from 14 to 13 items (Race condition removed — was only needed for Philosophers' threading skills).
+
+## Iteration 20 — `c1476b6`
+**Finding:** Two issues: (1) Skill-gap recs (Section 4) that prepare for upcoming 42 projects had no `goalId`, so board items couldn't link back to the project goal they support (e.g. "Build shell skills for Minishell" had no link to goal 33). (2) HTB module reasons from the THM cadence handler were identical — both said "Networking — deeper alternative to THM rooms" because they shared the same `mod.area`. User can't tell them apart.
+**Changes:**
+- `engine.ts`: Section 4 skill-gap recs now carry `goalId: slugToGoalId.get(project.slug)` for all platform types (HTB, THM, Root-me). Items 11-12 now link to goal 33 (Minishell).
+- `engine.ts`: Section 3 THM handler HTB module reason changed from `${mod.area}` to `${mod.name} (${mod.tier})` — now shows "Introduction to Networking (Fundamental)" vs "Network Enumeration with Nmap (Easy)"
