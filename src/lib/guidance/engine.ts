@@ -517,11 +517,17 @@ export function generateRecommendations(
   }
 
   // 3. Goal-driven recommendations for cybersec platforms
+  const goalTitleById = new Map(goalsWithPacing.map((g) => [g.id, g.title]));
   for (const goal of goalsWithPacing) {
     if (!goal.pacing || goal.pacing.percentComplete >= 100) continue;
 
     if (goal.category === "rootme" && goal.pacing.daysRemaining < 90) {
-      const relevantCats = goalToRootmeCategories(goal.title);
+      let relevantCats = goalToRootmeCategories(goal.title);
+      if (relevantCats.length === 0 && goal.parentGoalId) {
+        const parentTitle = goalTitleById.get(goal.parentGoalId);
+        if (parentTitle) relevantCats = goalToRootmeCategories(parentTitle);
+      }
+      if (relevantCats.length === 0) continue;
       const weakCategories = findWeakRootmeCategories(snapshot.rootme.categoryCounts, relevantCats);
       if (weakCategories.length > 0) {
         const picks = pickRootmeChallenges(weakCategories[0], snapshot.rootme.solvedTitles, 2);

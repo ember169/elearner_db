@@ -230,7 +230,7 @@ export function populateBacklog(
       goalId = match?.id ?? null;
     }
 
-    if (!goalId) {
+    if (!goalId && rec.platform !== "rootme") {
       goalId = categoryToGoalId.get(rec.platform) ?? null;
     }
 
