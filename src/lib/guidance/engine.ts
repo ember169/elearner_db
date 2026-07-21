@@ -120,15 +120,14 @@ export type GuidanceResult = {
   recommendations: Recommendation[];
 };
 
-function rmScoreWeight(score: number): number {
-  if (score >= 100) return 2.0;
-  if (score >= 70) return 1.5;
-  if (score >= 40) return 1.0;
-  if (score >= 20) return 0.6;
-  return 0.3;
-}
-
 export function gatherSnapshot(): PlatformSnapshot {
+  const rmScoreWeight = (score: number): number => {
+    if (score >= 100) return 2.0;
+    if (score >= 70) return 1.5;
+    if (score >= 40) return 1.0;
+    if (score >= 20) return 0.6;
+    return 0.3;
+  };
   const ft = {
     profile: db.select().from(ftProfile).limit(1).all()[0] ?? null,
     projects: db.select().from(ftProjects).all(),
@@ -516,6 +515,34 @@ export function generateRecommendations(
     });
   }
 
+  // 2.5. Project-completion alignment: challenges that exercise what you just learned
+  {
+    const completedSet = new Set(ftProgress.completedProjects.map((s) => s.toLowerCase()));
+    const alignmentRecs: Recommendation[] = [];
+    const completedByCircle = FT_COMMON_CORE
+      .filter((p) => completedSet.has(p.slug))
+      .sort((a, b) => b.circle - a.circle);
+    for (const project of completedByCircle) {
+      const aligned = PROJECT_CHALLENGE_ALIGNMENT[project.slug];
+      if (!aligned) continue;
+      for (const ch of aligned) {
+        if (alignmentRecs.length >= 4) break;
+        if (ch.rmTitle && snapshot.rootme.solvedTitles.has(ch.rmTitle)) continue;
+        alignmentRecs.push({
+          priority: "medium",
+          platform: ch.platform,
+          title: ch.title,
+          reason: ch.reason,
+          estimatedHours: ch.hours,
+          ref: ch.ref,
+          link: ch.link,
+        });
+      }
+      if (alignmentRecs.length >= 4) break;
+    }
+    recs.push(...alignmentRecs);
+  }
+
   // 3. Goal-driven recommendations for cybersec platforms
   const goalTitleById = new Map(goalsWithPacing.map((g) => [g.id, g.title]));
   for (const goal of goalsWithPacing) {
@@ -527,8 +554,10 @@ export function generateRecommendations(
         const parentTitle = goalTitleById.get(goal.parentGoalId);
         if (parentTitle) relevantCats = goalToRootmeCategories(parentTitle);
       }
-      if (relevantCats.length === 0) continue;
-      const weakCategories = findWeakRootmeCategories(snapshot.rootme.categoryCounts, relevantCats);
+      const weakCategories = findWeakRootmeCategories(
+        snapshot.rootme.categoryCounts,
+        relevantCats.length > 0 ? relevantCats : undefined,
+      );
       if (weakCategories.length > 0) {
         const picks = pickRootmeChallenges(weakCategories[0], snapshot.rootme.solvedTitles, 2);
         if (picks.length > 0) {
@@ -616,8 +645,8 @@ export function generateRecommendations(
   for (const project of ftProgress.availableProjects.slice(0, 5)) {
     for (const skill of project.skills) {
       const level = skillProfile[skill] ?? 0;
-      if (level < 1 && isSecurityRelated(skill)) {
-        const platformSuggestion = suggestPlatformForSkill(skill);
+      if (level < 2 && isSecurityRelated(skill)) {
+        const platformSuggestion = suggestPlatformForSkill(skill, level);
         if (platformSuggestion === "htb") {
           const mod = pickHtbModuleForSkill(snapshot, skill, htbFloors);
           if (mod) {
@@ -767,6 +796,11 @@ const SKILL_TO_ROOTME_CATEGORY: Record<string, string> = {
   forensics: "Forensique",
   security: "App - Système",
   networking: "Réseau",
+  http: "Web - Serveur",
+  threading: "App - Système",
+  concurrency: "App - Système",
+  "process-management": "App - Système",
+  shell: "Web - Serveur",
 };
 
 function pickThmRooms(
@@ -952,6 +986,65 @@ function findWeakRootmeCategories(
     .slice(0, 3);
 }
 
+// ── Project-completion challenge alignment ──────────────────────────────
+// Maps completed 42 projects to challenges that directly exercise the
+// same techniques offensively. Ordered by alignment strength per project.
+type AlignedChallenge = {
+  platform: string;
+  title: string;
+  reason: string;
+  hours: number;
+  ref?: string;
+  link?: string;
+  rmTitle?: string;
+};
+
+const PROJECT_CHALLENGE_ALIGNMENT: Record<string, AlignedChallenge[]> = {
+  libft: [
+    { platform: "rootme", title: "RM: ELF x86 - Stack buffer overflow basic 1", reason: "Stack variable overwrite — uses C memory model from libft", hours: 1, ref: "App - Système", link: "https://www.root-me.org/en/Challenges/App%20-%20Syst%C3%A8me/", rmTitle: "elf x86 - stack buffer overflow basic 1" },
+  ],
+  ft_printf: [
+    { platform: "rootme", title: "RM: Format string bug basic 1", reason: "You implemented printf — format string exploitation is the offensive mirror", hours: 2, ref: "App - Système", link: "https://www.root-me.org/en/Challenges/App%20-%20Syst%C3%A8me/", rmTitle: "elf x86 - format string bug basic 1" },
+    { platform: "rootme", title: "RM: Format string bug basic 2", reason: "Arbitrary write via %n — extends your printf internals to memory corruption", hours: 2, ref: "App - Système", link: "https://www.root-me.org/en/Challenges/App%20-%20Syst%C3%A8me/", rmTitle: "elf x86 - format string bug basic 2" },
+  ],
+  born2beroot: [
+    { platform: "htb", title: "HTB: Linux Privilege Escalation", reason: "Break the security policies you configured in born2beroot", hours: 8, ref: "linux-privesc", link: "https://academy.hackthebox.com/module/details/linux-privesc" },
+  ],
+  pipex: [
+    { platform: "htb", title: "HTB: Command Injections", reason: "Pipex executes commands via pipes — command injection is the offensive version", hours: 12, ref: "command-injections", link: "https://academy.hackthebox.com/module/details/command-injections" },
+  ],
+  push_swap: [
+    { platform: "rootme", title: "RM: ELF x64 - Basic KeygenMe", reason: "Reverse an algorithm to write a keygen — same analytical skill as designing a sort", hours: 2, ref: "Cracking", link: "https://www.root-me.org/en/Challenges/Cracking/", rmTitle: "elf x64 - basic keygenme" },
+  ],
+  philosophers: [
+    { platform: "rootme", title: "RM: Race condition", reason: "TOCTOU race — directly applies your threading and synchronization knowledge", hours: 2, ref: "App - Système", link: "https://www.root-me.org/en/Challenges/App%20-%20Syst%C3%A8me/", rmTitle: "elf x86 - race condition" },
+  ],
+  minishell: [
+    { platform: "rootme", title: "RM: PHP - Command injection", reason: "You built a shell — command injection exploits exactly what you implemented", hours: 2, ref: "Web - Serveur", link: "https://www.root-me.org/en/Challenges/Web%20-%20Serveur/", rmTitle: "php - command injection" },
+    { platform: "htb", title: "HTB: Command Injections", reason: "You built a shell — this module teaches attacking the mechanism you coded", hours: 12, ref: "command-injections", link: "https://academy.hackthebox.com/module/details/command-injections" },
+  ],
+  netpractice: [
+    { platform: "htb", title: "HTB: Network Enumeration with Nmap", reason: "Extend your subnetting knowledge into active network reconnaissance", hours: 8, ref: "nmap-enumeration", link: "https://academy.hackthebox.com/module/details/nmap-enumeration" },
+  ],
+  cpp04: [
+    { platform: "rootme", title: "RM: ELF C++ - 0 protection", reason: "Reverse a C++ binary — applies your OOP knowledge to binary analysis", hours: 1, ref: "Cracking", link: "https://www.root-me.org/en/Challenges/Cracking/", rmTitle: "elf c++ - 0 protection" },
+    { platform: "rootme", title: "RM: Stack bof C++ vtables", reason: "Vtable pointer corruption — exploits the polymorphism mechanism from cpp04", hours: 3, ref: "App - Système", link: "https://www.root-me.org/en/Challenges/App%20-%20Syst%C3%A8me/", rmTitle: "elf x86 - stack buffer overflow - c++ vtables" },
+  ],
+  webserv: [
+    { platform: "rootme", title: "RM: HTTP - User-agent", reason: "HTTP header spoofing — you implemented header parsing in webserv", hours: 1, ref: "Web - Serveur", link: "https://www.root-me.org/en/Challenges/Web%20-%20Serveur/", rmTitle: "http - user-agent" },
+    { platform: "rootme", title: "RM: Local File Inclusion", reason: "Path traversal — you implemented file serving and path resolution", hours: 2, ref: "Web - Serveur", link: "https://www.root-me.org/en/Challenges/Web%20-%20Serveur/", rmTitle: "local file inclusion" },
+    { platform: "htb", title: "HTB: Using Web Proxies", reason: "HTTP interception — you understand request/response from building the server", hours: 8, ref: "using-web-proxies", link: "https://academy.hackthebox.com/module/details/using-web-proxies" },
+  ],
+  inception: [
+    { platform: "htb", title: "HTB: Linux Privilege Escalation", reason: "Container escape scenarios — extends your Docker infrastructure knowledge", hours: 8, ref: "linux-privesc", link: "https://academy.hackthebox.com/module/details/linux-privesc" },
+  ],
+  ft_transcendence: [
+    { platform: "rootme", title: "RM: SQL injection - Authentication", reason: "SQLi on login — your project has database-backed authentication", hours: 2, ref: "Web - Serveur", link: "https://www.root-me.org/en/Challenges/Web%20-%20Serveur/", rmTitle: "sql injection - authentication" },
+    { platform: "htb", title: "HTB: SQL Injection Fundamentals", reason: "Learn to attack the database queries you write in ft_transcendence", hours: 8, ref: "sql-injection-fundamentals", link: "https://academy.hackthebox.com/module/details/sql-injection-fundamentals" },
+    { platform: "htb", title: "HTB: Cross-Site Scripting (XSS)", reason: "Your project has user-facing frontend — understanding XSS prevents shipping it", hours: 8, ref: "xss", link: "https://academy.hackthebox.com/module/details/xss" },
+  ],
+};
+
 function isSecurityRelated(skill: string): boolean {
   return [
     "security",
@@ -960,17 +1053,36 @@ function isSecurityRelated(skill: string): boolean {
     "reverse-engineering",
     "web-security",
     "forensics",
+    "http",
+    "sockets",
+    "threading",
+    "concurrency",
+    "process-management",
+    "shell",
+    "docker",
+    "system-administration",
   ].includes(skill);
 }
 
-function suggestPlatformForSkill(skill: string): string | null {
+function suggestPlatformForSkill(
+  skill: string,
+  level: number
+): string | null {
   const mapping: Record<string, string> = {
     security: "htb",
     networking: "htb",
     cryptography: "rootme",
     "reverse-engineering": "rootme",
-    "web-security": "htb",
+    "web-security": level >= 2 ? "rootme" : "htb",
     forensics: "rootme",
+    http: level >= 2 ? "rootme" : "htb",
+    sockets: "htb",
+    threading: "rootme",
+    concurrency: "rootme",
+    "process-management": "rootme",
+    shell: level >= 2 ? "rootme" : "htb",
+    docker: "htb",
+    "system-administration": "htb",
   };
   return mapping[skill] ?? null;
 }

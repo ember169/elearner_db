@@ -57,7 +57,8 @@ export function computeCompetencySignals(
       const done = ftSlugs.filter((slug) => completed.has(slug));
       if (done.length > 0) {
         const frac = done.length / ftSlugs.length;
-        const ftLevel = frac >= 1 ? 4 : frac >= 0.5 ? 3 : 2;
+        let ftLevel = frac >= 1 ? 4 : frac >= 0.5 ? 3 : 2;
+        if (ftSlugs.length === 1 && ftLevel > 2) ftLevel = 2;
         level = Math.max(level, ftLevel);
         evidence.push(`42: ${done.join(", ")}`);
       }
