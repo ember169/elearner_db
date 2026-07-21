@@ -299,6 +299,27 @@ export function populateBacklog(
     )
     .run();
 
+  // Purge HTB machine backlog items when user has no box owns (Academy first)
+  const htbOwns = (guidance.snapshot.htb.profile?.systemOwns ?? 0) +
+    (guidance.snapshot.htb.profile?.userOwns ?? 0);
+  if (htbOwns === 0) {
+    const htbMachineItems = db
+      .select()
+      .from(planItems)
+      .where(
+        and(
+          eq(planItems.weeklyPlanId, sentinelId),
+          eq(planItems.type, "htb"),
+          eq(planItems.boardStatus, "backlog")
+        )
+      )
+      .all()
+      .filter((i) => i.title.startsWith("HTB Machine:"));
+    for (const item of htbMachineItems) {
+      db.delete(planItems).where(eq(planItems.id, item.id)).run();
+    }
+  }
+
   // Collapse duplicate 42 items (Start/Continue/Finish variants of the same project)
   const all42 = db
     .select()

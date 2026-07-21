@@ -420,6 +420,19 @@ export function buildSkillProfile(snapshot: PlatformSnapshot): Record<string, nu
     profile[name] = Math.max(profile[name] ?? 0, skill.level ?? 0);
   }
 
+  // Derive skills from validated 42 projects (ft_skills table may be empty)
+  const completedSlugs = new Set(
+    snapshot.ft.projects
+      .filter((p) => p.validated)
+      .map((p) => (p.slug ?? p.name).toLowerCase().replace(/^42cursus-?/, "").replace(/[^a-z0-9_]/g, ""))
+  );
+  for (const project of FT_COMMON_CORE) {
+    if (!completedSlugs.has(project.slug)) continue;
+    for (const skill of project.skills) {
+      profile[skill] = (profile[skill] ?? 0) + 1;
+    }
+  }
+
   for (const [cat, count] of Object.entries(snapshot.rootme.categoryCounts)) {
     const mapped = PLATFORM_SKILL_MAPPING[cat];
     if (mapped) {
