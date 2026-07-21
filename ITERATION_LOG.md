@@ -91,7 +91,7 @@ Tracks what was found and changed in each iteration, with commit hashes for roll
 - `store.ts`: Briefing generation now excludes recs matching items already "done" on the board — "Then Philosophers" becomes "Then Minishell"
 - `store.ts`: Reason/priority refresh pass now also syncs `goalId` from current recommendations to existing board items
 
-## Iteration 14 — `pending`
+## Iteration 14 — `718841f`
 **Finding:** Goals page shows "35 active · 2 behind" — the count walks ALL children including every individual 42 project milestone. Showing "3 active · 3 behind" (top-level only) is much more useful. Same issue in mobile view.
 **Changes:**
 - `goals-tree.tsx`: `flatCount()` now only counts top-level goals (from the `goals` array root) instead of recursively walking children
