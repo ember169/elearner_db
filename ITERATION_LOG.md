@@ -72,9 +72,15 @@ Tracks what was found and changed in each iteration, with commit hashes for roll
 - `rootme-challenge-catalog.ts`: Changed fallback — returns `undefined` when tags exist but no tagged match found (only falls back to `unsolved[0]` when NO tags for the skill)
 - `engine.ts`: Added `hasRelatedRec` check before adding generic fallback rec
 
-## Iteration 11 — `pending`
+## Iteration 11 — `cd614cd`
 **Finding:** Three issues: (1) THM goal handler recommends HTB modules with misleading reason "2 more needed for THM rooms/week" — HTB modules don't count toward THM cadence metric. (2) Stale auto-generated board items persist despite no longer being in current recommendations (e.g. "HTB: Windows Fundamentals", "RM: ELF x64 - bof basic" with wrong concurrency reason). (3) Goal 7 "Improve C++ & OOP" shows "~0.0/day" required pace — unhelpful for slow-burn goals.
 **Changes:**
 - `engine.ts`: THM goal handler now uses honest reason "Networking — deeper alternative to THM rooms." instead of referencing THM metric
 - `engine.ts`: Fixed pace formatting — when perDay < 0.1, shows "2 more in 13 weeks" instead of "~0.0/day"
 - `store.ts`: Added stale auto-generated item pruning pass — removes backlog items matching rec patterns (RM:/HTB:/THM:/Root-me:) that are no longer in current recommendations
+
+## Iteration 12 — `pending`
+**Finding:** (1) Briefing claimed "it completes Circle 2 and unlocks the next" when the user is 3/7 in Circle 2 — completing one project doesn't complete the circle. (2) Shell skill mapped to "Linux & systems" HTB area, picking "File Transfers" (file transfer techniques during pentesting) instead of the much more relevant "Introduction to Bash Scripting" in "Scripting & automation".
+**Changes:**
+- `store.ts`: Changed briefing circle text from "it completes Circle N and unlocks the next" to "it moves you forward in Circle N"
+- `engine.ts`: Changed `SKILL_TO_HTB_AREA["shell"]` from "Linux & systems" to "Scripting & automation" — now picks "Introduction to Bash Scripting" for upcoming Minishell

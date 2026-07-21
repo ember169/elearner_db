@@ -84,8 +84,8 @@ function generateBriefing(
   const whyFirst = firstReason.includes("in progress")
     ? "it's already in progress"
     : circleMatch
-      ? `it completes Circle ${circleMatch[1]} and unlocks the next`
-      : firstReason.includes("needed for")
+      ? `it moves you forward in Circle ${circleMatch[1]}`
+      : firstReason.includes("needed for") || firstReason.includes("alternative to")
         ? "it keeps your cadence on track"
         : firstReason.includes("goal")
           ? "it keeps your goal on track"

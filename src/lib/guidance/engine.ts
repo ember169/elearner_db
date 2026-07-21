@@ -867,7 +867,7 @@ const SKILL_TO_HTB_AREA: Record<string, string> = {
   forensics: "Crypto & forensics basics",
   docker: "Linux & systems",
   sockets: "Networking",
-  shell: "Linux & systems",
+  shell: "Scripting & automation",
   "system-administration": "Linux & systems",
 };
 
