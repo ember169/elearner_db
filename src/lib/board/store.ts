@@ -137,7 +137,20 @@ export function populateBacklog(
   collapsedBriefingOverride?: string
 ): BoardItem[] {
   const sentinelId = getOrCreateSentinelPlan();
-  const guidance = runGuidanceEngine();
+
+  const done42Names = new Set(
+    db.select().from(planItems)
+      .where(and(eq(planItems.weeklyPlanId, sentinelId), eq(planItems.type, "42"), eq(planItems.boardStatus, "done")))
+      .all()
+      .map((i) => i.title)
+  );
+  const boardDoneSlugs = new Set<string>();
+  for (const name of done42Names) {
+    const p = FT_COMMON_CORE.find((proj) => proj.name === name);
+    if (p) boardDoneSlugs.add(p.slug);
+  }
+
+  const guidance = runGuidanceEngine(boardDoneSlugs.size > 0 ? boardDoneSlugs : undefined);
   const allRecs = guidance.recommendations;
   const allGoals = flattenGoals(guidance.goals);
 

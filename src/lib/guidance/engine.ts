@@ -477,7 +477,8 @@ export function generateRecommendations(
   snapshot: PlatformSnapshot,
   ftProgress: ReturnType<typeof analyzeFtProgress>,
   goalsWithPacing: GoalWithPacing[],
-  skillProfile: Record<string, number>
+  skillProfile: Record<string, number>,
+  boardDoneSlugs?: Set<string>
 ): Recommendation[] {
   const recs: Recommendation[] = [];
 
@@ -523,7 +524,11 @@ export function generateRecommendations(
   const ft42Goals = goalsWithPacing.filter((g) => g.category === "42");
   const hasUrgent42Goal = ft42Goals.some((g) => g.pacing && g.pacing.daysRemaining < 60 && !g.pacing.onTrack);
 
-  for (const project of ftProgress.availableProjects.slice(0, 3)) {
+  const available = boardDoneSlugs?.size
+    ? ftProgress.availableProjects.filter((p) => !boardDoneSlugs.has(p.slug))
+    : ftProgress.availableProjects;
+
+  for (const project of available.slice(0, 3)) {
     if (ftProgress.inProgressProjects.includes(project.slug)) continue;
     recs.push({
       priority: hasUrgent42Goal ? "high" : "medium",
@@ -732,7 +737,7 @@ export function generateRecommendations(
 
   // 4. Skill-gap based: if upcoming 42 projects need skills the user is weak in
   const alreadyRecTitles = new Set(recs.filter((r) => r.platform === "rootme").map((r) => r.title.replace(/^RM: /, "").toLowerCase()));
-  for (const project of ftProgress.availableProjects.slice(0, 5)) {
+  for (const project of available.slice(0, 5)) {
     for (const skill of project.skills) {
       const level = skillProfile[skill] ?? 0;
       if (level < 2 && isSecurityRelated(skill)) {
@@ -828,7 +833,7 @@ export function generateRecommendations(
   for (const machine of machinePicks) {
     const hours = machine.difficulty === "Hard" ? 8 : machine.difficulty === "Medium" ? 5 : 3;
     const matchedSkills = (areaToSkills[machine.area] ?? []).filter((s) => (skillProfile[s] ?? 0) < 2);
-    const relatedProject = ftProgress.availableProjects.find((p) =>
+    const relatedProject = available.find((p) =>
       p.skills.some((s) => matchedSkills.includes(s))
     );
     const reason = relatedProject
@@ -1239,7 +1244,7 @@ function suggestPlatformForSkill(
   return mapping[skill] ?? null;
 }
 
-export function runGuidanceEngine(): GuidanceResult {
+export function runGuidanceEngine(boardDoneSlugs?: Set<string>): GuidanceResult {
   syncGoalValues();
   const snapshot = gatherSnapshot();
   const goalsWithPacing = analyzeGoals();
@@ -1249,7 +1254,8 @@ export function runGuidanceEngine(): GuidanceResult {
     snapshot,
     ftProgress,
     flattenGoals(goalsWithPacing),
-    skillProfile
+    skillProfile,
+    boardDoneSlugs
   );
 
   return {
