@@ -104,6 +104,7 @@ export type Recommendation = {
   skills?: string[];
   ref?: string;
   link?: string;
+  goalId?: number;
 };
 
 export type GuidanceResult = {
@@ -545,6 +546,7 @@ export function generateRecommendations(
 
   // 3. Goal-driven recommendations for cybersec platforms
   const goalTitleById = new Map(goalsWithPacing.map((g) => [g.id, g.title]));
+  const recommendedHtbModuleIds = new Set<string>();
   for (const goal of goalsWithPacing) {
     if (!goal.pacing || goal.pacing.percentComplete >= 100) continue;
 
@@ -558,8 +560,9 @@ export function generateRecommendations(
         snapshot.rootme.categoryCounts,
         relevantCats.length > 0 ? relevantCats : undefined,
       );
-      if (weakCategories.length > 0) {
-        const picks = pickRootmeChallenges(weakCategories[0], snapshot.rootme.solvedTitles, 2);
+      let found = false;
+      for (const cat of weakCategories) {
+        const picks = pickRootmeChallenges(cat, snapshot.rootme.solvedTitles, 2);
         if (picks.length > 0) {
           for (const ch of picks) {
             recs.push({
@@ -570,23 +573,29 @@ export function generateRecommendations(
               estimatedHours: ch.score >= 40 ? 3 : ch.score >= 20 ? 2 : 1,
               ref: ch.category,
               link: `https://www.root-me.org/en/Challenges/${encodeURIComponent(ch.category)}/`,
+              goalId: goal.id,
             });
           }
-        } else {
-          recs.push({
-            priority: goal.pacing.onTrack ? "medium" : "high",
-            platform: "rootme",
-            title: `Root-me: ${weakCategories[0]} challenges`,
-            reason: `${goal.pacing.requiredPace} needed for "${goal.title}". ${weakCategories[0]} has few solves.`,
-            estimatedHours: 3,
-            ref: weakCategories[0],
-          });
+          found = true;
+          break;
         }
+      }
+      if (!found && weakCategories.length > 0) {
+        recs.push({
+          priority: goal.pacing.onTrack ? "medium" : "high",
+          platform: "rootme",
+          title: `Root-me: ${weakCategories[0]} challenges`,
+          reason: `${goal.pacing.requiredPace} needed for "${goal.title}". ${weakCategories[0]} has few solves.`,
+          estimatedHours: 3,
+          ref: weakCategories[0],
+          goalId: goal.id,
+        });
       }
     }
 
     if (goal.category === "thm" && goal.pacing.daysRemaining < 90) {
-      const htbPicks = pickHtbModules(skillProfile, 2, htbFloors);
+      const htbPicks = pickHtbModules(skillProfile, 2, htbFloors)
+        .filter((m) => !recommendedHtbModuleIds.has(m.id));
       if (htbPicks.length > 0) {
         for (const mod of htbPicks) {
           const tierHours = { Fundamental: 6, Easy: 8, Medium: 12, Hard: 16 };
@@ -598,7 +607,9 @@ export function generateRecommendations(
             estimatedHours: tierHours[mod.tier],
             ref: mod.id,
             link: `https://academy.hackthebox.com/module/details/${mod.id}`,
+            goalId: goal.id,
           });
+          recommendedHtbModuleIds.add(mod.id);
         }
       } else {
         const thmPicks = pickThmRooms(snapshot, skillProfile, 2, thmFloors);
@@ -611,13 +622,15 @@ export function generateRecommendations(
             estimatedHours: room.difficulty === "hard" ? 4 : room.difficulty === "medium" ? 3 : 2,
             ref: room.code,
             link: `https://tryhackme.com/room/${room.code}`,
+            goalId: goal.id,
           });
         }
       }
     }
 
     if (goal.category === "htb" && goal.pacing.daysRemaining < 90) {
-      const htbPicks = pickHtbModules(skillProfile, 2, htbFloors);
+      const htbPicks = pickHtbModules(skillProfile, 2, htbFloors)
+        .filter((m) => !recommendedHtbModuleIds.has(m.id));
       for (const mod of htbPicks) {
         recs.push({
           priority: goal.pacing.onTrack ? "medium" : "high",
@@ -627,7 +640,9 @@ export function generateRecommendations(
           estimatedHours: ({ Fundamental: 6, Easy: 8, Medium: 12, Hard: 16 })[mod.tier],
           ref: mod.id,
           link: `https://academy.hackthebox.com/module/details/${mod.id}`,
+          goalId: goal.id,
         });
+        recommendedHtbModuleIds.add(mod.id);
       }
     }
 
@@ -637,6 +652,7 @@ export function generateRecommendations(
         platform: "maldev",
         title: "Maldev elearning",
         reason: `${goal.pacing.requiredPace} needed. Currently at ${(goal.currentValue ?? 0).toFixed(0)}%.`,
+        goalId: goal.id,
       });
     }
   }
@@ -773,10 +789,12 @@ const SKILL_TO_THM_CATEGORY: Record<string, string> = {
 const SKILL_TO_HTB_AREA: Record<string, string> = {
   security: "Networking",
   networking: "Networking",
-  cryptography: "Crypto",
-  "reverse-engineering": "Reverse engineering & binary",
+  cryptography: "Crypto & forensics basics",
+  "reverse-engineering": "Low-level & C",
   "web-security": "Web",
-  forensics: "Forensics & incident response",
+  forensics: "Crypto & forensics basics",
+  docker: "Linux & systems",
+  "system-administration": "Linux & systems",
 };
 
 const SKILL_TO_HTB_MACHINE_AREA: Record<string, string> = {
@@ -1004,8 +1022,8 @@ const PROJECT_CHALLENGE_ALIGNMENT: Record<string, AlignedChallenge[]> = {
     { platform: "rootme", title: "RM: ELF x86 - Stack buffer overflow basic 1", reason: "Stack variable overwrite — uses C memory model from libft", hours: 1, ref: "App - Système", link: "https://www.root-me.org/en/Challenges/App%20-%20Syst%C3%A8me/", rmTitle: "elf x86 - stack buffer overflow basic 1" },
   ],
   ft_printf: [
-    { platform: "rootme", title: "RM: Format string bug basic 1", reason: "You implemented printf — format string exploitation is the offensive mirror", hours: 2, ref: "App - Système", link: "https://www.root-me.org/en/Challenges/App%20-%20Syst%C3%A8me/", rmTitle: "elf x86 - format string bug basic 1" },
-    { platform: "rootme", title: "RM: Format string bug basic 2", reason: "Arbitrary write via %n — extends your printf internals to memory corruption", hours: 2, ref: "App - Système", link: "https://www.root-me.org/en/Challenges/App%20-%20Syst%C3%A8me/", rmTitle: "elf x86 - format string bug basic 2" },
+    { platform: "rootme", title: "RM: ELF x86 - Format string bug basic 1", reason: "You implemented printf — format string exploitation is the offensive mirror", hours: 2, ref: "App - Système", link: "https://www.root-me.org/en/Challenges/App%20-%20Syst%C3%A8me/", rmTitle: "elf x86 - format string bug basic 1" },
+    { platform: "rootme", title: "RM: ELF x86 - Format string bug basic 2", reason: "Arbitrary write via %n — extends your printf internals to memory corruption", hours: 2, ref: "App - Système", link: "https://www.root-me.org/en/Challenges/App%20-%20Syst%C3%A8me/", rmTitle: "elf x86 - format string bug basic 2" },
   ],
   born2beroot: [
     { platform: "htb", title: "HTB: Linux Privilege Escalation", reason: "Break the security policies you configured in born2beroot", hours: 8, ref: "linux-privesc", link: "https://academy.hackthebox.com/module/details/linux-privesc" },
@@ -1017,7 +1035,7 @@ const PROJECT_CHALLENGE_ALIGNMENT: Record<string, AlignedChallenge[]> = {
     { platform: "rootme", title: "RM: ELF x64 - Basic KeygenMe", reason: "Reverse an algorithm to write a keygen — same analytical skill as designing a sort", hours: 2, ref: "Cracking", link: "https://www.root-me.org/en/Challenges/Cracking/", rmTitle: "elf x64 - basic keygenme" },
   ],
   philosophers: [
-    { platform: "rootme", title: "RM: Race condition", reason: "TOCTOU race — directly applies your threading and synchronization knowledge", hours: 2, ref: "App - Système", link: "https://www.root-me.org/en/Challenges/App%20-%20Syst%C3%A8me/", rmTitle: "elf x86 - race condition" },
+    { platform: "rootme", title: "RM: ELF x86 - Race condition", reason: "TOCTOU race — directly applies your threading and synchronization knowledge", hours: 2, ref: "App - Système", link: "https://www.root-me.org/en/Challenges/App%20-%20Syst%C3%A8me/", rmTitle: "elf x86 - race condition" },
   ],
   minishell: [
     { platform: "rootme", title: "RM: PHP - Command injection", reason: "You built a shell — command injection exploits exactly what you implemented", hours: 2, ref: "Web - Serveur", link: "https://www.root-me.org/en/Challenges/Web%20-%20Serveur/", rmTitle: "php - command injection" },
@@ -1028,7 +1046,7 @@ const PROJECT_CHALLENGE_ALIGNMENT: Record<string, AlignedChallenge[]> = {
   ],
   cpp04: [
     { platform: "rootme", title: "RM: ELF C++ - 0 protection", reason: "Reverse a C++ binary — applies your OOP knowledge to binary analysis", hours: 1, ref: "Cracking", link: "https://www.root-me.org/en/Challenges/Cracking/", rmTitle: "elf c++ - 0 protection" },
-    { platform: "rootme", title: "RM: Stack bof C++ vtables", reason: "Vtable pointer corruption — exploits the polymorphism mechanism from cpp04", hours: 3, ref: "App - Système", link: "https://www.root-me.org/en/Challenges/App%20-%20Syst%C3%A8me/", rmTitle: "elf x86 - stack buffer overflow - c++ vtables" },
+    { platform: "rootme", title: "RM: ELF x86 - Stack buffer overflow - C++ vtables", reason: "Vtable pointer corruption — exploits the polymorphism mechanism from cpp04", hours: 3, ref: "App - Système", link: "https://www.root-me.org/en/Challenges/App%20-%20Syst%C3%A8me/", rmTitle: "elf x86 - stack buffer overflow - c++ vtables" },
   ],
   webserv: [
     { platform: "rootme", title: "RM: HTTP - User-agent", reason: "HTTP header spoofing — you implemented header parsing in webserv", hours: 1, ref: "Web - Serveur", link: "https://www.root-me.org/en/Challenges/Web%20-%20Serveur/", rmTitle: "http - user-agent" },
@@ -1037,6 +1055,19 @@ const PROJECT_CHALLENGE_ALIGNMENT: Record<string, AlignedChallenge[]> = {
   ],
   inception: [
     { platform: "htb", title: "HTB: Linux Privilege Escalation", reason: "Container escape scenarios — extends your Docker infrastructure knowledge", hours: 8, ref: "linux-privesc", link: "https://academy.hackthebox.com/module/details/linux-privesc" },
+  ],
+  get_next_line: [
+    { platform: "rootme", title: "RM: ELF x86 - Stack buffer overflow basic 2", reason: "Buffer overflow to overwrite a function pointer — applies your fd/buffer management skills", hours: 1, ref: "App - Système", link: "https://www.root-me.org/en/Challenges/App%20-%20Syst%C3%A8me/", rmTitle: "elf x86 - stack buffer overflow basic 2" },
+  ],
+  minitalk: [
+    { platform: "rootme", title: "RM: ELF x86 - Stack buffer overflow basic 3", reason: "Shellcode via environment variables — extends your signal handling and IPC knowledge", hours: 2, ref: "App - Système", link: "https://www.root-me.org/en/Challenges/App%20-%20Syst%C3%A8me/", rmTitle: "elf x86 - stack buffer overflow basic 3" },
+  ],
+  cpp00: [
+    { platform: "rootme", title: "RM: ELF C++ - 0 protection", reason: "Reverse a C++ binary — apply your new OOP knowledge to binary analysis", hours: 1, ref: "Cracking", link: "https://www.root-me.org/en/Challenges/Cracking/", rmTitle: "elf c++ - 0 protection" },
+  ],
+  ft_irc: [
+    { platform: "rootme", title: "RM: FTP - authentication", reason: "Extract protocol credentials from captures — you implemented a similar text protocol", hours: 1, ref: "Réseau", link: "https://www.root-me.org/en/Challenges/R%C3%A9seau/", rmTitle: "ftp - authentication" },
+    { platform: "htb", title: "HTB: Network Enumeration with Nmap", reason: "Network reconnaissance — you understand server-side networking from building ft_irc", hours: 8, ref: "nmap-enumeration", link: "https://academy.hackthebox.com/module/details/nmap-enumeration" },
   ],
   ft_transcendence: [
     { platform: "rootme", title: "RM: SQL injection - Authentication", reason: "SQLi on login — your project has database-backed authentication", hours: 2, ref: "Web - Serveur", link: "https://www.root-me.org/en/Challenges/Web%20-%20Serveur/", rmTitle: "sql injection - authentication" },

@@ -61,6 +61,27 @@ export const ROOTME_CHALLENGE_CATALOG: RootmeChallenge[] = [
   { id: 306, title: "PHP - Command injection", category: "Web - Serveur", score: 25, skills: ["command-injection", "php"], description: "Inject OS commands through a PHP application." },
   { id: 307, title: "Local File Inclusion", category: "Web - Serveur", score: 25, skills: ["lfi", "path-traversal"], description: "Read server files via Local File Inclusion." },
   { id: 308, title: "SQL injection - String", category: "Web - Serveur", score: 30, skills: ["sqli", "union", "data-extraction"], description: "Extract data with UNION-based SQL injection." },
+
+  // ── Cryptanalyse ───────────────────────────────────────────────────────
+  { id: 401, title: "Encoding - ASCII", category: "Cryptanalyse", score: 5, skills: ["encoding", "ascii"], description: "Decode an ASCII-encoded message." },
+  { id: 402, title: "Encoding - UU", category: "Cryptanalyse", score: 5, skills: ["encoding", "uuencode"], description: "Decode a UU-encoded message." },
+  { id: 403, title: "Hash - Message Digest 5", category: "Cryptanalyse", score: 10, skills: ["hash", "md5", "cracking"], description: "Crack an MD5 hash to recover the password." },
+  { id: 404, title: "Shift cipher", category: "Cryptanalyse", score: 10, skills: ["cipher", "caesar", "frequency-analysis"], description: "Break a shift cipher using frequency analysis." },
+  { id: 405, title: "File - PKZIP", category: "Cryptanalyse", score: 15, skills: ["archive", "known-plaintext"], description: "Crack a password-protected ZIP archive." },
+  { id: 406, title: "Transposition - Rail Fence", category: "Cryptanalyse", score: 20, skills: ["cipher", "transposition"], description: "Decode a rail fence transposition cipher." },
+
+  // ── Réseau ─────────────────────────────────────────────────────────────
+  { id: 501, title: "FTP - authentication", category: "Réseau", score: 5, skills: ["ftp", "pcap", "wireshark"], description: "Extract FTP credentials from a network capture." },
+  { id: 502, title: "TELNET - authentication", category: "Réseau", score: 5, skills: ["telnet", "pcap", "wireshark"], description: "Extract Telnet credentials from a network capture." },
+  { id: 503, title: "Ethernet - frame", category: "Réseau", score: 10, skills: ["ethernet", "hex", "protocol-analysis"], description: "Decode raw Ethernet frame data." },
+  { id: 504, title: "DNS - zone transfer", category: "Réseau", score: 15, skills: ["dns", "axfr", "enumeration"], description: "Perform a DNS zone transfer to discover records." },
+  { id: 505, title: "Bluetooth - Unknown file", category: "Réseau", score: 15, skills: ["bluetooth", "obex", "protocol-analysis"], description: "Analyze a Bluetooth protocol capture." },
+
+  // ── Forensique ─────────────────────────────────────────────────────────
+  { id: 601, title: "Command & Control - level 2", category: "Forensique", score: 10, skills: ["c2", "pcap", "malware-analysis"], description: "Identify C2 communication in a network capture." },
+  { id: 602, title: "Find the cat", category: "Forensique", score: 15, skills: ["steganography", "metadata", "forensics"], description: "Find hidden data in an image file." },
+  { id: 603, title: "Docker layers", category: "Forensique", score: 20, skills: ["docker", "forensics", "layers"], description: "Analyze Docker image layers for hidden secrets." },
+  { id: 604, title: "Logs analysis - web attack", category: "Forensique", score: 25, skills: ["log-analysis", "web", "forensics"], description: "Analyze web server logs to identify an attack." },
 ];
 
 export function getRootmeChallengesByCategory(category: string): RootmeChallenge[] {

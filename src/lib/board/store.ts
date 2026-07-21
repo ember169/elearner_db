@@ -207,8 +207,11 @@ export function populateBacklog(
     if (existingKeys.has(key)) continue;
 
     const category = categoryFromType(rec.platform);
-    let goalId =
-      (rec.ref ? slugToGoalId.get(rec.ref) : undefined) ?? null;
+    let goalId = rec.goalId ?? null;
+
+    if (!goalId) {
+      goalId = (rec.ref ? slugToGoalId.get(rec.ref) : undefined) ?? null;
+    }
 
     if (!goalId && rec.platform === "rootme" && rec.ref) {
       const refLower = rec.ref.toLowerCase();
@@ -261,7 +264,7 @@ export function populateBacklog(
       and(
         eq(planItems.weeklyPlanId, sentinelId),
         eq(planItems.type, "thm"),
-        ne(planItems.boardStatus, "done")
+        eq(planItems.boardStatus, "backlog")
       )
     )
     .run();
