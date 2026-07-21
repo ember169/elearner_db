@@ -779,15 +779,21 @@ export function generateRecommendations(
             });
             alreadyRecTitles.add(ch.title.toLowerCase());
           } else {
-            recs.push({
-              priority: "low",
-              platform: "rootme",
-              title: `Root-me: ${cat} challenges`,
-              reason: `Build ${skill} skills for upcoming "${project.name}".`,
-              estimatedHours: 3,
-              skills: [skill],
-              ref: cat,
-            });
+            const hasRelatedRec = recs.some(
+              (r) => r.platform === "rootme" && r.ref === cat &&
+                r.reason?.includes(project.name)
+            );
+            if (!hasRelatedRec) {
+              recs.push({
+                priority: "low",
+                platform: "rootme",
+                title: `Root-me: ${cat} challenges`,
+                reason: `Build ${skill} skills for upcoming "${project.name}".`,
+                estimatedHours: 3,
+                skills: [skill],
+                ref: cat,
+              });
+            }
           }
         }
       }

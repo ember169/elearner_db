@@ -154,7 +154,7 @@ export function pickRootmeChallengeForSkill(
     const match = unsolved.find((c) =>
       c.skills.some((s) => tags.includes(s))
     );
-    if (match) return match;
+    return match;
   }
   return unsolved[0];
 }
