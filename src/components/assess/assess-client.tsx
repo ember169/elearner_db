@@ -38,8 +38,8 @@ type AssessmentRow = {
   activityLevel: number;
   validatedLevel: number | null;
   overallScore: number | null;
-  attemptNumber: number;
-  questionCount: number;
+  attemptNumber: number | null;
+  questionCount: number | null;
   gapsJson: string | null;
   completedAt: string | null;
   createdAt: string;
