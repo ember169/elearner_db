@@ -170,3 +170,19 @@ Config: `provider: "local"`, `baseUrl: "http://fedora-server:8000"`, `model: "ge
 - `suggest-dialog.tsx`: Same LLM error display
 
 **Verification:** 10 consecutive rule-based suggestions produced only appropriate templates: C++ Module Progression, Networking Foundations, Reverse Engineering, Web Development, Digital Forensics, Security Scripting. No AV/EDR Evasion, Malware Development, Windows Internals, AD Attacks, Binary Exploitation, or other advanced topics appeared. LLM error message now visible in UI: "LLM failed: Local LLM error 401: {"detail":"Invalid token payload"}".
+
+## Iteration 24 — `9c231f8`
+**Finding:** Five UX issues: (1) save/sync buttons gave no success feedback (used raw `alert()` for errors), (2) sync history timestamps showed wrong timezone, (3) no sticky headers on long pages, (4) binary exploitation challenges miscategorized in cybersec lane, (5) side project suggestions had no accept/decline workflow.
+**Changes:**
+- `settings-client.tsx`: Replaced `alert()` with inline `saveResult`/`syncResult` state showing green/red feedback badges; auto-clear 3s success, 5s error. Fixed timestamps to `fr-FR` locale with `timeZone: "Europe/Paris"`. Made header sticky with `sticky top-0 z-10`
+- `kanban-board.tsx`: Wrapped grid in scroll container (`max-height: calc(100dvh - 260px)`), added `position: sticky; top: 0` to column headers and corner cell
+- `detail-pane.tsx`: Split content into sticky header (breadcrumb + title) and scrollable body
+- `store.ts`: Added `MALDEV_KEYWORDS` array, expanded `categoryFromType()` to accept title and check keywords (buffer overflow, format string, shellcode, assembly, etc.). Added reclassification migration pass after RM dedup
+- `schema.ts`: Added `sideProjectState` column to settings table
+- `0016_side_project_state.sql`: Migration for new column
+- `api/side-project/route.ts`: New endpoint with accept/done/abort actions. Accept creates epic goal + issue children + board card in correct swim lane
+- `side-project-brief.tsx`: Full accept/decline UI — ACCEPTED badge, Done/Abort buttons, double-confirmation on abort
+- `planner-client.tsx`: Wired accept/done/abort handlers, added `SideProjectState` type
+- `page.tsx`: Reads `sideProjectState` from settings, passes to PlannerClient
+
+**Verification:** Save shows inline "Saved" feedback. Timestamps in Paris timezone. Board column headers stay sticky on scroll. "HTB: Intro to Assembly Language" reclassified to Maldev lane. Side project accept flow creates epic+issues in Goals, shows ACCEPTED badge. Abort double-confirmation works (Are you sure? → Yes, abort / Cancel).
