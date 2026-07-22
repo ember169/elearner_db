@@ -113,6 +113,36 @@ export function AssessClient({
   }, []);
 
   async function startAssessment(competencyId: string) {
+    const comp = competencies.find((c) => c.id === competencyId);
+    const latest = comp?.latestAssessment;
+
+    // Resume existing ready or in-progress assessment instead of creating a duplicate
+    if (latest && (latest.status === "ready" || latest.status === "in_progress")) {
+      try {
+        const res = await fetch(`/api/assess/${latest.id}`);
+        const data = await res.json();
+        setQuestions(data.questions);
+        setAssessmentData(data.assessment);
+        setActiveAssessmentId(latest.id);
+        // For in-progress, find the first unanswered question
+        const firstUnanswered = (data.questions as QuestionRow[]).findIndex((q) => !q.studentAnswer);
+        setCurrentQ(firstUnanswered >= 0 ? firstUnanswered : 0);
+        setAnswer("");
+        setView("session");
+      } catch (e) {
+        console.error(e);
+      }
+      return;
+    }
+
+    // Resume generating assessment (user navigated away and came back)
+    if (latest && latest.status === "generating") {
+      setGenerating(competencyId);
+      setActiveAssessmentId(latest.id);
+      pollAssessment(latest.id);
+      return;
+    }
+
     setGenerating(competencyId);
     try {
       const res = await fetch("/api/assess", {
@@ -557,16 +587,20 @@ function CompetencyCard({
   onAssess: () => void;
   onHistory: () => void;
 }) {
+  const latestStatus = data.latestAssessment?.status;
   const status = data.validation
     ? "Validated"
-    : data.latestAssessment?.status === "generating" || data.latestAssessment?.status === "ready"
-      ? "Ready"
-      : data.assessmentCount > 0
-        ? "Stale"
-        : "Never";
+    : latestStatus === "generating"
+      ? "Generating"
+      : latestStatus === "ready" || latestStatus === "in_progress"
+        ? "Ready"
+        : data.assessmentCount > 0
+          ? "Stale"
+          : "Never";
 
   const statusVariant: Record<string, "success" | "outline" | "warning" | "secondary"> = {
     Validated: "success",
+    Generating: "warning",
     Ready: "warning",
     Stale: "secondary",
     Never: "outline",
@@ -614,12 +648,14 @@ function CompetencyCard({
           >
             {generating ? (
               <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+            ) : latestStatus === "ready" || latestStatus === "in_progress" ? (
+              <Play className="h-3 w-3 mr-1" />
             ) : data.assessmentCount > 0 ? (
               <RotateCcw className="h-3 w-3 mr-1" />
             ) : (
               <Play className="h-3 w-3 mr-1" />
             )}
-            {generating ? "Generating..." : data.assessmentCount > 0 ? "Retake" : "Assess"}
+            {generating ? "Generating..." : latestStatus === "ready" ? "Start" : latestStatus === "in_progress" ? "Resume" : data.assessmentCount > 0 ? "Retake" : "Assess"}
           </Button>
           {data.assessmentCount > 0 && (
             <Button variant="ghost" size="xs" onClick={onHistory}>

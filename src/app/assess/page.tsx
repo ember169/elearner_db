@@ -36,7 +36,7 @@ export default function AssessPage() {
     description: c.description,
     activityLevel: signals[c.id]?.autoLevel ?? 0,
     validation: validationMap[c.id] ?? null,
-    assessmentCount: allAssessments.filter((a) => a.competencyId === c.id).length,
+    assessmentCount: allAssessments.filter((a) => a.competencyId === c.id && a.status === "completed").length,
     latestAssessment: allAssessments.find((a) => a.competencyId === c.id) ?? null,
   }));
 
