@@ -175,6 +175,12 @@ export function AssessClient({
       return;
     }
 
+    // Grading failed — retry instead of creating a new assessment
+    if (latest && latest.status === "grading_failed") {
+      retryGrading(latest.id, competencyId);
+      return;
+    }
+
     setGenerating(competencyId);
     try {
       const res = await fetch("/api/assess", {
@@ -759,7 +765,7 @@ function CompetencyCard({
             ) : (
               <Play className="h-3 w-3 mr-1" />
             )}
-            {isGrading ? "Grading..." : generating ? "Generating..." : latestStatus === "ready" ? "Start" : latestStatus === "in_progress" ? "Resume" : data.assessmentCount > 0 || latestStatus === "grading_failed" ? "Retake" : "Assess"}
+            {isGrading ? "Grading..." : generating ? "Generating..." : latestStatus === "ready" ? "Start" : latestStatus === "in_progress" ? "Resume" : latestStatus === "grading_failed" ? "Retry grading" : data.assessmentCount > 0 ? "Retake" : "Assess"}
           </Button>
           {data.assessmentCount > 0 && (
             <Button variant="ghost" size="xs" onClick={onHistory}>
