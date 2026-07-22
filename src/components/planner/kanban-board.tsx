@@ -204,8 +204,7 @@ export function StatusKanbanBoard({
         style={{
           borderRadius: "12px",
           border: "1px solid var(--border)",
-          overflow: "auto",
-          maxHeight: "calc(100dvh - 260px)",
+          overflow: "hidden",
         }}
       >
       <div
