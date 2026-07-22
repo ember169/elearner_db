@@ -34,6 +34,11 @@ export const settings = sqliteTable("settings", {
   syncIntervalMinutes: integer("sync_interval_minutes").default(60),
   // Side project tracking (JSON: { title, goalId, status, acceptedAt, projectJson })
   sideProjectState: text("side_project_state"),
+  // Assessment AI (separate LLM config; null = use mentor config)
+  assessLlmProvider: text("assess_llm_provider"),
+  assessLlmApiKey: text("assess_llm_api_key"),
+  assessLlmModel: text("assess_llm_model"),
+  assessLlmBaseUrl: text("assess_llm_base_url"),
 });
 
 export const syncLog = sqliteTable("sync_log", {
@@ -372,6 +377,60 @@ export const deadlines = sqliteTable("deadlines", {
   weeklyHoursNeeded: real("weekly_hours_needed"),
   warning: text("warning"), // feasibility warning text
   createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+// --- Assessments ---
+
+export const assessments = sqliteTable("assessments", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  competencyId: text("competency_id").notNull(),
+  status: text("status").notNull().default("pending"),
+  triggerType: text("trigger_type").notNull(),
+  activityLevel: integer("activity_level").notNull(),
+  validatedLevel: integer("validated_level"),
+  overallScore: real("overall_score"),
+  attemptNumber: integer("attempt_number").default(1),
+  previousAssessmentId: integer("previous_assessment_id"),
+  questionCount: integer("question_count").default(0),
+  gapsJson: text("gaps_json"),
+  startedAt: text("started_at"),
+  completedAt: text("completed_at"),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+export const assessmentQuestions = sqliteTable("assessment_questions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  assessmentId: integer("assessment_id")
+    .notNull()
+    .references(() => assessments.id, { onDelete: "cascade" }),
+  questionType: text("question_type").notNull(),
+  difficulty: integer("difficulty").notNull(),
+  questionText: text("question_text").notNull(),
+  rubricJson: text("rubric_json").notNull(),
+  questionHash: text("question_hash"),
+  studentAnswer: text("student_answer"),
+  scoreJson: text("score_json"),
+  score: real("score"),
+  difficultyFlag: text("difficulty_flag"),
+  sortOrder: integer("sort_order").default(0),
+  answeredAt: text("answered_at"),
+  gradedAt: text("graded_at"),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+export const competencyValidations = sqliteTable("competency_validations", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  competencyId: text("competency_id").notNull().unique(),
+  validatedLevel: integer("validated_level").notNull(),
+  assessmentId: integer("assessment_id").references(() => assessments.id, { onDelete: "set null" }),
+  persistentGapsJson: text("persistent_gaps_json"),
+  validatedAt: text("validated_at")
     .notNull()
     .default(sql`(datetime('now'))`),
 });

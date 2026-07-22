@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   CalendarDays,
+  ClipboardCheck,
   Map,
   Target,
   Settings,
@@ -17,6 +18,7 @@ const navItems = [
   { href: "/", label: "Planner", icon: CalendarDays },
   { href: "/goals", label: "Goals", icon: Target },
   { href: "/progress", label: "Progress", icon: Map },
+  { href: "/assess", label: "Assess", icon: ClipboardCheck },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

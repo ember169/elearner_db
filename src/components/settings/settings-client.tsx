@@ -17,6 +17,7 @@ import {
   Bug,
   Flag,
   Brain,
+  ClipboardCheck,
   RefreshCw,
   Save,
   Download,
@@ -50,6 +51,10 @@ interface Config {
   objective: string | null;
   theme: string | null;
   syncIntervalMinutes: number | null;
+  assessLlmProvider: string | null;
+  assessLlmApiKey: string | null;
+  assessLlmModel: string | null;
+  assessLlmBaseUrl: string | null;
 }
 
 interface SyncLogEntry {
@@ -93,6 +98,20 @@ export function SettingsClient({
         if (llmApiKey) payload.apiKey = llmApiKey;
         if (llmModel) payload.model = llmModel;
       }
+      if (platform === "assess-llm") {
+        payload.platform = "llm";
+        const p = assessUseMentor ? llmProvider : assessLlmProvider;
+        payload.provider = p;
+        if (assessUseMentor) {
+          if (llmBaseUrl) payload.baseUrl = llmBaseUrl;
+          if (llmApiKey) payload.apiKey = llmApiKey;
+          if (llmModel) payload.model = llmModel;
+        } else {
+          if (assessLlmBaseUrl) payload.baseUrl = assessLlmBaseUrl;
+          if (assessLlmApiKey) payload.apiKey = assessLlmApiKey;
+          if (assessLlmModel) payload.model = assessLlmModel;
+        }
+      }
       const res = await fetch("/api/sync/test", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -128,6 +147,12 @@ export function SettingsClient({
   const [llmModel, setLlmModel] = useState(config.llmModel ?? "claude-sonnet-5");
   const [llmBaseUrl, setLlmBaseUrl] = useState(config.llmBaseUrl ?? "");
   const [objective, setObjective] = useState(config.objective ?? "");
+
+  const [assessUseMentor, setAssessUseMentor] = useState(!config.assessLlmProvider);
+  const [assessLlmProvider, setAssessLlmProvider] = useState(config.assessLlmProvider ?? "anthropic");
+  const [assessLlmApiKey, setAssessLlmApiKey] = useState(config.assessLlmApiKey ?? "");
+  const [assessLlmModel, setAssessLlmModel] = useState(config.assessLlmModel ?? "");
+  const [assessLlmBaseUrl, setAssessLlmBaseUrl] = useState(config.assessLlmBaseUrl ?? "");
 
   // Deadline state
   const [deadlineDate, setDeadlineDate] = useState("");
@@ -206,6 +231,10 @@ export function SettingsClient({
           llmModel: llmModel || null,
           llmBaseUrl: llmBaseUrl || null,
           objective: objective || null,
+          assessLlmProvider: assessUseMentor ? null : (assessLlmProvider || null),
+          assessLlmApiKey: assessUseMentor ? null : (assessLlmApiKey || null),
+          assessLlmModel: assessUseMentor ? null : (assessLlmModel || null),
+          assessLlmBaseUrl: assessUseMentor ? null : (assessLlmBaseUrl || null),
         }),
       });
       await assertOk(res);
@@ -346,6 +375,66 @@ export function SettingsClient({
               <Field label="Model" value={llmModel} onChange={setLlmModel} placeholder="gemma-4-E2B-it-GGUF" />
               <Field label="API Key (if required)" value={llmApiKey} onChange={setLlmApiKey} placeholder="Bearer token" type="password" />
             </div>
+          )}
+        </div>
+      </PlatformSection>
+
+      <PlatformSection
+        icon={<ClipboardCheck className="h-4 w-4" />}
+        name="Assessment AI"
+        configured={assessUseMentor ? (llmProvider === "local" ? !!llmBaseUrl : !!llmApiKey) : (assessLlmProvider === "local" ? !!assessLlmBaseUrl : !!assessLlmApiKey)}
+        hint="Powers question generation and grading. Can use a stronger model than the mentor for better assessment quality."
+        onTest={() => testConnection("assess-llm")}
+        testingNow={testing === "assess-llm"}
+        testResult={testResult["assess-llm"]}
+      >
+        <div className="space-y-3">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={assessUseMentor}
+              onChange={(e) => setAssessUseMentor(e.target.checked)}
+              className="rounded border-border"
+            />
+            <span className="text-[14px]">Use Mentor AI configuration</span>
+          </label>
+          {assessUseMentor ? (
+            <p className="text-[14px] text-muted-foreground">
+              Using the same provider as AI Mentor ({llmProvider === "local" ? "Local LLM" : "Anthropic"}{llmModel ? ` — ${llmModel}` : ""}).
+            </p>
+          ) : (
+            <>
+              <div className="space-y-1.5">
+                <Label className="text-[15px]">Provider</Label>
+                <div className="flex gap-1">
+                  {(["anthropic", "openai", "local"] as const).map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => setAssessLlmProvider(p)}
+                      className={`px-3 py-1.5 text-[15px] rounded-sm border transition-colors ${
+                        assessLlmProvider === p
+                          ? "border-primary bg-primary/10 text-primary font-medium"
+                          : "border-border text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {p === "anthropic" ? "Anthropic" : p === "openai" ? "OpenAI" : "Local LLM"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {assessLlmProvider === "local" ? (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <Field label="Base URL" value={assessLlmBaseUrl} onChange={setAssessLlmBaseUrl} placeholder="http://fedora-server:8000" />
+                  <Field label="Model" value={assessLlmModel} onChange={setAssessLlmModel} placeholder="gemma-4-E2B-it-GGUF" />
+                  <Field label="API Key (if required)" value={assessLlmApiKey} onChange={setAssessLlmApiKey} placeholder="Bearer token" type="password" />
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <Field label="API Key" value={assessLlmApiKey} onChange={setAssessLlmApiKey} placeholder={assessLlmProvider === "openai" ? "sk-..." : "sk-ant-..."} type="password" />
+                  <Field label="Model" value={assessLlmModel} onChange={setAssessLlmModel} placeholder={assessLlmProvider === "openai" ? "gpt-4o" : "claude-sonnet-5"} />
+                </div>
+              )}
+            </>
           )}
         </div>
       </PlatformSection>
