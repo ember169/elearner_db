@@ -587,7 +587,8 @@ export function DetailPane({
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="px-6 py-5">
+      {/* Sticky header */}
+      <div className="sticky top-0 z-10 px-6 pt-5 pb-3" style={{ background: "var(--background)", borderBottom: "1px solid var(--border)" }}>
         {/* Breadcrumb */}
         {parentChain.length > 0 && (
           <div className="flex items-center gap-1 text-[14px] text-muted-foreground mb-1.5 flex-wrap">
@@ -648,7 +649,7 @@ export function DetailPane({
           <h2 className="text-[20px] font-bold tracking-[-0.02em] leading-tight">{goal.title}</h2>
         </div>
 
-        <div className="flex items-center gap-2 mb-4">
+        <div className="flex items-center gap-2">
           {isCompleted ? (
             <Badge className="text-[15px] font-bold uppercase tracking-wider bg-green-500/15 text-green-400 border border-green-500/30 px-2 py-0.5">Completed</Badge>
           ) : isBehind ? (
@@ -670,7 +671,9 @@ export function DetailPane({
             </span>
           )}
         </div>
+      </div>
 
+      <div className="px-6 pb-5">
         {/* TASK: Metadata grid */}
         {isTask && (
           <div className="mb-4 border-t border-border pt-2">

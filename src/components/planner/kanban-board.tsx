@@ -201,18 +201,23 @@ export function StatusKanbanBoard({
       onDragEnd={handleDragEnd}
     >
       <div
+        style={{
+          borderRadius: "12px",
+          border: "1px solid var(--border)",
+          overflow: "auto",
+          maxHeight: "calc(100dvh - 260px)",
+        }}
+      >
+      <div
         className="grid"
         style={{
           gridTemplateColumns: "80px repeat(4, 1fr)",
           gridTemplateRows: "auto repeat(3, auto)",
           gap: "0",
-          borderRadius: "12px",
-          overflow: "hidden",
-          border: "1px solid var(--border)",
         }}
       >
         {/* Top-left corner */}
-        <div style={{ background: "var(--card)", padding: "8px" }} />
+        <div style={{ background: "var(--card)", padding: "8px", position: "sticky", top: 0, zIndex: 15 }} />
 
         {/* Column headers */}
         {COLUMNS.map((col, ci) => {
@@ -225,6 +230,9 @@ export function StatusKanbanBoard({
                 background: "var(--card)",
                 borderBottom: "2px solid var(--border)",
                 borderLeft: "1px solid var(--border)",
+                position: "sticky",
+                top: 0,
+                zIndex: 10,
               }}
             >
               <ColIcon
@@ -305,6 +313,7 @@ export function StatusKanbanBoard({
             })}
           </Fragment>
         ))}
+      </div>
       </div>
 
       <DragOverlay>

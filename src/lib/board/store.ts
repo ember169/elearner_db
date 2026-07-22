@@ -61,9 +61,21 @@ function resolveLink(type: string, ref?: string): string | undefined {
   }
 }
 
-function categoryFromType(type: string): BoardCategory {
-  if (["thm", "htb", "rootme"].includes(type)) return "cybersec";
+const MALDEV_KEYWORDS = [
+  "buffer overflow", "format string", "shellcode",
+  "assembly", "nop-sled", "ret2libc", "rop",
+  "vtable", "process inject", "stack overflow",
+];
+
+function categoryFromType(type: string, title?: string): BoardCategory {
   if (type === "maldev") return "maldev";
+  if (["thm", "htb", "rootme"].includes(type)) {
+    if (title) {
+      const t = title.toLowerCase();
+      if (MALDEV_KEYWORDS.some((kw) => t.includes(kw))) return "maldev";
+    }
+    return "cybersec";
+  }
   return "42";
 }
 
@@ -262,7 +274,7 @@ export function populateBacklog(
     const key = `${normalizeTitle(rec.title)}::${rec.platform}`;
     if (existingKeys.has(key)) continue;
 
-    const category = categoryFromType(rec.platform);
+    const category = categoryFromType(rec.platform, rec.title);
     let goalId = rec.goalId ?? null;
 
     if (!goalId) {
@@ -437,6 +449,19 @@ export function populateBacklog(
     group.sort((a, b) => b.title.length - a.title.length);
     for (const dup of group.slice(1)) {
       db.delete(planItems).where(eq(planItems.id, dup.id)).run();
+    }
+  }
+
+  // Reclassify maldev-adjacent items from cybersec to maldev
+  const cybersecItems = db
+    .select()
+    .from(planItems)
+    .where(and(eq(planItems.weeklyPlanId, sentinelId), eq(planItems.category, "cybersec")))
+    .all();
+  for (const item of cybersecItems) {
+    const correct = categoryFromType(item.type, item.title);
+    if (correct === "maldev") {
+      db.update(planItems).set({ category: "maldev" }).where(eq(planItems.id, item.id)).run();
     }
   }
 
@@ -650,7 +675,7 @@ export function initializeBoard(): BoardData {
       if (seenTitles.has(key)) continue;
       seenTitles.add(key);
 
-      const category = item.category ?? categoryFromType(item.type);
+      const category = item.category ?? categoryFromType(item.type, item.title);
       const goalId =
         item.goalId ??
         (item.ref ? slugToGoalId.get(item.ref) : undefined) ??
@@ -750,7 +775,7 @@ export function addBoardItem(data: {
       estimatedHours: data.estimatedHours ?? 2,
       priority: data.priority ?? "medium",
       goalId: data.goalId ?? null,
-      category: data.category ?? categoryFromType(data.type),
+      category: data.category ?? categoryFromType(data.type, data.title),
       boardStatus: data.boardStatus ?? "backlog",
       sortOrder: maxSort + 1,
     })

@@ -1,0 +1,1 @@
+ALTER TABLE `settings` ADD `side_project_state` text;

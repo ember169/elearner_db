@@ -32,6 +32,8 @@ export const settings = sqliteTable("settings", {
   // App
   theme: text("theme").default("dark"),
   syncIntervalMinutes: integer("sync_interval_minutes").default(60),
+  // Side project tracking (JSON: { title, goalId, status, acceptedAt, projectJson })
+  sideProjectState: text("side_project_state"),
 });
 
 export const syncLog = sqliteTable("sync_log", {

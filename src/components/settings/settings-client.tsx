@@ -24,6 +24,8 @@ import {
   ArrowRight,
   CalendarClock,
   AlertTriangle,
+  Check,
+  X,
 } from "lucide-react";
 import { assertOk } from "@/lib/utils";
 
@@ -77,6 +79,8 @@ export function SettingsClient({
 
   const [testing, setTesting] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<Record<string, { ok: boolean; msg: string }>>({});
+  const [saveResult, setSaveResult] = useState<{ ok: boolean; message: string } | null>(null);
+  const [syncResult, setSyncResult] = useState<{ ok: boolean; message: string } | null>(null);
 
   async function testConnection(platform: string) {
     setTesting(platform);
@@ -181,6 +185,7 @@ export function SettingsClient({
 
   async function saveSettings() {
     setSaving(true);
+    setSaveResult(null);
     try {
       const res = await fetch("/api/settings", {
         method: "PUT",
@@ -205,8 +210,11 @@ export function SettingsClient({
       });
       await assertOk(res);
       router.refresh();
+      setSaveResult({ ok: true, message: "Saved" });
+      setTimeout(() => setSaveResult(null), 3000);
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Failed to save settings.");
+      setSaveResult({ ok: false, message: e instanceof Error ? e.message : "Failed to save settings." });
+      setTimeout(() => setSaveResult(null), 5000);
     } finally {
       setSaving(false);
     }
@@ -214,12 +222,16 @@ export function SettingsClient({
 
   async function triggerSync() {
     setSyncing(true);
+    setSyncResult(null);
     try {
       const res = await fetch("/api/sync", { method: "POST" });
       await assertOk(res);
       router.refresh();
+      setSyncResult({ ok: true, message: "Synced" });
+      setTimeout(() => setSyncResult(null), 3000);
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Sync failed.");
+      setSyncResult({ ok: false, message: e instanceof Error ? e.message : "Sync failed." });
+      setTimeout(() => setSyncResult(null), 5000);
     } finally {
       setSyncing(false);
     }
@@ -254,23 +266,31 @@ export function SettingsClient({
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="page-title">Settings</h1>
-          <p className="page-subtitle mt-1">
-            Configure your platform connections and preferences
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={exportData} disabled={exporting}>
-            <Download className="h-3.5 w-3.5 mr-1.5" />
-            Export
-          </Button>
-          <Button size="sm" onClick={saveSettings} disabled={saving}>
-            <Save className="h-3.5 w-3.5 mr-1.5" />
-            {saving ? "Saving..." : "Save"}
-            <ArrowRight className="h-3 w-3 ml-1" />
-          </Button>
+      <div className="sticky top-0 z-10 -mx-5 -mt-16 px-5 pt-16 pb-4 md:-mx-8 md:-mt-8 md:px-8 md:pt-8" style={{ background: "var(--background)", borderBottom: "1px solid var(--border)" }}>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="page-title">Settings</h1>
+            <p className="page-subtitle mt-1">
+              Configure your platform connections and preferences
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {saveResult && (
+              <span className={`flex items-center gap-1 text-[13px] ${saveResult.ok ? "text-green-500" : "text-red-400"}`}>
+                {saveResult.ok ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
+                {saveResult.message}
+              </span>
+            )}
+            <Button variant="outline" size="sm" onClick={exportData} disabled={exporting}>
+              <Download className="h-3.5 w-3.5 mr-1.5" />
+              Export
+            </Button>
+            <Button size="sm" onClick={saveSettings} disabled={saving}>
+              <Save className="h-3.5 w-3.5 mr-1.5" />
+              {saving ? "Saving..." : "Save"}
+              <ArrowRight className="h-3 w-3 ml-1" />
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -512,10 +532,18 @@ export function SettingsClient({
             <RefreshCw className="h-4 w-4 text-muted-foreground" />
             <p className="section-label">Sync</p>
           </div>
-          <Button onClick={triggerSync} disabled={syncing} size="sm">
-            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${syncing ? "animate-spin" : ""}`} />
-            {syncing ? "Syncing all platforms..." : "Sync now"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={triggerSync} disabled={syncing} size="sm">
+              <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${syncing ? "animate-spin" : ""}`} />
+              {syncing ? "Syncing all platforms..." : "Sync now"}
+            </Button>
+            {syncResult && (
+              <span className={`flex items-center gap-1 text-[13px] ${syncResult.ok ? "text-green-500" : "text-red-400"}`}>
+                {syncResult.ok ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
+                {syncResult.message}
+              </span>
+            )}
+          </div>
 
           <Separator />
 
@@ -558,9 +586,10 @@ export function SettingsClient({
                           </button>
                         )}
                         <span className="ml-auto text-[14px] text-muted-foreground tabular-nums shrink-0">
-                          {new Date(sync.startedAt).toLocaleString("en-US", {
+                          {new Date(sync.startedAt).toLocaleString("fr-FR", {
                             dateStyle: "short",
                             timeStyle: "medium",
+                            timeZone: "Europe/Paris",
                           })}
                         </span>
                       </div>

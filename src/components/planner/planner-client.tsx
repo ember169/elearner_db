@@ -12,6 +12,12 @@ import { MobileBoardView } from "./mobile-board";
 import type { PlanItemData, GoalSlim, SideProject, CompetencyEntry } from "./types";
 import { assertOk } from "@/lib/utils";
 
+type SideProjectState = {
+  title: string;
+  goalId: number;
+  status: "accepted" | "done" | "aborted";
+} | null;
+
 interface PlannerClientProps {
   boardItems: PlanItemData[];
   mentorBriefing: string | null;
@@ -20,6 +26,7 @@ interface PlannerClientProps {
   competencies: CompetencyEntry[];
   goals: GoalSlim[];
   sideProject?: SideProject | null;
+  sideProjectState?: SideProjectState;
   hasKey: boolean;
   stale: boolean;
 }
@@ -32,6 +39,7 @@ export function PlannerClient({
   competencies,
   goals,
   sideProject: initialSideProject,
+  sideProjectState: initialSideProjectState,
   hasKey,
   stale,
 }: PlannerClientProps) {
@@ -40,6 +48,7 @@ export function PlannerClient({
   const [briefing, setBriefing] = useState(initialBriefing);
   const [collapsedBriefing, setCollapsedBriefing] = useState(initialCollapsed);
   const [sideProject, setSideProject] = useState(initialSideProject);
+  const [spState, setSpState] = useState<SideProjectState>(initialSideProjectState ?? null);
   const [regenerating, setRegenerating] = useState(false);
   const [regenStep, setRegenStep] = useState<string | null>(null);
   const [briefingSource, setBriefingSource] = useState<"llm" | "fallback" | null>(null);
@@ -128,6 +137,40 @@ export function PlannerClient({
     });
     const data = await res.json();
     if (data.side_project) setSideProject(data.side_project);
+  }
+
+  async function handleAcceptSideProject() {
+    if (!sideProject) return;
+    const res = await fetch("/api/side-project", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "accept", project: sideProject }),
+    });
+    const data = await res.json();
+    if (data.state) setSpState(data.state);
+    router.refresh();
+  }
+
+  async function handleDoneSideProject() {
+    await fetch("/api/side-project", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "done" }),
+    });
+    setSpState(null);
+    await handleRefreshSideProject();
+    router.refresh();
+  }
+
+  async function handleAbortSideProject() {
+    await fetch("/api/side-project", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "abort" }),
+    });
+    setSpState(null);
+    await handleRefreshSideProject();
+    router.refresh();
   }
 
   async function handleDeleteItem(id: number) {
@@ -297,7 +340,14 @@ export function PlannerClient({
         </div>
 
         {sideProject ? (
-          <SideProjectBrief project={sideProject} onRefresh={handleRefreshSideProject} />
+          <SideProjectBrief
+            project={sideProject}
+            onRefresh={handleRefreshSideProject}
+            acceptedState={spState}
+            onAccept={handleAcceptSideProject}
+            onDone={handleDoneSideProject}
+            onAbort={handleAbortSideProject}
+          />
         ) : (
           <div
             className="rounded-sm border border-border px-4 py-4 flex items-center justify-center"

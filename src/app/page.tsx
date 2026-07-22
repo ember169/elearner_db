@@ -16,6 +16,11 @@ export default function HomePage() {
   const cfg = db.select().from(settings).limit(1).all()[0] ?? null;
   const objective = cfg?.objective ?? "Red team / malware dev";
 
+  let sideProjectState = null;
+  if (cfg?.sideProjectState) {
+    try { sideProjectState = JSON.parse(cfg.sideProjectState); } catch {}
+  }
+
   const guidance = runGuidanceEngine();
   const signals = computeCompetencySignals(guidance.snapshot, guidance.ftProgress);
 
@@ -51,6 +56,7 @@ export default function HomePage() {
       competencies={competencies}
       goals={activeGoals}
       sideProject={mentorResult.plan.side_project ?? null}
+      sideProjectState={sideProjectState}
       hasKey={mentorResult.hasKey}
       stale={mentorResult.stale}
     />
