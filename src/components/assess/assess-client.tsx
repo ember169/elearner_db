@@ -229,6 +229,14 @@ export function AssessClient({
     }
   }
 
+  async function retryGrading(assessmentId: number, competencyId: string) {
+    setGradingDone(null);
+    setGrading(competencyId);
+    setView("grid");
+    await fetch(`/api/assess/${assessmentId}/grade`, { method: "POST" });
+    pollGrading(assessmentId, competencyId);
+  }
+
   async function loadHistory(competencyId: string) {
     const res = await fetch("/api/assess");
     const data = await res.json();
@@ -302,12 +310,17 @@ export function AssessClient({
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                {gradingDone.status === "completed" && (
+                {gradingDone.status === "completed" ? (
                   <Button size="xs" onClick={() => {
                     viewPastAssessment(gradingDone.assessmentId);
                     setGradingDone(null);
                   }}>
                     View results
+                  </Button>
+                ) : (
+                  <Button size="xs" onClick={() => retryGrading(gradingDone.assessmentId, gradingDone.competencyId)}>
+                    <RotateCcw className="h-3 w-3 mr-1" />
+                    Retry
                   </Button>
                 )}
                 <Button size="xs" variant="ghost" onClick={() => setGradingDone(null)}>
@@ -508,6 +521,16 @@ export function AssessClient({
               {copied ? <Check className="h-3.5 w-3.5 mr-1" /> : <Copy className="h-3.5 w-3.5 mr-1" />}
               {copied ? "Copied" : "Copy Report"}
             </Button>
+            {assessmentData.status === "grading_failed" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => retryGrading(assessmentData.id, assessmentData.competencyId)}
+              >
+                <RotateCcw className="h-3.5 w-3.5 mr-1" />
+                Retry grading
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
