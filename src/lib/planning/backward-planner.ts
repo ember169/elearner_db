@@ -57,15 +57,23 @@ function minHoursForCircle(
   completed: Set<string>
 ): { projects: { slug: string; name: string; hours: number; group?: string }[]; totalHours: number } {
   const all = circleProjects(circle);
-  const groups = new Map<string, FtProject[]>();
+  const groupMembers = new Map<string, FtProject[]>();
+  const completedGroups = new Set<string>();
   const ungrouped: FtProject[] = [];
+
+  for (const p of all) {
+    if (p.group && completed.has(p.slug)) {
+      completedGroups.add(p.group);
+    }
+  }
 
   for (const p of all) {
     if (completed.has(p.slug)) continue;
     if (p.group) {
-      const list = groups.get(p.group) ?? [];
+      if (completedGroups.has(p.group)) continue;
+      const list = groupMembers.get(p.group) ?? [];
       list.push(p);
-      groups.set(p.group, list);
+      groupMembers.set(p.group, list);
     } else {
       ungrouped.push(p);
     }
@@ -77,8 +85,7 @@ function minHoursForCircle(
     projects.push({ slug: p.slug, name: p.name, hours: p.estimatedHours, group: p.group });
   }
 
-  for (const [groupName, members] of groups) {
-    // Check if any member is already completed (group satisfied)
+  for (const [groupName, members] of groupMembers) {
     if (members.length === 0) continue;
     const shortest = members.reduce((a, b) =>
       a.estimatedHours <= b.estimatedHours ? a : b
