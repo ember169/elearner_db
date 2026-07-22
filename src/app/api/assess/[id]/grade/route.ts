@@ -6,6 +6,122 @@ import { gradeAnswer, scoreToLevel } from "@/lib/assess/grader";
 import { readAssessLlmConfig } from "@/lib/assess/llm";
 import type { Rubric } from "@/lib/assess/types";
 
+async function gradeInBackground(assessmentId: number) {
+  const assessment = db
+    .select()
+    .from(assessments)
+    .where(eq(assessments.id, assessmentId))
+    .get();
+
+  if (!assessment) return;
+
+  const questions = db
+    .select()
+    .from(assessmentQuestions)
+    .where(eq(assessmentQuestions.assessmentId, assessmentId))
+    .all();
+
+  const config = readAssessLlmConfig();
+  const allGaps: string[] = [];
+  const errors: string[] = [];
+  let totalScore = 0;
+  let totalMax = 0;
+  let gradedCount = 0;
+
+  for (const q of questions) {
+    try {
+      const rubric: Rubric = JSON.parse(q.rubricJson);
+      const result = await gradeAnswer(
+        q.questionText,
+        rubric,
+        q.studentAnswer!,
+        config,
+      );
+
+      db.update(assessmentQuestions)
+        .set({
+          scoreJson: JSON.stringify(result),
+          score: (result.totalScore / result.maxScore) * 100,
+          gradedAt: new Date().toISOString(),
+        })
+        .where(eq(assessmentQuestions.id, q.id))
+        .run();
+
+      totalScore += result.totalScore;
+      totalMax += result.maxScore;
+      gradedCount++;
+      allGaps.push(...result.identifiedGaps);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error(`[assess] Grading failed for question ${q.id}:`, msg);
+      errors.push(`Q${q.id}: ${msg}`);
+    }
+  }
+
+  if (gradedCount === 0) {
+    db.update(assessments)
+      .set({
+        status: "grading_failed",
+        gapsJson: JSON.stringify(errors),
+        completedAt: new Date().toISOString(),
+      })
+      .where(eq(assessments.id, assessmentId))
+      .run();
+    return;
+  }
+
+  const overallPercent = totalMax > 0 ? (totalScore / totalMax) * 100 : 0;
+  const validatedLevel = scoreToLevel(overallPercent, assessment.activityLevel);
+  const uniqueGaps = [...new Set(allGaps)];
+
+  db.update(assessments)
+    .set({
+      status: "completed",
+      overallScore: Math.round(overallPercent * 10) / 10,
+      validatedLevel,
+      gapsJson: JSON.stringify(uniqueGaps),
+      completedAt: new Date().toISOString(),
+    })
+    .where(eq(assessments.id, assessmentId))
+    .run();
+
+  const existing = db
+    .select()
+    .from(competencyValidations)
+    .where(eq(competencyValidations.competencyId, assessment.competencyId))
+    .get();
+
+  let persistentGaps: string[] = uniqueGaps;
+  if (existing?.persistentGapsJson) {
+    try {
+      const prev = JSON.parse(existing.persistentGapsJson) as string[];
+      const still = prev.filter((g) => uniqueGaps.includes(g));
+      persistentGaps = [...still, ...uniqueGaps.filter((g) => !still.includes(g))];
+    } catch {}
+  }
+
+  if (existing) {
+    db.update(competencyValidations)
+      .set({
+        validatedLevel,
+        assessmentId,
+        persistentGapsJson: JSON.stringify(persistentGaps),
+        validatedAt: new Date().toISOString(),
+      })
+      .where(eq(competencyValidations.competencyId, assessment.competencyId))
+      .run();
+  } else {
+    db.insert(competencyValidations)
+      .values({
+        competencyId: assessment.competencyId,
+        validatedLevel,
+        assessmentId,
+        persistentGapsJson: JSON.stringify(persistentGaps),
+      })
+      .run();
+  }
+}
+
 export async function POST(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -37,95 +153,24 @@ export async function POST(
     );
   }
 
-  const config = readAssessLlmConfig();
-  const allGaps: string[] = [];
-  let totalScore = 0;
-  let totalMax = 0;
-
-  for (const q of questions) {
-    try {
-      const rubric: Rubric = JSON.parse(q.rubricJson);
-      const result = await gradeAnswer(
-        q.questionText,
-        rubric,
-        q.studentAnswer!,
-        config,
-      );
-
-      db.update(assessmentQuestions)
-        .set({
-          scoreJson: JSON.stringify(result),
-          score: (result.totalScore / result.maxScore) * 100,
-          gradedAt: new Date().toISOString(),
-        })
-        .where(eq(assessmentQuestions.id, q.id))
-        .run();
-
-      totalScore += result.totalScore;
-      totalMax += result.maxScore;
-      allGaps.push(...result.identifiedGaps);
-    } catch (e) {
-      console.error(`[assess] Grading failed for question ${q.id}:`, e);
-    }
-  }
-
-  const overallPercent = totalMax > 0 ? (totalScore / totalMax) * 100 : 0;
-  const validatedLevel = scoreToLevel(overallPercent, assessment.activityLevel);
-  const uniqueGaps = [...new Set(allGaps)];
-
+  // Set status to grading and return immediately
   db.update(assessments)
-    .set({
-      status: "completed",
-      overallScore: Math.round(overallPercent * 10) / 10,
-      validatedLevel,
-      gapsJson: JSON.stringify(uniqueGaps),
-      completedAt: new Date().toISOString(),
-    })
+    .set({ status: "grading" })
     .where(eq(assessments.id, assessmentId))
     .run();
 
-  // Update or insert competency validation
-  const existing = db
-    .select()
-    .from(competencyValidations)
-    .where(eq(competencyValidations.competencyId, assessment.competencyId))
-    .get();
-
-  // Merge persistent gaps
-  let persistentGaps: string[] = uniqueGaps;
-  if (existing?.persistentGapsJson) {
-    try {
-      const prev = JSON.parse(existing.persistentGapsJson) as string[];
-      const still = prev.filter((g) => uniqueGaps.includes(g));
-      const resolved = prev.filter((g) => !uniqueGaps.includes(g));
-      persistentGaps = [...still, ...uniqueGaps.filter((g) => !still.includes(g))];
-    } catch {}
-  }
-
-  if (existing) {
-    db.update(competencyValidations)
+  // Fire and forget — grading happens in the background
+  gradeInBackground(assessmentId).catch((err) => {
+    console.error("[assess] Background grading crashed:", err);
+    db.update(assessments)
       .set({
-        validatedLevel,
-        assessmentId,
-        persistentGapsJson: JSON.stringify(persistentGaps),
-        validatedAt: new Date().toISOString(),
+        status: "grading_failed",
+        gapsJson: JSON.stringify([String(err)]),
+        completedAt: new Date().toISOString(),
       })
-      .where(eq(competencyValidations.competencyId, assessment.competencyId))
+      .where(eq(assessments.id, assessmentId))
       .run();
-  } else {
-    db.insert(competencyValidations)
-      .values({
-        competencyId: assessment.competencyId,
-        validatedLevel,
-        assessmentId,
-        persistentGapsJson: JSON.stringify(persistentGaps),
-      })
-      .run();
-  }
-
-  return NextResponse.json({
-    overallScore: Math.round(overallPercent * 10) / 10,
-    validatedLevel,
-    gaps: uniqueGaps,
   });
+
+  return NextResponse.json({ assessmentId, status: "grading" });
 }

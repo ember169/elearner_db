@@ -88,7 +88,8 @@ export function AssessClient({
   const [difficultyFlag, setDifficultyFlag] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [generating, setGenerating] = useState<string | null>(null);
-  const [grading, setGrading] = useState(false);
+  const [grading, setGrading] = useState<string | null>(null);
+  const [gradingDone, setGradingDone] = useState<{ competencyId: string; assessmentId: number; status: "completed" | "grading_failed" } | null>(null);
   const [showRaw, setShowRaw] = useState<Record<number, boolean>>({});
   const [copied, setCopied] = useState(false);
   const [assessmentData, setAssessmentData] = useState<AssessmentRow | null>(null);
@@ -111,6 +112,30 @@ export function AssessClient({
       setGenerating(null);
     }
   }, []);
+
+  const pollGrading = useCallback(async (id: number, competencyId: string) => {
+    const res = await fetch(`/api/assess/${id}`);
+    const data = await res.json();
+    const st = data.assessment.status;
+    if (st === "completed" || st === "grading_failed") {
+      setGrading(null);
+      setGradingDone({ competencyId, assessmentId: id, status: st });
+      router.refresh();
+    } else {
+      setTimeout(() => pollGrading(id, competencyId), 5000);
+    }
+  }, [router]);
+
+  // Auto-resume polling for any assessment that's currently grading
+  useEffect(() => {
+    for (const c of competencies) {
+      if (c.latestAssessment?.status === "grading") {
+        setGrading(c.id);
+        pollGrading(c.latestAssessment.id, c.id);
+        break;
+      }
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function startAssessment(competencyId: string) {
     const comp = competencies.find((c) => c.id === competencyId);
@@ -140,6 +165,13 @@ export function AssessClient({
       setGenerating(competencyId);
       setActiveAssessmentId(latest.id);
       pollAssessment(latest.id);
+      return;
+    }
+
+    // Already grading — just resume polling
+    if (latest && latest.status === "grading") {
+      setGrading(competencyId);
+      pollGrading(latest.id, competencyId);
       return;
     }
 
@@ -181,19 +213,14 @@ export function AssessClient({
         setAnswer("");
         setDifficultyFlag(null);
       } else {
-        // All answered — trigger grading
-        setGrading(true);
-        const gradeRes = await fetch(`/api/assess/${activeAssessmentId}/grade`, {
+        // All answered — trigger background grading
+        const cId = assessmentData?.competencyId ?? "";
+        await fetch(`/api/assess/${activeAssessmentId}/grade`, {
           method: "POST",
         });
-        const gradeData = await gradeRes.json();
-        // Reload assessment
-        const detailRes = await fetch(`/api/assess/${activeAssessmentId}`);
-        const detail = await detailRes.json();
-        setAssessmentData(detail.assessment);
-        setQuestions(detail.questions);
-        setGrading(false);
-        setView("results");
+        setGrading(cId);
+        setView("grid");
+        pollGrading(activeAssessmentId, cId);
       }
     } catch (e) {
       console.error(e);
@@ -225,7 +252,19 @@ export function AssessClient({
     if (!assessmentData) return;
     const comp = competencies.find((c) => c.id === assessmentData.competencyId);
     const report = buildReport(assessmentData, questions, comp?.label ?? assessmentData.competencyId);
-    await navigator.clipboard.writeText(report);
+    try {
+      await navigator.clipboard.writeText(report);
+    } catch {
+      // Fallback for non-HTTPS contexts
+      const ta = document.createElement("textarea");
+      ta.value = report;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
@@ -245,6 +284,39 @@ export function AssessClient({
             <p className="page-subtitle mt-1">Validate your knowledge with structured assessments</p>
           </div>
         </div>
+
+        {/* Grading done notification */}
+        {gradingDone && (
+          <Card className={gradingDone.status === "completed" ? "border-green-500/30 bg-green-500/5" : "border-destructive/30 bg-destructive/5"}>
+            <CardContent className="pt-3 pb-3 px-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {gradingDone.status === "completed" ? (
+                  <Check className="h-4 w-4 text-green-600" />
+                ) : (
+                  <X className="h-4 w-4 text-destructive" />
+                )}
+                <span className="text-[14px]">
+                  {gradingDone.status === "completed"
+                    ? `Grading complete for ${competencies.find((c) => c.id === gradingDone.competencyId)?.label ?? gradingDone.competencyId}`
+                    : `Grading failed for ${competencies.find((c) => c.id === gradingDone.competencyId)?.label ?? gradingDone.competencyId} — check your AI configuration`}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                {gradingDone.status === "completed" && (
+                  <Button size="xs" onClick={() => {
+                    viewPastAssessment(gradingDone.assessmentId);
+                    setGradingDone(null);
+                  }}>
+                    View results
+                  </Button>
+                )}
+                <Button size="xs" variant="ghost" onClick={() => setGradingDone(null)}>
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Detail pane for selected competency */}
         {selectedCompetency && (
@@ -301,6 +373,7 @@ export function AssessClient({
                   key={c.id}
                   data={c}
                   generating={generating === c.id}
+                  gradingId={grading === c.id}
                   onAssess={() => startAssessment(c.id)}
                   onHistory={() => loadHistory(c.id)}
                 />
@@ -408,20 +481,12 @@ export function AssessClient({
                 ) : (
                   <ChevronRight className="h-3.5 w-3.5 mr-1" />
                 )}
-                {currentQ < questions.length - 1 ? "Next" : "Submit & Grade"}
+                {currentQ < questions.length - 1 ? "Next" : "Finish"}
               </Button>
             </div>
           </CardContent>
         </Card>
 
-        {grading && (
-          <Card>
-            <CardContent className="pt-4 pb-4 px-4 flex items-center gap-3">
-              <Loader2 className="h-4 w-4 animate-spin text-primary" />
-              <span className="text-[14px]">Grading your answers...</span>
-            </CardContent>
-          </Card>
-        )}
       </div>
     );
   }
@@ -526,7 +591,7 @@ export function AssessClient({
                 </>
               )}
 
-              {q.scoreJson && (() => {
+              {q.scoreJson ? (() => {
                 try {
                   const grading = JSON.parse(q.scoreJson);
                   return (
@@ -551,7 +616,12 @@ export function AssessClient({
                     </>
                   );
                 } catch { return null; }
-              })()}
+              })() : q.studentAnswer && (
+                <>
+                  <Separator />
+                  <p className="text-[13px] text-red-400">Grading failed for this question. Check your Assessment AI configuration in Settings.</p>
+                </>
+              )}
 
               {/* Raw data toggle */}
               <button
@@ -561,9 +631,11 @@ export function AssessClient({
                 {showRaw[q.id] ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
                 {showRaw[q.id] ? "Hide" : "Show"} raw data
               </button>
-              {showRaw[q.id] && q.scoreJson && (
+              {showRaw[q.id] && (
                 <pre className="text-[11px] font-mono bg-muted/30 rounded-sm px-3 py-2 overflow-x-auto max-h-[200px] overflow-y-auto">
-                  {JSON.stringify(JSON.parse(q.scoreJson), null, 2)}
+                  {q.scoreJson
+                    ? JSON.stringify(JSON.parse(q.scoreJson), null, 2)
+                    : JSON.stringify({ rubric: JSON.parse(q.rubricJson), note: "No grading data — LLM call failed" }, null, 2)}
                 </pre>
               )}
             </CardContent>
@@ -579,29 +651,38 @@ export function AssessClient({
 function CompetencyCard({
   data,
   generating,
+  gradingId,
   onAssess,
   onHistory,
 }: {
   data: CompetencyData;
   generating: boolean;
+  gradingId: boolean;
   onAssess: () => void;
   onHistory: () => void;
 }) {
   const latestStatus = data.latestAssessment?.status;
-  const status = data.validation
-    ? "Validated"
-    : latestStatus === "generating"
-      ? "Generating"
-      : latestStatus === "ready" || latestStatus === "in_progress"
-        ? "Ready"
-        : data.assessmentCount > 0
-          ? "Stale"
-          : "Never";
+  const isGrading = gradingId || latestStatus === "grading";
+  const status = isGrading
+    ? "Grading"
+    : data.validation
+      ? "Validated"
+      : latestStatus === "generating"
+        ? "Generating"
+        : latestStatus === "ready" || latestStatus === "in_progress"
+          ? "Ready"
+          : latestStatus === "grading_failed"
+            ? "Failed"
+            : data.assessmentCount > 0
+              ? "Stale"
+              : "Never";
 
-  const statusVariant: Record<string, "success" | "outline" | "warning" | "secondary"> = {
+  const statusVariant: Record<string, "success" | "outline" | "warning" | "secondary" | "destructive"> = {
     Validated: "success",
+    Grading: "warning",
     Generating: "warning",
     Ready: "warning",
+    Failed: "destructive",
     Stale: "secondary",
     Never: "outline",
   };
@@ -644,9 +725,9 @@ function CompetencyCard({
           <Button
             size="xs"
             onClick={onAssess}
-            disabled={generating}
+            disabled={generating || isGrading}
           >
-            {generating ? (
+            {generating || isGrading ? (
               <Loader2 className="h-3 w-3 mr-1 animate-spin" />
             ) : latestStatus === "ready" || latestStatus === "in_progress" ? (
               <Play className="h-3 w-3 mr-1" />
@@ -655,7 +736,7 @@ function CompetencyCard({
             ) : (
               <Play className="h-3 w-3 mr-1" />
             )}
-            {generating ? "Generating..." : latestStatus === "ready" ? "Start" : latestStatus === "in_progress" ? "Resume" : data.assessmentCount > 0 ? "Retake" : "Assess"}
+            {isGrading ? "Grading..." : generating ? "Generating..." : latestStatus === "ready" ? "Start" : latestStatus === "in_progress" ? "Resume" : data.assessmentCount > 0 || latestStatus === "grading_failed" ? "Retake" : "Assess"}
           </Button>
           {data.assessmentCount > 0 && (
             <Button variant="ghost" size="xs" onClick={onHistory}>
