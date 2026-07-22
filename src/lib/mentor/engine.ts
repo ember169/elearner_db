@@ -257,7 +257,7 @@ function toolSchema() {
         },
         side_project: {
           type: "object",
-          description: "A small hands-on project that leverages this week's learning. Always include one.",
+          description: "A small hands-on project that leverages this week's learning. Always include one. Total should be 6-8h across 3-4 steps. Be realistic: include time for debugging, reading docs, and setup — not just coding.",
           properties: {
             title: { type: "string" },
             description: { type: "string", description: "2-3 sentence description of the project." },
@@ -269,7 +269,7 @@ function toolSchema() {
                 properties: {
                   title: { type: "string" },
                   description: { type: "string" },
-                  estimatedHours: { type: "number" },
+                  estimatedHours: { type: "number", description: "Realistic hours including debugging and research. Minimum 1h per step, most steps 2-3h." },
                 },
                 required: ["title", "description", "estimatedHours"],
               },
@@ -521,6 +521,7 @@ function narrativeToolSchema() {
         },
         side_project: {
           type: "object",
+          description: "Total should be 6-8h across 3-4 steps. Be realistic: include time for debugging, reading docs, and setup.",
           properties: {
             title: { type: "string" },
             description: { type: "string", description: "2-3 sentence description." },
@@ -532,7 +533,7 @@ function narrativeToolSchema() {
                 properties: {
                   title: { type: "string" },
                   description: { type: "string" },
-                  estimatedHours: { type: "number" },
+                  estimatedHours: { type: "number", description: "Realistic hours including debugging and research. Minimum 1h, most steps 2-3h." },
                 },
                 required: ["title", "description", "estimatedHours"],
               },
@@ -700,8 +701,8 @@ const SIDE_PROJECT_TEMPLATES: SideProjectTemplate[] = [
     description: "Apply your shell-building skills to create a basic reverse shell — connects back to a listener, spawns /bin/sh, handles I/O redirection.",
     skills: ["C", "networking", "unix"],
     steps: [
-      { title: "Socket connection", description: "Create a TCP socket that connects to a hardcoded IP:port.", estimatedHours: 1 },
-      { title: "Shell spawning", description: "Fork, dup2 stdin/stdout/stderr to the socket, execve /bin/sh.", estimatedHours: 2 },
+      { title: "Socket connection", description: "Create a TCP socket that connects to a hardcoded IP:port.", estimatedHours: 2 },
+      { title: "Shell spawning", description: "Fork, dup2 stdin/stdout/stderr to the socket, execve /bin/sh.", estimatedHours: 3 },
       { title: "Add features", description: "Add signal handling, retry logic, or basic encryption.", estimatedHours: 2 },
     ],
     capstone: "Core malware dev skill — understanding how shells work from the inside.",
@@ -712,8 +713,8 @@ const SIDE_PROJECT_TEMPLATES: SideProjectTemplate[] = [
     description: "Use your threading/mutex knowledge from Philosophers to build a keylogger that logs keystrokes to a file using producer-consumer threads.",
     skills: ["C", "threading", "unix"],
     steps: [
-      { title: "Input capture thread", description: "Read from /dev/input or terminal in raw mode.", estimatedHours: 1 },
-      { title: "Logging thread", description: "Consumer thread writes buffered keystrokes to a file with mutex protection.", estimatedHours: 2 },
+      { title: "Input capture thread", description: "Read from /dev/input or terminal in raw mode.", estimatedHours: 2 },
+      { title: "Logging thread", description: "Consumer thread writes buffered keystrokes to a file with mutex protection.", estimatedHours: 3 },
       { title: "Stealth features", description: "Add timestamp logging, process name detection, or self-delete.", estimatedHours: 2 },
     ],
     capstone: "Combines threading (Philosophers) with red team concepts.",
@@ -724,9 +725,9 @@ const SIDE_PROJECT_TEMPLATES: SideProjectTemplate[] = [
     description: "Apply OOP concepts from CPP modules to build a multi-threaded port scanner with clean class design.",
     skills: ["C++", "networking", "OOP"],
     steps: [
-      { title: "Scanner class", description: "Create a PortScanner class with target, port range, and scan() method.", estimatedHours: 1 },
-      { title: "TCP connect scan", description: "Implement connect() scan with configurable timeout.", estimatedHours: 2 },
-      { title: "Output formatting", description: "Add service detection (common ports) and formatted results.", estimatedHours: 1 },
+      { title: "Scanner class", description: "Create a PortScanner class with target, port range, and scan() method.", estimatedHours: 2 },
+      { title: "TCP connect scan", description: "Implement connect() scan with configurable timeout.", estimatedHours: 3 },
+      { title: "Output formatting", description: "Add service detection (common ports) and formatted results.", estimatedHours: 2 },
     ],
     capstone: "Bridges C++ OOP skills with practical security tooling.",
   },
@@ -736,8 +737,8 @@ const SIDE_PROJECT_TEMPLATES: SideProjectTemplate[] = [
     description: "Script your standard recon steps — nmap, gobuster, enum4linux — into a single tool that generates a clean report.",
     skills: ["bash", "scripting", "recon"],
     steps: [
-      { title: "Nmap wrapper", description: "Run staged nmap scans and parse output to find open ports.", estimatedHours: 1 },
-      { title: "Service enumeration", description: "Auto-run gobuster for HTTP, enum4linux for SMB, etc.", estimatedHours: 2 },
+      { title: "Nmap wrapper", description: "Run staged nmap scans and parse output to find open ports.", estimatedHours: 2 },
+      { title: "Service enumeration", description: "Auto-run gobuster for HTTP, enum4linux for SMB, etc.", estimatedHours: 3 },
       { title: "Report generation", description: "Output a markdown report with findings.", estimatedHours: 1 },
     ],
     capstone: "Speeds up your THM/HTB workflow and builds scripting muscle.",
@@ -748,7 +749,7 @@ const SIDE_PROJECT_TEMPLATES: SideProjectTemplate[] = [
     description: "Reinforce networking fundamentals by building a tool that calculates subnets, CIDR ranges, and host counts.",
     skills: ["C", "networking", "bitwise ops"],
     steps: [
-      { title: "IP parsing", description: "Parse dotted-quad notation and CIDR prefixes.", estimatedHours: 1 },
+      { title: "IP parsing", description: "Parse dotted-quad notation and CIDR prefixes.", estimatedHours: 2 },
       { title: "Subnet math", description: "Calculate network address, broadcast, first/last host, wildcard mask.", estimatedHours: 2 },
       { title: "Range operations", description: "Check if an IP is in a subnet, split/merge subnets.", estimatedHours: 2 },
     ],
@@ -761,8 +762,8 @@ const SIDE_PROJECT_TEMPLATES: SideProjectTemplate[] = [
     skills: ["C", "linux internals", "maldev"],
     steps: [
       { title: "Process enumeration", description: "List running processes, find target by name.", estimatedHours: 1 },
-      { title: "Memory injection", description: "Use ptrace to write shellcode into the target's address space.", estimatedHours: 3 },
-      { title: "Execution", description: "Redirect execution flow to the injected code.", estimatedHours: 2 },
+      { title: "Memory injection", description: "Use ptrace to write shellcode into the target's address space.", estimatedHours: 4 },
+      { title: "Execution", description: "Redirect execution flow to the injected code.", estimatedHours: 3 },
     ],
     capstone: "Foundational technique for malware development and red team ops.",
   },
@@ -791,8 +792,8 @@ export function pickSideProject(scheduledItems: MentorFocus[], objective: string
     skills: ["scripting", "security"],
     steps: [
       { title: "Choose a concept", description: "Pick one technique or topic from this week to implement.", estimatedHours: 1 },
-      { title: "Implement it", description: "Build a minimal working prototype.", estimatedHours: 3 },
-      { title: "Test against a lab", description: "Try it on a THM/HTB box or local VM.", estimatedHours: 1 },
+      { title: "Implement it", description: "Build a minimal working prototype.", estimatedHours: 4 },
+      { title: "Test against a lab", description: "Try it on a THM/HTB box or local VM.", estimatedHours: 2 },
     ],
     capstone_connection: `Reinforces practical ${objective.split("/")[0]?.trim() ?? "security"} skills.`,
   };
@@ -847,9 +848,9 @@ export function buildFallbackPlan(ctx: MentorContext): MentorPlan {
         description: sideProjectFocus.why,
         skills: ["scripting", ctx.objective.split(",")[0]?.trim().split("/")[0]?.trim() ?? "security"].filter(Boolean),
         steps: [
-          { title: "Set up project scaffold", description: "Create the project structure and dependencies.", estimatedHours: 1 },
-          { title: "Implement core logic", description: sideProjectFocus.why, estimatedHours: 2 },
-          { title: "Test and document", description: "Verify it works and write a short README.", estimatedHours: 1 },
+          { title: "Set up project scaffold", description: "Create the project structure and dependencies.", estimatedHours: 2 },
+          { title: "Implement core logic", description: sideProjectFocus.why, estimatedHours: 3 },
+          { title: "Test and document", description: "Verify it works and write a short README.", estimatedHours: 2 },
         ],
       }
     : undefined;
