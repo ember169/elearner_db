@@ -2,10 +2,9 @@ import { db } from "@/lib/db";
 import { assessments, assessmentQuestions, competencyValidations } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
-import { gradeAnswer, scoreToLevel } from "@/lib/assess/grader";
-import { readAssessLlmConfig } from "@/lib/assess/llm";
+import { scoreToLevel } from "@/lib/assess/grader";
 import { assessLog } from "@/lib/assess/log";
-import type { Rubric } from "@/lib/assess/types";
+import { gradeQuestionInBackground } from "@/lib/assess/grade-question";
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -22,35 +21,20 @@ async function gradeInBackground(assessmentId: number) {
 
   assessLog("info", `Finalizing grading for assessment #${assessmentId} (${assessment.competencyId})`);
 
-  // Grade any ungraded questions (ones that weren't already graded per-answer)
-  const config = readAssessLlmConfig();
+  // Enqueue any ungraded questions through the serial queue
   const questions = db
     .select()
     .from(assessmentQuestions)
     .where(eq(assessmentQuestions.assessmentId, assessmentId))
     .all();
 
-  const ungraded = questions.filter((q) => !q.scoreJson && q.studentAnswer);
-  for (const q of ungraded) {
-    try {
-      const rubric: Rubric = JSON.parse(q.rubricJson);
-      const result = await gradeAnswer(q.questionText, rubric, q.studentAnswer!, config);
-      db.update(assessmentQuestions)
-        .set({
-          scoreJson: JSON.stringify(result),
-          score: (result.totalScore / result.maxScore) * 100,
-          gradedAt: new Date().toISOString(),
-        })
-        .where(eq(assessmentQuestions.id, q.id))
-        .run();
-      assessLog("info", `Q${q.id} graded: ${result.totalScore}/${result.maxScore}`);
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      assessLog("error", `Q${q.id} grading failed: ${msg}`);
+  for (const q of questions) {
+    if (!q.scoreJson && q.studentAnswer) {
+      gradeQuestionInBackground(q.id);
     }
   }
 
-  // Wait for any in-flight per-answer grading to finish (poll up to 10 minutes)
+  // Wait for all questions to be graded (poll up to 10 minutes)
   const deadline = Date.now() + 600_000;
   while (Date.now() < deadline) {
     const fresh = db
@@ -59,7 +43,7 @@ async function gradeInBackground(assessmentId: number) {
       .where(eq(assessmentQuestions.assessmentId, assessmentId))
       .all();
     if (fresh.every((q) => q.scoreJson || !q.studentAnswer)) break;
-    await sleep(3000);
+    await sleep(5000);
   }
 
   // Collect final results
