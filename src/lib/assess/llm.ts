@@ -87,7 +87,7 @@ export async function callAssessLlm(
   const url = `${cfg.baseUrl.replace(/\/+$/, "")}/v1/chat/completions`;
   const res = await fetch(url, {
     method: "POST",
-    signal: AbortSignal.timeout(90_000),
+    signal: AbortSignal.timeout(300_000),
     headers: {
       "Content-Type": "application/json",
       ...(cfg.apiKey ? { Authorization: `Bearer ${cfg.apiKey}` } : {}),
