@@ -694,7 +694,7 @@ function CompetencyCard({
   const isGrading = gradingId || latestStatus === "grading";
   const status = isGrading
     ? "Grading"
-    : data.validation
+    : data.validation && data.validation.validatedLevel > 0
       ? "Validated"
       : latestStatus === "generating"
         ? "Generating"
