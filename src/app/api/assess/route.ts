@@ -4,6 +4,7 @@ import { desc, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { generateAssessment } from "@/lib/assess/generator";
 import { readAssessLlmConfig } from "@/lib/assess/llm";
+import { assessLog } from "@/lib/assess/log";
 import { getCompetency } from "@/lib/mentor/competency-map";
 import { computeCompetencySignals } from "@/lib/mentor/competency-signals";
 import { runGuidanceEngine } from "@/lib/guidance/engine";
@@ -98,7 +99,7 @@ export async function POST(req: NextRequest) {
         .run();
     })
     .catch((err) => {
-      console.error("[assess] Generation failed:", err);
+      assessLog("error", `Generation failed for ${competencyId}: ${err}`);
       db.update(assessments)
         .set({ status: "pending" })
         .where(eq(assessments.id, assessmentId))

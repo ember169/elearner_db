@@ -1,4 +1,5 @@
 import { callAssessLlm, parseJsonFromLlm } from "./llm";
+import { assessLog } from "./log";
 import type { QuestionTemplate, Rubric, AssessLlmConfig } from "./types";
 import { TEMPLATES } from "./rubric-templates";
 import { createHash } from "crypto";
@@ -129,6 +130,8 @@ export async function generateAssessment(
   const focusGaps = opts.focusGaps ?? [];
   const targetDifficulty = opts.pinDifficulty ?? Math.min(activityLevel, 5);
 
+  assessLog("info", `Generating assessment for ${competencyId} (level ${activityLevel}, difficulty ${targetDifficulty})`);
+
   // 2 anchor questions from template bank
   const anchors = pickAnchors(competencyId, 2, excludeHashes, focusGaps, targetDifficulty);
 
@@ -146,7 +149,8 @@ export async function generateAssessment(
       );
       llmQuestions.push(q);
     } catch (e) {
-      console.error(`[assess] Failed to generate LLM question ${i + 1}:`, e);
+      const msg = e instanceof Error ? e.message : String(e);
+      assessLog("error", `LLM question generation ${i + 1}/3 failed: ${msg}`);
       // Fall back to an extra anchor
       const extra = pickAnchors(competencyId, 1, [
         ...excludeHashes,

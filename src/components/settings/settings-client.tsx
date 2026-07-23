@@ -155,6 +155,25 @@ export function SettingsClient({
   const [assessLlmBaseUrl, setAssessLlmBaseUrl] = useState(config.assessLlmBaseUrl ?? "");
 
   // Deadline state
+  const [assessLogs, setAssessLogs] = useState<{ timestamp: string; level: string; message: string }[]>([]);
+  const [logsLoading, setLogsLoading] = useState(false);
+
+  async function loadAssessLogs() {
+    setLogsLoading(true);
+    try {
+      const res = await fetch("/api/assess/logs");
+      const data = await res.json();
+      setAssessLogs(data.logs ?? []);
+    } catch {} finally {
+      setLogsLoading(false);
+    }
+  }
+
+  async function clearLogs() {
+    await fetch("/api/assess/logs", { method: "DELETE" });
+    setAssessLogs([]);
+  }
+
   const [deadlineDate, setDeadlineDate] = useState("");
   const [deadlineBudget, setDeadlineBudget] = useState("15");
   const [deadlineSaving, setDeadlineSaving] = useState(false);
@@ -438,6 +457,47 @@ export function SettingsClient({
           )}
         </div>
       </PlatformSection>
+
+      {/* Assessment Logs */}
+      <Card>
+        <CardContent className="pt-4 pb-4 px-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <Terminal className="h-4 w-4 text-muted-foreground" />
+            <span className="text-[15px] font-semibold tracking-tight">Assessment Logs</span>
+            <span className="text-[13px] text-muted-foreground ml-auto tabular-nums">{assessLogs.length} entries</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="xs" onClick={loadAssessLogs} disabled={logsLoading}>
+              <RefreshCw className={`h-3 w-3 mr-1 ${logsLoading ? "animate-spin" : ""}`} />
+              {logsLoading ? "Loading..." : "Load logs"}
+            </Button>
+            {assessLogs.length > 0 && (
+              <Button variant="ghost" size="xs" onClick={clearLogs} className="text-destructive">
+                Clear
+              </Button>
+            )}
+          </div>
+          {assessLogs.length > 0 && (
+            <ScrollArea className="h-[240px]">
+              <div className="space-y-0.5 font-mono text-[12px]">
+                {[...assessLogs].reverse().map((log, i) => (
+                  <div key={i} className={`px-2 py-1 rounded-sm ${log.level === "error" ? "bg-destructive/10 text-red-400" : "text-muted-foreground"}`}>
+                    <span className="tabular-nums opacity-60">
+                      {new Date(log.timestamp).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "medium", timeZone: "Europe/Paris" })}
+                    </span>
+                    {" "}
+                    <span className={log.level === "error" ? "text-red-400 font-medium" : "text-muted-foreground"}>
+                      [{log.level.toUpperCase()}]
+                    </span>
+                    {" "}
+                    {log.message}
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Deadline Planning */}
       <Card>
