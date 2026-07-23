@@ -527,7 +527,7 @@ export function AssessClient({
               {copied ? <Check className="h-3.5 w-3.5 mr-1" /> : <Copy className="h-3.5 w-3.5 mr-1" />}
               {copied ? "Copied" : "Copy Report"}
             </Button>
-            {assessmentData.status === "grading_failed" && (
+            {(assessmentData.status === "grading_failed" || questions.every((q) => q.studentAnswer && !q.scoreJson)) && (
               <Button
                 variant="outline"
                 size="sm"
