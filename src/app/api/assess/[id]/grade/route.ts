@@ -7,6 +7,10 @@ import { readAssessLlmConfig } from "@/lib/assess/llm";
 import { assessLog } from "@/lib/assess/log";
 import type { Rubric } from "@/lib/assess/types";
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function gradeInBackground(assessmentId: number) {
   const assessment = db
     .select()
@@ -16,31 +20,21 @@ async function gradeInBackground(assessmentId: number) {
 
   if (!assessment) return;
 
-  assessLog("info", `Grading started for assessment #${assessmentId} (${assessment.competencyId})`);
+  assessLog("info", `Finalizing grading for assessment #${assessmentId} (${assessment.competencyId})`);
 
+  // Grade any ungraded questions (ones that weren't already graded per-answer)
+  const config = readAssessLlmConfig();
   const questions = db
     .select()
     .from(assessmentQuestions)
     .where(eq(assessmentQuestions.assessmentId, assessmentId))
     .all();
 
-  const config = readAssessLlmConfig();
-  const allGaps: string[] = [];
-  const errors: string[] = [];
-  let totalScore = 0;
-  let totalMax = 0;
-  let gradedCount = 0;
-
-  for (const q of questions) {
+  const ungraded = questions.filter((q) => !q.scoreJson && q.studentAnswer);
+  for (const q of ungraded) {
     try {
       const rubric: Rubric = JSON.parse(q.rubricJson);
-      const result = await gradeAnswer(
-        q.questionText,
-        rubric,
-        q.studentAnswer!,
-        config,
-      );
-
+      const result = await gradeAnswer(q.questionText, rubric, q.studentAnswer!, config);
       db.update(assessmentQuestions)
         .set({
           scoreJson: JSON.stringify(result),
@@ -49,16 +43,49 @@ async function gradeInBackground(assessmentId: number) {
         })
         .where(eq(assessmentQuestions.id, q.id))
         .run();
-
-      totalScore += result.totalScore;
-      totalMax += result.maxScore;
-      gradedCount++;
       assessLog("info", `Q${q.id} graded: ${result.totalScore}/${result.maxScore}`);
-      allGaps.push(...result.identifiedGaps);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       assessLog("error", `Q${q.id} grading failed: ${msg}`);
-      errors.push(`Q${q.id}: ${msg}`);
+    }
+  }
+
+  // Wait for any in-flight per-answer grading to finish (poll up to 10 minutes)
+  const deadline = Date.now() + 600_000;
+  while (Date.now() < deadline) {
+    const fresh = db
+      .select()
+      .from(assessmentQuestions)
+      .where(eq(assessmentQuestions.assessmentId, assessmentId))
+      .all();
+    if (fresh.every((q) => q.scoreJson || !q.studentAnswer)) break;
+    await sleep(3000);
+  }
+
+  // Collect final results
+  const final = db
+    .select()
+    .from(assessmentQuestions)
+    .where(eq(assessmentQuestions.assessmentId, assessmentId))
+    .all();
+
+  const allGaps: string[] = [];
+  const errors: string[] = [];
+  let totalScore = 0;
+  let totalMax = 0;
+  let gradedCount = 0;
+
+  for (const q of final) {
+    if (q.scoreJson) {
+      try {
+        const result = JSON.parse(q.scoreJson);
+        totalScore += result.totalScore ?? 0;
+        totalMax += result.maxScore ?? 0;
+        gradedCount++;
+        if (result.identifiedGaps) allGaps.push(...result.identifiedGaps);
+      } catch {}
+    } else if (q.studentAnswer) {
+      errors.push(`Q${q.id}: not graded`);
     }
   }
 

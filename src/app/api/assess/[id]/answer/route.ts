@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { assessments, assessmentQuestions } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
+import { gradeQuestionInBackground } from "@/lib/assess/grade-question";
 
 export async function POST(
   req: NextRequest,
@@ -34,6 +35,9 @@ export async function POST(
     })
     .where(eq(assessmentQuestions.id, questionId))
     .run();
+
+  // Start grading this question immediately in the background
+  gradeQuestionInBackground(questionId);
 
   // Update assessment status to in_progress if not already
   const assessment = db
