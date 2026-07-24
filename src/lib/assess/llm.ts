@@ -2,6 +2,28 @@ import { db } from "@/lib/db";
 import { settings } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import type { AssessLlmConfig } from "./types";
+import { assessLog } from "./log";
+
+async function fetchWithRetry(
+  url: string,
+  init: RequestInit,
+  maxRetries = 3,
+): Promise<Response> {
+  let lastError: Error | null = null;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fetch(url, init);
+    } catch (e) {
+      lastError = e instanceof Error ? e : new Error(String(e));
+      if (attempt < maxRetries) {
+        const delay = Math.min(1000 * 2 ** attempt, 30_000);
+        assessLog("info", `LLM fetch failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delay / 1000}s: ${lastError.message}`);
+        await new Promise((r) => setTimeout(r, delay));
+      }
+    }
+  }
+  throw lastError!;
+}
 
 export function readAssessLlmConfig(): AssessLlmConfig {
   const cfg = db.select().from(settings).where(eq(settings.id, 1)).get();
@@ -30,7 +52,7 @@ export async function callAssessLlm(
 
   if (cfg.provider === "anthropic") {
     if (!cfg.apiKey) throw new Error("Assessment AI: no Anthropic API key configured");
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
+    const res = await fetchWithRetry("https://api.anthropic.com/v1/messages", {
       method: "POST",
       signal: AbortSignal.timeout(60_000),
       headers: {
@@ -57,7 +79,7 @@ export async function callAssessLlm(
   if (cfg.provider === "openai") {
     const base = "https://api.openai.com/v1";
     if (!cfg.apiKey) throw new Error("Assessment AI: no OpenAI API key configured");
-    const res = await fetch(`${base}/chat/completions`, {
+    const res = await fetchWithRetry(`${base}/chat/completions`, {
       method: "POST",
       signal: AbortSignal.timeout(60_000),
       headers: {
@@ -85,7 +107,7 @@ export async function callAssessLlm(
   // local / OpenAI-compatible
   if (!cfg.baseUrl) throw new Error("Assessment AI: no base URL configured for local LLM");
   const url = `${cfg.baseUrl.replace(/\/+$/, "")}/v1/chat/completions`;
-  const res = await fetch(url, {
+  const res = await fetchWithRetry(url, {
     method: "POST",
     signal: AbortSignal.timeout(480_000),
     headers: {
