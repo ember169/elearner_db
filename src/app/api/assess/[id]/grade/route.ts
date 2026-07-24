@@ -63,10 +63,14 @@ async function gradeInBackground(assessmentId: number) {
     if (q.scoreJson) {
       try {
         const result = JSON.parse(q.scoreJson);
-        totalScore += result.totalScore ?? 0;
-        totalMax += result.maxScore ?? 0;
-        gradedCount++;
-        if (result.identifiedGaps) allGaps.push(...result.identifiedGaps);
+        if (result.error) {
+          errors.push(`Q${q.id}: ${result.error}`);
+        } else {
+          totalScore += result.totalScore ?? 0;
+          totalMax += result.maxScore ?? 0;
+          gradedCount++;
+          if (result.identifiedGaps) allGaps.push(...result.identifiedGaps);
+        }
       } catch {}
     } else if (q.studentAnswer) {
       errors.push(`Q${q.id}: not graded`);
@@ -171,9 +175,24 @@ export async function POST(
     );
   }
 
+  // Clear error-marked grades so they get re-graded on retry
+  for (const q of questions) {
+    if (q.scoreJson) {
+      try {
+        const parsed = JSON.parse(q.scoreJson);
+        if (parsed.error) {
+          db.update(assessmentQuestions)
+            .set({ scoreJson: null, score: null, gradedAt: null })
+            .where(eq(assessmentQuestions.id, q.id))
+            .run();
+        }
+      } catch {}
+    }
+  }
+
   // Set status to grading (update startedAt so stale detection can measure from here)
   db.update(assessments)
-    .set({ status: "grading", startedAt: new Date().toISOString() })
+    .set({ status: "grading", startedAt: new Date().toISOString(), completedAt: null })
     .where(eq(assessments.id, assessmentId))
     .run();
 
