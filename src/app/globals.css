@@ -118,13 +118,23 @@
     font-size: 0.875rem;
     line-height: 1.5;
     letter-spacing: -0.011em;
+    overscroll-behavior-y: none;
   }
   html {
     @apply font-sans;
+    -webkit-tap-highlight-color: transparent;
   }
   h1, h2, h3, h4 {
     letter-spacing: -0.025em;
     font-feature-settings: "ss01", "cv01";
+  }
+  button, [role="button"], a {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  /* Prevent input zoom on iOS — inputs < 16px trigger Safari zoom */
+  @media (max-width: 767px) {
+    input, select, textarea { font-size: 16px !important; }
   }
 }
 
@@ -165,6 +175,11 @@ a:focus-visible,
  *  --text-2xl:     28px  — page titles
  *  --text-hero:    44px  — hero / splash
  */
+
+/* Standalone PWA — hide grid dots for cleaner look */
+@media (display-mode: standalone) {
+  .grid-bg { display: none; }
+}
 
 /* Grid background pattern — faint dot grid, not graph paper */
 .grid-bg {

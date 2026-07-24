@@ -246,6 +246,7 @@ export function FullWeekView({
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       style={{
+        touchAction: "pan-y",
         transform: swipeDelta ? `translateX(${swipeDelta}px)` : undefined,
         transition: swipeDelta ? "none" : "transform 0.3s ease-out",
       }}

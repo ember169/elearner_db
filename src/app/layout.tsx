@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Roboto } from "next/font/google";
 import "./globals.css";
 import { Sidebar } from "@/components/layout/sidebar";
@@ -13,6 +13,21 @@ const roboto = Roboto({
 export const metadata: Metadata = {
   title: "Learner DB",
   description: "Personal learning dashboard",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Learner DB",
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+  themeColor: "#1f1d19",
+  colorScheme: "dark",
 };
 
 export default function RootLayout({
@@ -22,12 +37,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${roboto.variable} dark h-full antialiased`}>
-      <body className="min-h-full bg-background text-foreground">
+      <body className="min-h-dvh bg-background text-foreground pb-[env(safe-area-inset-bottom)]">
         <TooltipProvider>
           <div className="grid-bg fixed inset-0 pointer-events-none" />
           <Sidebar />
-          <main className="md:pl-14 min-h-screen relative">
-            <div className="px-5 pt-16 pb-6 md:px-8 md:py-8">{children}</div>
+          <main className="md:pl-14 min-h-dvh relative">
+            <div className="px-5 pt-16 pb-20 md:px-8 md:py-8 md:pb-8">{children}</div>
           </main>
         </TooltipProvider>
       </body>

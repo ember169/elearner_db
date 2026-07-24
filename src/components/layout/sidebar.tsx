@@ -8,10 +8,7 @@ import {
   Map,
   Target,
   Settings,
-  Menu,
-  X,
 } from "lucide-react";
-import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -53,30 +50,11 @@ function ShieldLogo() {
 
 export function Sidebar() {
   const pathname = usePathname();
-  const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
     <>
-      <button
-        className="fixed top-4 left-4 z-50 md:hidden p-1.5 rounded-sm border border-border bg-background/80 backdrop-blur-sm"
-        onClick={() => setMobileOpen(!mobileOpen)}
-      >
-        {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-      </button>
-
-      {mobileOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-black/60 md:hidden"
-          onClick={() => setMobileOpen(false)}
-        />
-      )}
-
-      <aside
-        className={cn(
-          "fixed inset-y-0 left-0 z-40 flex w-14 flex-col items-center border-r border-border bg-sidebar transition-transform duration-200 md:translate-x-0",
-          mobileOpen ? "translate-x-0" : "-translate-x-full"
-        )}
-      >
+      {/* Desktop: vertical icon rail */}
+      <aside className="fixed inset-y-0 left-0 z-40 hidden md:flex w-14 flex-col items-center border-r border-border bg-sidebar">
         <div className="flex h-14 items-center justify-center">
           <div className="flex h-[30px] w-[30px] items-center justify-center">
             <ShieldLogo />
@@ -93,7 +71,6 @@ export function Sidebar() {
               <Link
                 key={item.href}
                 href={item.href}
-                onClick={() => setMobileOpen(false)}
                 title={item.label}
                 className={cn(
                   "flex h-[40px] w-[40px] items-center justify-center rounded-sm transition-colors",
@@ -115,6 +92,33 @@ export function Sidebar() {
           })}
         </nav>
       </aside>
+
+      {/* Mobile: fixed bottom tab bar */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden flex items-stretch justify-around border-t border-border bg-sidebar/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)]">
+        {navItems.map((item) => {
+          const isActive =
+            item.href === "/"
+              ? pathname === "/"
+              : pathname.startsWith(item.href);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "flex flex-col items-center justify-center gap-0.5 flex-1 pt-2 pb-1.5 min-h-[52px] transition-colors",
+                isActive
+                  ? "text-[oklch(0.82_0.055_80)]"
+                  : "text-[rgba(237,232,220,0.35)] active:text-[rgba(237,232,220,0.7)]"
+              )}
+            >
+              <item.icon className="h-5 w-5" />
+              <span className="text-[10px] font-medium leading-none">
+                {item.label}
+              </span>
+            </Link>
+          );
+        })}
+      </nav>
     </>
   );
 }
