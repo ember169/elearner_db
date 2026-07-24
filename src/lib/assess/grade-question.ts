@@ -13,11 +13,14 @@ let running = false;
 async function drain() {
   if (running) return;
   running = true;
-  while (queue.length > 0) {
-    const job = queue.shift()!;
-    await job();
+  try {
+    while (queue.length > 0) {
+      const job = queue.shift()!;
+      await job();
+    }
+  } finally {
+    running = false;
   }
-  running = false;
 }
 
 function enqueue(job: () => Promise<void>) {
@@ -27,16 +30,16 @@ function enqueue(job: () => Promise<void>) {
 
 export function gradeQuestionInBackground(questionId: number) {
   enqueue(async () => {
-    const q = db
-      .select()
-      .from(assessmentQuestions)
-      .where(eq(assessmentQuestions.id, questionId))
-      .get();
-
-    if (!q || !q.studentAnswer || q.scoreJson) return;
-
-    const config = readAssessLlmConfig();
     try {
+      const q = db
+        .select()
+        .from(assessmentQuestions)
+        .where(eq(assessmentQuestions.id, questionId))
+        .get();
+
+      if (!q || !q.studentAnswer || q.scoreJson) return;
+
+      const config = readAssessLlmConfig();
       const result = await gradeAnswer(
         q.questionText,
         JSON.parse(q.rubricJson) as Rubric,
@@ -55,6 +58,14 @@ export function gradeQuestionInBackground(questionId: number) {
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       assessLog("error", `Q${questionId} grading failed: ${msg}`);
+      db.update(assessmentQuestions)
+        .set({
+          scoreJson: JSON.stringify({ error: msg, totalScore: 0, maxScore: 0, criteria: [], identifiedGaps: [] }),
+          score: 0,
+          gradedAt: new Date().toISOString(),
+        })
+        .where(eq(assessmentQuestions.id, questionId))
+        .run();
     }
   });
 }

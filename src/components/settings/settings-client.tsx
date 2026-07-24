@@ -314,7 +314,7 @@ export function SettingsClient({
 
   return (
     <div className="space-y-5">
-      <div className="sticky top-0 z-10 -mx-5 -mt-4 px-5 pt-4 pb-4 md:-mx-8 md:-mt-8 md:px-8 md:pt-8" style={{ background: "var(--background)", borderBottom: "1px solid var(--border)" }}>
+      <div className="sticky top-0 z-10 -mx-5 -mt-4 px-5 pt-4 pb-4 md:-mx-8 md:-mt-8 md:px-8 md:pt-8 backdrop-blur-xl backdrop-saturate-[1.8]" style={{ background: "color-mix(in oklch, var(--background) 80%, transparent)", borderBottom: "0.33px solid rgba(255,255,255,0.08)" }}>
         <div className="flex items-center justify-between">
           <div>
             <h1 className="page-title">Settings</h1>

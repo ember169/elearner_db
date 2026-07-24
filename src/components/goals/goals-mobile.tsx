@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
   AlertTriangle,
-  ArrowLeft,
+  ChevronLeft,
   Check,
   CheckCircle2,
   ChevronRight,
@@ -273,10 +273,10 @@ function MobileEpicView({
     <div className="flex flex-col h-full">
       <div className="px-4 pb-3">
         <button
-          className="flex items-center gap-1 text-[14px] text-muted-foreground mb-2"
+          className="flex items-center gap-0.5 text-[17px] text-primary mb-2"
           onClick={onBack}
         >
-          <ArrowLeft className="h-3 w-3" />
+          <ChevronLeft className="h-5 w-5" />
           Goals
         </button>
         <div className="flex items-center gap-1.5 mb-1">
@@ -401,10 +401,10 @@ function MobileIssueView({
     <div className="flex flex-col h-full">
       <div className="px-4 pb-3">
         <button
-          className="flex items-center gap-1 text-[14px] text-muted-foreground mb-2"
+          className="flex items-center gap-0.5 text-[17px] text-primary mb-2"
           onClick={onBack}
         >
-          <ArrowLeft className="h-3 w-3" />
+          <ChevronLeft className="h-5 w-5" />
           {parent?.title.replace("Complete ", "") ?? "Goals"}
         </button>
         <div className="flex items-center gap-1.5 mb-1">
@@ -530,10 +530,10 @@ function MobileTaskView({
     <div className="flex flex-col h-full">
       <div className="px-4 pb-3">
         <button
-          className="flex items-center gap-1 text-[14px] text-muted-foreground mb-3"
+          className="flex items-center gap-0.5 text-[17px] text-primary mb-3"
           onClick={onBack}
         >
-          <ArrowLeft className="h-3 w-3" />
+          <ChevronLeft className="h-5 w-5" />
           {parent?.title.replace("Complete ", "") ?? "Goals"}
         </button>
 
@@ -667,10 +667,10 @@ function MobileStandaloneView({
     <div className="flex flex-col h-full">
       <div className="px-4 pb-3">
         <button
-          className="flex items-center gap-1 text-[14px] text-muted-foreground mb-3"
+          className="flex items-center gap-0.5 text-[17px] text-primary mb-3"
           onClick={onBack}
         >
-          <ArrowLeft className="h-3 w-3" />
+          <ChevronLeft className="h-5 w-5" />
           Goals
         </button>
         {isCadence && (

@@ -8,7 +8,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground shadow-[0_10px_25px_rgba(0,0,0,0.3),0_2px_4px_rgba(0,0,0,0.3)] hover:brightness-110",
+        default: "bg-primary text-primary-foreground hover:brightness-110",
         outline:
           "border-border bg-transparent hover:bg-accent hover:text-foreground dark:border-input dark:hover:bg-input/50",
         secondary:
@@ -21,10 +21,10 @@ const buttonVariants = cva(
       },
       size: {
         default:
-          "h-9 gap-1.5 px-3.5",
-        xs: "h-6 gap-1 px-2 text-[14px]",
-        sm: "h-7.5 gap-1 px-2.5 text-[15px]",
-        lg: "h-10 gap-1.5 px-4 text-[15px]",
+          "h-11 gap-1.5 px-4",
+        xs: "h-8 gap-1 px-2.5 text-[14px]",
+        sm: "h-9 gap-1 px-3 text-[15px]",
+        lg: "h-12 gap-1.5 px-5 text-[15px]",
         icon: "size-8",
         "icon-xs": "size-6 [&_svg:not([class*='size-'])]:size-3",
         "icon-sm": "size-7",

@@ -171,9 +171,9 @@ export async function POST(
     );
   }
 
-  // Set status to grading and return immediately
+  // Set status to grading (update startedAt so stale detection can measure from here)
   db.update(assessments)
-    .set({ status: "grading" })
+    .set({ status: "grading", startedAt: new Date().toISOString() })
     .where(eq(assessments.id, assessmentId))
     .run();
 

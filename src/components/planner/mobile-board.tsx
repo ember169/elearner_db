@@ -69,7 +69,7 @@ export function MobileBoardView({
   return (
     <div>
       {/* Tab bar */}
-      <div className="flex gap-1 p-1 rounded-sm" style={{ background: "var(--muted)" }}>
+      <div className="flex gap-1 p-1 rounded-lg" style={{ background: "var(--muted)" }}>
         {(
           [
             { id: "in_progress" as const, label: "In progress", count: inProgressItems.length },
@@ -80,10 +80,11 @@ export function MobileBoardView({
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className="flex-1 py-1.5 rounded-sm text-[14px] font-medium transition-colors"
+            className="flex-1 py-2 rounded-md text-[14px] font-medium transition-colors"
             style={{
               background: tab === t.id ? "var(--background)" : "transparent",
               color: tab === t.id ? "var(--foreground)" : "var(--muted-foreground)",
+              boxShadow: tab === t.id ? "0 1px 3px rgba(0,0,0,0.15)" : "none",
             }}
           >
             {t.label}

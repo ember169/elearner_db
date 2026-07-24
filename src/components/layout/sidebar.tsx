@@ -93,8 +93,8 @@ export function Sidebar() {
         </nav>
       </aside>
 
-      {/* Mobile: fixed bottom tab bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden flex items-stretch justify-around border-t border-border bg-sidebar/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)]">
+      {/* Mobile: iOS-style bottom tab bar */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden flex items-stretch justify-around bg-sidebar/80 backdrop-blur-xl backdrop-saturate-[1.8] pb-[env(safe-area-inset-bottom)]" style={{ borderTop: "0.33px solid rgba(255,255,255,0.08)" }}>
         {navItems.map((item) => {
           const isActive =
             item.href === "/"
@@ -105,13 +105,13 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center justify-center gap-0.5 flex-1 pt-2 pb-1.5 min-h-[52px] transition-colors",
+                "flex flex-col items-center justify-center gap-1 flex-1 pt-1.5 pb-0.5 min-h-[49px] transition-colors",
                 isActive
                   ? "text-[oklch(0.82_0.055_80)]"
-                  : "text-[rgba(237,232,220,0.35)] active:text-[rgba(237,232,220,0.7)]"
+                  : "text-[rgba(237,232,220,0.4)] active:text-[rgba(237,232,220,0.7)]"
               )}
             >
-              <item.icon className="h-5 w-5" />
+              <item.icon className="h-[22px] w-[22px]" strokeWidth={1.5} />
               <span className="text-[10px] font-medium leading-none">
                 {item.label}
               </span>

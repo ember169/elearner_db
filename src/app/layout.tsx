@@ -1,14 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import { Roboto } from "next/font/google";
 import "./globals.css";
 import { Sidebar } from "@/components/layout/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
-
-const roboto = Roboto({
-  variable: "--font-roboto",
-  subsets: ["latin"],
-  weight: ["400", "500", "700", "900"],
-});
 
 export const metadata: Metadata = {
   title: "Learner DB",
@@ -36,7 +29,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${roboto.variable} dark h-full antialiased`}>
+    <html lang="en" className="dark h-full antialiased">
       <body className="min-h-dvh bg-background text-foreground pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
         <TooltipProvider>
           <div className="grid-bg fixed inset-0 pointer-events-none" />
