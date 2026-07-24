@@ -164,7 +164,7 @@ export function GoalsClient({
   return (
     <>
       {/* Desktop: split panel */}
-      <div className="hidden md:flex h-dvh">
+      <div className="hidden md:flex h-full">
         <GoalsTree
           goals={goals}
           selectedId={selectedId}
@@ -212,7 +212,7 @@ export function GoalsClient({
       </div>
 
       {/* Mobile: drill-down */}
-      <div className="md:hidden h-dvh">
+      <div className="md:hidden h-full">
         {mobilePane === "create" ? (
           <CreateForm
             allGoals={goals}

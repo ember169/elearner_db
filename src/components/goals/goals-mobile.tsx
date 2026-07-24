@@ -201,9 +201,9 @@ function MobileGoalsList({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-4 pt-14 pb-2">
+      <div className="flex items-center justify-between px-4 pb-2">
         <div>
-          <h1 className="text-[22px] font-bold">Goals</h1>
+          <h1 className="page-title">Goals</h1>
           <p className="text-[15px] text-muted-foreground">
             {activeCount} active
             {behindGoals.length > 0 && (
@@ -271,7 +271,7 @@ function MobileEpicView({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-4 pt-14 pb-3">
+      <div className="px-4 pb-3">
         <button
           className="flex items-center gap-1 text-[14px] text-muted-foreground mb-2"
           onClick={onBack}
@@ -399,7 +399,7 @@ function MobileIssueView({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-4 pt-14 pb-3">
+      <div className="px-4 pb-3">
         <button
           className="flex items-center gap-1 text-[14px] text-muted-foreground mb-2"
           onClick={onBack}
@@ -528,7 +528,7 @@ function MobileTaskView({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-4 pt-14 pb-3">
+      <div className="px-4 pb-3">
         <button
           className="flex items-center gap-1 text-[14px] text-muted-foreground mb-3"
           onClick={onBack}
@@ -665,7 +665,7 @@ function MobileStandaloneView({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-4 pt-14 pb-3">
+      <div className="px-4 pb-3">
         <button
           className="flex items-center gap-1 text-[14px] text-muted-foreground mb-3"
           onClick={onBack}

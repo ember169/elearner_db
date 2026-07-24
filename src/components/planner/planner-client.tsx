@@ -230,9 +230,7 @@ export function PlannerClient({
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <div className="min-w-0">
-          <h1 className="text-[28px] font-bold tracking-tight leading-tight">
-            Planner
-          </h1>
+          <h1 className="page-title">Planner</h1>
           <p className="text-[15px] text-muted-foreground mt-0.5 truncate">
             {objective}
           </p>

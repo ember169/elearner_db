@@ -37,12 +37,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${roboto.variable} dark h-full antialiased`}>
-      <body className="min-h-dvh bg-background text-foreground pb-[env(safe-area-inset-bottom)]">
+      <body className="min-h-dvh bg-background text-foreground pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
         <TooltipProvider>
           <div className="grid-bg fixed inset-0 pointer-events-none" />
           <Sidebar />
           <main className="md:pl-14 min-h-dvh relative">
-            <div className="px-5 pt-16 pb-20 md:px-8 md:py-8 md:pb-8">{children}</div>
+            <div className="px-5 pt-4 pb-20 md:px-8 md:py-8 md:pb-8">{children}</div>
           </main>
         </TooltipProvider>
       </body>
