@@ -558,6 +558,20 @@ export function getAvailableProjects(completedSlugs: string[]): FtProject[] {
   });
 }
 
+export function getUpcomingProjects(completedSlugs: string[]): FtProject[] {
+  const completed = new Set(completedSlugs.map((s) => s.toLowerCase()));
+  const doneGroups = satisfiedGroups(completed);
+  const available = new Set(
+    getAvailableProjects(completedSlugs).map((p) => p.slug),
+  );
+  return FT_COMMON_CORE.filter((p) => {
+    if (completed.has(p.slug)) return false;
+    if (available.has(p.slug)) return false;
+    if (p.group && doneGroups.has(p.group)) return false;
+    return true;
+  });
+}
+
 export function getCircleProgress(completedSlugs: string[]) {
   const completed = new Set(completedSlugs.map((s) => s.toLowerCase()));
   const circles: Record<number, { total: number; done: number }> = {};

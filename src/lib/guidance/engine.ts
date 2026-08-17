@@ -17,6 +17,7 @@ import { eq, or, and, isNotNull } from "drizzle-orm";
 import {
   FT_COMMON_CORE,
   getAvailableProjects,
+  getUpcomingProjects,
   getCircleProgress,
   SKILL_CATEGORIES,
   PLATFORM_SKILL_MAPPING,
@@ -116,6 +117,7 @@ export type GuidanceResult = {
     completedProjects: string[];
     inProgressProjects: string[];
     availableProjects: FtProject[];
+    upcomingProjects: FtProject[];
   };
   skillProfile: Record<string, number>;
   recommendations: Recommendation[];
@@ -378,6 +380,7 @@ export function analyzeFtProgress(snapshot: PlatformSnapshot) {
   const normalizedCompleted = completedSlugs.map((s) => matchProjectSlug(s));
   const circleBreakdown = getCircleProgress(normalizedCompleted);
   const availableProjects = getAvailableProjects(normalizedCompleted);
+  const upcomingProjects = getUpcomingProjects(normalizedCompleted);
 
   let currentCircle = 0;
   for (let c = 6; c >= 0; c--) {
@@ -393,6 +396,7 @@ export function analyzeFtProgress(snapshot: PlatformSnapshot) {
     completedProjects: normalizedCompleted,
     inProgressProjects: inProgressSlugs.map(matchProjectSlug),
     availableProjects,
+    upcomingProjects,
   };
 }
 
@@ -528,8 +532,10 @@ export function generateRecommendations(
     ? ftProgress.availableProjects.filter((p) => !boardDoneSlugs.has(p.slug))
     : ftProgress.availableProjects;
 
+  const alreadyAdded = new Set<string>();
   for (const project of available.slice(0, 3)) {
     if (ftProgress.inProgressProjects.includes(project.slug)) continue;
+    alreadyAdded.add(project.slug);
     recs.push({
       priority: hasUrgent42Goal ? "high" : "medium",
       platform: "42",
@@ -544,6 +550,28 @@ export function generateRecommendations(
         : project.description
           ? `${project.description.replace(/\.$/, "")} (Circle ${project.circle}).`
           : `Next available project in Circle ${project.circle}.`,
+      estimatedHours: project.estimatedHours,
+      skills: project.skills,
+      ref: project.slug,
+      goalId: slugToGoalId.get(project.slug),
+    });
+  }
+
+  // 2b. Upcoming 42 projects (prerequisites not yet met)
+  const upcoming = boardDoneSlugs?.size
+    ? ftProgress.upcomingProjects.filter((p) => !boardDoneSlugs.has(p.slug))
+    : ftProgress.upcomingProjects;
+
+  for (const project of upcoming) {
+    if (alreadyAdded.has(project.slug)) continue;
+    if (ftProgress.inProgressProjects.includes(project.slug)) continue;
+    recs.push({
+      priority: "low",
+      platform: "42",
+      title: project.name,
+      reason: project.description
+        ? `${project.description.replace(/\.$/, "")} (Circle ${project.circle}).`
+        : `Upcoming in Circle ${project.circle}.`,
       estimatedHours: project.estimatedHours,
       skills: project.skills,
       ref: project.slug,
