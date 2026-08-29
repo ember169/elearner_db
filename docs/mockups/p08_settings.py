@@ -36,7 +36,7 @@ def section(c, x, y, w, title, note=None):
 def content(c, x, y, w, compact=False):
     t = c.t
     c.text(x, y + 24, "Settings", SANS, 26, t["text"], bold=True)
-    y += 52
+    y += 62
 
     y += section(c, x, y, w, "Objective")
     c.rect(x, y + 10, w, 66, t["card"], r=12, stroke=t["line"])
@@ -53,10 +53,11 @@ def content(c, x, y, w, compact=False):
     y += field(c, x, y, w, "api key", "sk-ant-••••••••••••••••••••3f9a", action="test")
     y += field(c, x, y, w, "model", "claude-opus-5")
     y += 8
+    msg = ("Connected · go deeper visible" if compact
+           else "Connected · mentor chat and go deeper are visible")
     c.card(x, y, w, 52, r=12)
     c.circle(x + 22, y + 26, 5, t["success"])
-    c.text(x + 38, y + 31, "Connected · mentor chat and go deeper are visible",
-           MONO, 11, t["success"])
+    c.text(x + 38, y + 31, msg, MONO, 11, t["success"])
     y += 76
 
     y += section(c, x, y, w, "Sync")
