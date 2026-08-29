@@ -670,15 +670,13 @@ Avatar, Badge (6 variants), Button (multiple sizes including xs), Calendar, Card
 
 ### Brand mark (`src/components/brand/mark.tsx`)
 
-The family's marks are all discs built the same way: one structural move plus one contrasting core, with the core taking the surface colour so a single drawing works on charcoal and on paper. Leofresh cuts through produce; Decathleo looks down a weight plate. Cartableo reads as concentric layers around a terminal prompt:
+The family's marks are filled discs, not outlines: Leofresh's kiwi is a green disc with a cream core, Decathleo's plate is banded colour around a hole that takes the surface. One disc, one contrasting core — that is the whole recipe, and Cartableo follows it.
 
-- **Segmented outer ring** — the perimeter you probe or defend, its eight gorges the way in (cyber). Uses the family's segmented move, the same one Leofresh's citron and Decathleo's grooves use.
-- **Inner ring** — depth. The app is literally six tiers deep, L0 to L5 (learning).
-- **Core** — a prompt chevron in the surface colour (dev).
+The core is a prompt chevron: the terminal, where the cyber and the dev both happen, and what you sit in front of to learn the trade. A single groove near the rim gives the disc the family's banded read.
 
-Family rules that apply and are implemented: the disc never rotates and is never cropped, minimum size 20px, and below 28px the ring gaps and inner ring stop resolving, so `CartableoMark` ships the simplified disc + core variant instead.
+Family rules implemented, not just cited: never rotated, never cropped, minimum 20px, and below 28px the groove stops resolving so `CartableoMark` drops it.
 
-One drawing, three renderings: `CartableoMark` for the app (referencing `var(--cb-or)` / `var(--cb-bg)`), literal-colour copies in `src/app/icon.tsx` and `src/app/apple-icon.tsx` because Satori has no CSS variables, and `public/icon.svg` for PWA install. The last scales the mark to 0.78 so its content radius (11.1 of 32) stays inside the 12.8 maskable safe zone.
+One drawing, three renderings: `CartableoMark` for the app (`var(--cb-or)` / `var(--cb-bg)`), literal-colour copies in `src/app/icon.tsx` and `src/app/apple-icon.tsx` because Satori has no CSS variables, and `public/icon.svg` for PWA install — that last scaled to 0.78 so its content radius (11.7 of 32) stays inside the 12.8 maskable safe zone.
 
 ### Family design system (`src/app/globals.css`)
 
