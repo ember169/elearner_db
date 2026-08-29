@@ -242,3 +242,181 @@ a:focus-visible,
   height: 100%;
   transition: width 0.5s ease;
 }
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Family design system (Leofresh · Decathleo · Comptableo · Cartableo)
+   ---------------------------------------------------------------------------
+   Per the Decathleo handoff §3, the family shares everything except the accent:
+   neutrals, elevation spaced in CIE L*, success/danger, shadows, radii and the
+   4–48 spacing scale are copied verbatim from the Leofresh README. Only the
+   accent changes per app — mint for Leofresh, cuivre for Decathleo, and here
+   Cartableo's existing gold, kept as its identity.
+
+   Namespaced --cb-* and exposed through @theme so these live alongside the
+   shadcn tokens the other five pages already use, rather than redefining them.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* Self-hosted latin subsets, vendored from the Leofresh bundle. No third-party
+   origin: the PWA must look right offline and on first paint. */
+@font-face {
+  font-family: "DM Serif Display";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/dm-serif-display-400.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Archivo";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/archivo-var.woff2") format("woff2-variations");
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url("/fonts/jetbrains-mono-var.woff2") format("woff2-variations");
+}
+
+:root {
+  /* Neutrals — identical across the family. Elevation is spaced in L*, which is
+     what makes a card read as a card on an OLED panel at night:
+     bg 5.5 · card 10.3 · raised 13.7 · raised-hover 18.9 · line 21.7 */
+  --cb-bg: #131211;
+  --cb-card: #1d1c19;
+  --cb-raised: #242320;
+  --cb-raised-hover: #2f2e29;
+  --cb-line: #35342f;
+  --cb-text: #f7f3ea;
+  --cb-text-second: #c2c0b8;
+  --cb-text-muted: #98968d;
+
+  /* The accent — Cartableo's gold, the one token that differs from Leofresh's
+     mint and Decathleo's cuivre. #D7C19C is the hex of the oklch(.82 .055 80)
+     the app already ships. It measures 10.7:1 on --cb-bg, in line with mint
+     (10.6) and above cuivre (8.5), so it clears the family's own bar. */
+  --cb-or: #d7c19c;
+  --cb-or-pressed: #b19b78;
+  --cb-or-tint: rgba(215, 193, 156, 0.14);
+  --cb-on-or: #131211;
+
+  /* Status — family values. Unlike Decathleo, --warn keeps the family orange:
+     it collided with cuivre, but the gold here is far less saturated (C .055),
+     so #E08A3C stays legible as a separate signal. */
+  --cb-success: #57b37f;
+  --cb-success-tint: rgba(87, 179, 127, 0.16);
+  --cb-warn: #e08a3c;
+  --cb-warn-tint: rgba(224, 138, 60, 0.16);
+  --cb-danger: #e67078;
+  --cb-danger-tint: rgba(201, 48, 60, 0.18);
+  --cb-on-danger: #131211;
+  --cb-scrim: rgba(19, 18, 17, 0.55);
+}
+
+@theme inline {
+  --color-cb-bg: var(--cb-bg);
+  --color-cb-card: var(--cb-card);
+  --color-cb-raised: var(--cb-raised);
+  --color-cb-raised-hover: var(--cb-raised-hover);
+  --color-cb-line: var(--cb-line);
+  --color-cb-text: var(--cb-text);
+  --color-cb-second: var(--cb-text-second);
+  --color-cb-muted: var(--cb-text-muted);
+  --color-cb-or: var(--cb-or);
+  --color-cb-or-pressed: var(--cb-or-pressed);
+  --color-cb-or-tint: var(--cb-or-tint);
+  --color-cb-on-or: var(--cb-on-or);
+  --color-cb-success: var(--cb-success);
+  --color-cb-success-tint: var(--cb-success-tint);
+  --color-cb-warn: var(--cb-warn);
+  --color-cb-warn-tint: var(--cb-warn-tint);
+  --color-cb-danger: var(--cb-danger);
+  --color-cb-danger-tint: var(--cb-danger-tint);
+
+  /* Typography — family stack. DM Serif Display for display titles (never
+     uppercase), Archivo for body/buttons/card titles, JetBrains Mono for meta,
+     numbers and uppercase labels at .06–.16em tracking. */
+  --font-cb-display: "DM Serif Display", Georgia, serif;
+  --font-cb-sans: "Archivo", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-cb-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Radii — family scale: 8 chip-sm · 9 chip · 11–12 button · 14 card ·
+     16 card-lg · 18 hero · 20 tile · 22 device · pill */
+  --radius-cb-chip-sm: 8px;
+  --radius-cb-chip: 9px;
+  --radius-cb-button: 12px;
+  --radius-cb-card: 14px;
+  --radius-cb-card-lg: 16px;
+  --radius-cb-hero: 18px;
+  --radius-cb-tile: 20px;
+  --radius-cb-device: 22px;
+}
+
+/* Family type roles. Display titles are never uppercase; mono labels carry the
+   family's .06–.16em tracking. */
+.cb-display {
+  font-family: var(--font-cb-display);
+  font-weight: 400;
+  line-height: 1.12;
+  text-transform: none;
+}
+.cb-label-mono {
+  font-family: var(--font-cb-mono);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* Code highlighting for knowledge articles. rehype-highlight emits highlight.js
+   class names; rather than import a stock theme, the tokens map onto the family
+   ramp so code sits in the same palette as the prose around it. The accent is
+   spent on one thing only — keywords — the way the family spends it on the one
+   point that counts. */
+.hljs {
+  color: var(--cb-text-second);
+  background: transparent;
+}
+.hljs-comment,
+.hljs-quote {
+  color: var(--cb-text-muted);
+  font-style: italic;
+}
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-built_in,
+.hljs-name {
+  color: var(--cb-or);
+}
+.hljs-string,
+.hljs-attr,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+  color: var(--cb-success);
+}
+.hljs-number,
+.hljs-literal,
+.hljs-variable,
+.hljs-template-variable,
+.hljs-type,
+.hljs-params {
+  color: var(--cb-warn);
+}
+.hljs-title,
+.hljs-section,
+.hljs-function .hljs-title {
+  color: var(--cb-text);
+  font-weight: 700;
+}
+.hljs-deletion,
+.hljs-meta {
+  color: var(--cb-danger);
+}
+.hljs-emphasis {
+  font-style: italic;
+}
+.hljs-strong {
+  font-weight: 700;
+}

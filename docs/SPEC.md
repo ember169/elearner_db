@@ -142,6 +142,15 @@ Platform APIs          Sync Engine            SQLite DB
 | `learningPaths` | Named ordered sequences of resources: title, description, optional competency ID. |
 | `learningPathItems` | Join rows linking a path to its resources with a sort order. |
 
+### Knowledge (V4)
+
+| Table | Purpose |
+|-------|---------|
+| `knowledgeArticles` | One pre-generated course per competency + depth tier: title, `depthTier` (0–5), `recommendedLevel`, `status` (`ready` / `generating`), generated/updated timestamps. Unique on (`competencyId`, `depthTier`). 120 articles seeded — 20 competencies x 6 tiers. |
+| `articleSections` | Ordered sections within an article: `heading`, `content` (Markdown, may contain ```mermaid blocks), `isExpanded` and `expansionPrompt` once deepened via cloud LLM. |
+| `articleAnnotations` | User highlights and margin notes, stored as offset ranges (`startOffset`/`endOffset`) so they survive re-renders. |
+| `userContentBlocks` | User-inserted blocks (text/image/table/mermaid) placed after a given section. |
+
 ### Other
 
 | Table | Purpose |
@@ -272,6 +281,21 @@ Searchable catalog of every learning resource, grouped by competency.
 
 ---
 
+### Knowledge (`/knowledge`)
+
+Pre-generated courses, six depth tiers per competency.
+
+**Server component** (`src/app/knowledge/page.tsx`): loads all articles, then resolves each competency's level the same way Assess does — a validated level from `competencyValidations` outranks the activity signal from `computeCompetencySignals()`, since it was earned against an assessment rather than inferred.
+
+**Client features** (`src/components/knowledge/knowledge-client.tsx`):
+
+- **Competency grid**: cards grouped by area, each showing the competency's level badge (gold tint + check when validated, neutral when inferred) and a row of six tier chips. A tier at or below the user's level is gold; above it is neutral — the badge is a marker, never a gate, and every tier opens. A tier with no article renders as a dashed empty cell rather than a filled one.
+- **Search**: matches competency label, description, area, and article titles.
+- **Article reader** (`article-reader.tsx`): Markdown via react-markdown + remark-gfm, so GFM tables render; code highlighted by rehype-highlight against a palette mapped onto the family tokens rather than a stock highlight.js theme. Section headings are plain text — the family reserves icons for UI chrome. Wide tables and code blocks scroll inside their own container.
+- **Mermaid** (`mermaid-block.tsx`): fenced ```mermaid blocks are intercepted before the highlighter and rendered by Mermaid, dynamically imported once per session so its ~1MB never enters the app bundle. Themed from the family tokens read off the document at init. A malformed diagram falls back to its source in a bordered block instead of taking the article down.
+
+---
+
 ### Settings (`/settings`)
 
 Configuration and sync management.
@@ -395,6 +419,14 @@ Body `{ status }`, one of `not_started` / `in_progress` / `completed`. Sets `sta
 ### `DELETE /api/learn/[id]`
 
 Removes a resource. Returns `{ ok: true }`. 400 on a non-numeric ID, 404 if it does not exist.
+
+### `GET /api/knowledge`
+
+Lists articles, optionally filtered by `competencyId`. Returns `{ articles }`.
+
+### `GET /api/knowledge/[id]`
+
+Returns `{ article }` with its ordered sections, each section's annotations, and the article's user content blocks. 400 on a non-numeric ID, 404 if it does not exist.
 
 ### `GET/PUT /api/settings`
 
@@ -635,6 +667,21 @@ Avatar, Badge (6 variants), Button (multiple sizes including xs), Calendar, Card
 ### Layout (`src/components/layout/`)
 
 **Nav Rail** (`sidebar.tsx`): fixed left icon-only rail, 56px (w-14) wide, desktop only. Gold shield SVG logo (28x28) at top, 6 nav buttons (40x40, 20x20 Lucide icons): Planner (/), Goals (/goals), Learn (/learn), Progress (/progress), Assess (/assess), Settings (/settings). Active state: `oklch(0.82 0.055 80 / 0.1)` bg with gold icon. Inactive: `rgba(237,232,220,.35)` icons. Mobile: iOS-style bottom tab bar with the same six destinations, blurred translucent background, safe-area inset padding. Main content offset: `md:pl-14`.
+
+### Family design system (`src/app/globals.css`)
+
+Cartableo shares the design system of the sibling apps (Leofresh, Decathleo, Comptableo). Per the Decathleo handoff, the family shares everything **except the accent**: the neutral ramp, elevation spaced in CIE L*, success/warn/danger, shadows, the 8-22 radius scale and the 4-48 spacing scale are common. Only the accent changes per app - mint for Leofresh, cuivre for Decathleo, and Cartableo's existing gold here, kept as its identity.
+
+Tokens are namespaced `--cb-*` and exposed through `@theme` as `cb-` utilities, living **alongside** the shadcn tokens the five older pages already use rather than replacing them. Knowledge is the first page built on them.
+
+| Group | Values |
+|-------|--------|
+| Neutrals | `--cb-bg #131211` · `--cb-card #1d1c19` · `--cb-raised #242320` · `--cb-raised-hover #2f2e29` · `--cb-line #35342f` (L* 5.5 / 10.3 / 13.7 / 18.9 / 21.7) |
+| Ink | `--cb-text #f7f3ea` · `--cb-text-second #c2c0b8` · `--cb-text-muted #98968d` |
+| Accent (Cartableo) | `--cb-or #d7c19c` — the hex of the `oklch(.82 .055 80)` gold the app already shipped. 10.7:1 on `--cb-bg`, against mint's 10.6 and cuivre's 8.5. Plus `-pressed`, `-tint`, `--cb-on-or` |
+| Status | `--cb-success #57b37f` · `--cb-warn #e08a3c` · `--cb-danger #e67078`, each with a tint. Unlike Decathleo, warn keeps the family orange: it collided with cuivre, but the gold here is far less saturated (C .055) |
+| Type | DM Serif Display (display titles, never uppercase) · Archivo 400/700 (body, buttons, card titles) · JetBrains Mono 500 (meta, numbers, uppercase labels at .1em). Self-hosted latin subsets in `public/fonts/`, vendored from the Leofresh bundle — no third-party origin, so the PWA is correct offline and on first paint |
+| Helpers | `.cb-display` and `.cb-label-mono` carry the two type roles that need more than a font family |
 
 ### Platform colors (`src/lib/platform-colors.ts`)
 

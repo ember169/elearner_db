@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   BookOpen,
   CalendarDays,
+  Notebook,
   ClipboardCheck,
   Map,
   Target,
@@ -16,6 +17,7 @@ const navItems = [
   { href: "/", label: "Planner", icon: CalendarDays },
   { href: "/goals", label: "Goals", icon: Target },
   { href: "/learn", label: "Learn", icon: BookOpen },
+  { href: "/knowledge", label: "Knowledge", icon: Notebook },
   { href: "/progress", label: "Progress", icon: Map },
   { href: "/assess", label: "Assess", icon: ClipboardCheck },
   { href: "/settings", label: "Settings", icon: Settings },
