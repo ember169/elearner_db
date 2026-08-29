@@ -67,8 +67,19 @@ export function updateResourceStatus(
   completedAt?: string
 ) {
   const updates: Record<string, unknown> = { status };
-  if (status === "in_progress" && !completedAt) updates.startedAt = new Date().toISOString();
-  if (status === "completed") updates.completedAt = completedAt || new Date().toISOString();
+  if (status === "in_progress") {
+    updates.startedAt = new Date().toISOString();
+    updates.completedAt = null;
+  }
+  if (status === "completed") {
+    updates.completedAt = completedAt || new Date().toISOString();
+  }
+  // Reverting to not_started clears both timestamps, so a reset resource never
+  // keeps a start or completion date from a previous attempt.
+  if (status === "not_started") {
+    updates.startedAt = null;
+    updates.completedAt = null;
+  }
   db.update(learningResources).set(updates).where(eq(learningResources.id, id)).run();
 }
 

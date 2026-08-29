@@ -16,7 +16,8 @@
 /coverage
 
 # next.js
-/.next/
+# Unanchored so stray build traces in nested dirs are ignored too.
+.next/
 /out/
 
 # production

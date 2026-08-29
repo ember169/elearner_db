@@ -134,6 +134,14 @@ Platform APIs          Sync Engine            SQLite DB
 | `goals` | Trackable goals with two types. **Cumulative**: reach targetValue by deadline. **Cadence**: maintain cadenceValue per cadenceUnit (per_week/per_month) over a rolling window. Supports a 3-level hierarchy via self-referential `parentGoalId`: **Epic** (depth 0) → **Issue** (depth 1) → **Task** (depth 2). Parent `currentValue` = completed child count (targetValue is NOT overwritten by child operations — it preserves the user's original target). Auto-completion cascades up and down. Cadence goals only at leaf level. Circular references prevented by `validateParentChain()`. Fields: title, description, category, goalType, targetValue, currentValue, cadenceValue, cadenceUnit, metricSource, deadline, parentGoalId (self-ref FK), sortOrder, ftSlug (link to 42 project), originalTarget (preserves user target separate from rollup), status. |
 | `goalMilestones` | Milestones (FK to goals, cascade delete): title, target value threshold, reached-at timestamp. |
 
+### Learning (V4)
+
+| Table | Purpose |
+|-------|---------|
+| `learningResources` | Unified catalog of every study item: platform, external ID, title, description, URL, difficulty, estimated hours, content type, tags JSON, competency IDs JSON, status (`not_started` / `in_progress` / `completed`), started/completed timestamps. Seeded from the HTB Academy, HTB machine, and Root-me catalogs plus synced THM rooms and 42 projects. |
+| `learningPaths` | Named ordered sequences of resources: title, description, optional competency ID. |
+| `learningPathItems` | Join rows linking a path to its resources with a sort order. |
+
 ### Other
 
 | Table | Purpose |
@@ -247,6 +255,22 @@ Goal management with two goal types, hierarchical goals, and auto-tracking via a
 
 **Aggregate parent pacing** (`computeAggregatePacing()`): after tree assembly, walks bottom-up and computes weighted average of children's `percentComplete` (weight = `targetValue` or 1). Parent `pacing.requiredPace` shows "N/M milestones", `pacing.currentPace` shows "X% aggregate". `onTrack` is true only when all children are on track and deadline hasn't passed.
 
+### Learn (`/learn`)
+
+Searchable catalog of every learning resource, grouped by competency.
+
+**Server component** (`src/app/learn/page.tsx`): loads all resources via `listResources()` and passes the competency map down. Marked `force-dynamic`.
+
+**Client features** (`src/components/learn/learn-client.tsx`):
+
+- **Search**: matches title, description, content type, platform, tags, and competency labels. Filtering runs in memory over the already-loaded set, so results update on every keystroke without a round trip.
+- **Filter chips**: platform, difficulty (`beginner` / `intermediate` / `advanced` / `expert`), and status. Chips are multi-select within a dimension and AND across dimensions. A Clear button resets search and all chips; a running "N of M resources" count sits below.
+- **Competency-grouped grid**: sections ordered by competency area, then by the competency map's own ordering. A resource mapped to several competencies appears under each. Resources with no mapped competency fall into a trailing **Unmapped** group. Sections collapse individually; empty sections are omitted.
+- **Detail panel**: sticky beside the grid on desktop, an overlay sheet on mobile. Shows platform, difficulty, description, type, estimated hours, start/completion dates, competency and tag badges, status controls, and an external link to the resource on its platform. Start/completion dates are shown only when the current status justifies them.
+- **Status control**: three buttons write through `PATCH /api/learn/[id]` and update the row in place.
+
+---
+
 ### Settings (`/settings`)
 
 Configuration and sync management.
@@ -350,6 +374,18 @@ Creates/updates a common core deadline. Body: `{ targetDate: "YYYY-MM-DD", weekl
 ### `DELETE /api/deadlines?id=N`
 
 Deletes a deadline and its auto-generated children.
+
+### `GET /api/learn`
+
+Lists learning resources. Optional query params, all AND-combined: `platform`, `difficulty`, `status`, `competencyId`, `search` (substring match on title). Returns `{ resources }`.
+
+### `GET /api/learn/[id]`
+
+Returns `{ resource }` for one resource. 400 on a non-numeric ID, 404 if it does not exist.
+
+### `PATCH /api/learn/[id]`
+
+Body `{ status }`, one of `not_started` / `in_progress` / `completed`. Sets `startedAt` on first move to `in_progress` and `completedAt` on completion. Returns the updated `{ resource }`. 400 on an invalid ID or status, 404 if the resource does not exist.
 
 ### `GET/PUT /api/settings`
 
@@ -589,7 +625,7 @@ Avatar, Badge (6 variants), Button (multiple sizes including xs), Calendar, Card
 
 ### Layout (`src/components/layout/`)
 
-**Nav Rail** (`sidebar.tsx`): fixed left icon-only rail, 48px (w-12) wide. Gold shield SVG logo (28x28) at top, 4 nav buttons (34x34, 16x16 Lucide icons): Planner (/), Progress (/progress), Goals (/goals), Settings (/settings). Active state: `oklch(0.82 0.055 80 / 0.1)` bg with gold icon. Inactive: `rgba(237,232,220,.35)` icons. Mobile: off-screen with hamburger toggle and overlay. Main content offset: `md:pl-12`.
+**Nav Rail** (`sidebar.tsx`): fixed left icon-only rail, 56px (w-14) wide, desktop only. Gold shield SVG logo (28x28) at top, 6 nav buttons (40x40, 20x20 Lucide icons): Planner (/), Goals (/goals), Learn (/learn), Progress (/progress), Assess (/assess), Settings (/settings). Active state: `oklch(0.82 0.055 80 / 0.1)` bg with gold icon. Inactive: `rgba(237,232,220,.35)` icons. Mobile: iOS-style bottom tab bar with the same six destinations, blurred translucent background, safe-area inset padding. Main content offset: `md:pl-14`.
 
 ### Platform colors (`src/lib/platform-colors.ts`)
 
