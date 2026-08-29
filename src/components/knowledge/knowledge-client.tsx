@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
-import { Search, X, ArrowLeft, Loader2, BadgeCheck } from "lucide-react";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { Search, X, ArrowLeft, Loader2, BadgeCheck, Maximize2, Minimize2 } from "lucide-react";
 import { cn, assertOk } from "@/lib/utils";
 import { ArticleReader, type ReaderSection } from "./article-reader";
 import type { UserBlock } from "./user-block";
+import { ExportMenu } from "./export-menu";
 
 type ArticleRef = {
   id: number;
@@ -56,6 +57,7 @@ export function KnowledgeClient({
   const [article, setArticle] = useState<LoadedArticle | null>(null);
   const [loadingId, setLoadingId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const openArticle = useCallback(async (id: number) => {
@@ -105,6 +107,21 @@ export function KnowledgeClient({
     if (res.ok) setArticle((await res.json()).article as LoadedArticle);
   }, []);
 
+  useEffect(() => {
+    if (!fullscreen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setFullscreen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    // The rail and tab bar are fixed, so the overlay alone would leave the page
+    // scrollable behind it.
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [fullscreen]);
+
   const groups = useMemo(() => {
     const q = search.trim().toLowerCase();
     const match = (c: CompetencyEntry) =>
@@ -128,15 +145,40 @@ export function KnowledgeClient({
     const aboveLevel = competency ? article.depthTier > competency.level : false;
 
     return (
+      <div
+        className={
+          fullscreen
+            ? "fixed inset-0 z-50 overflow-y-auto bg-cb-bg px-5 py-6 md:px-8"
+            : ""
+        }
+      >
       <div className="mx-auto max-w-3xl space-y-5">
-        <button
-          type="button"
-          onClick={() => setArticle(null)}
-          className="flex items-center gap-1.5 font-cb-sans text-[14px] text-cb-muted transition-colors hover:text-cb-text"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          All competencies
-        </button>
+        <div className="flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={() => setArticle(null)}
+            className="flex items-center gap-1.5 font-cb-sans text-[14px] text-cb-muted transition-colors hover:text-cb-text"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            All competencies
+          </button>
+          <div className="flex items-center gap-1.5">
+            <ExportMenu articleId={article.id} />
+            <button
+              type="button"
+              onClick={() => setFullscreen((v) => !v)}
+              title={fullscreen ? "Exit full screen (Esc)" : "Full screen"}
+              aria-label={fullscreen ? "Exit full screen" : "Full screen"}
+              className="cb-label-mono flex items-center gap-1 rounded-cb-chip-sm bg-cb-raised px-2 py-1.5 text-[10px] text-cb-second transition-colors hover:bg-cb-raised-hover hover:text-cb-text"
+            >
+              {fullscreen ? (
+                <Minimize2 className="h-3 w-3" />
+              ) : (
+                <Maximize2 className="h-3 w-3" />
+              )}
+            </button>
+          </div>
+        </div>
 
         <header className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
@@ -202,6 +244,7 @@ export function KnowledgeClient({
             });
           }}
         />
+      </div>
       </div>
     );
   }

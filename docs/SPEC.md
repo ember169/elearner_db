@@ -295,6 +295,8 @@ Pre-generated courses, six depth tiers per competency.
 - **Mermaid** (`mermaid-block.tsx`): fenced ```mermaid blocks are intercepted before the highlighter and rendered by Mermaid, dynamically imported once per session so its ~1MB never enters the app bundle. Themed from the family tokens read off the document at init. A malformed diagram falls back to its source in a bordered block instead of taking the article down.
 - **Annotations** (`annotate-plugin.ts`, `annotation-popover.tsx`): select prose in a section and a docked panel offers a highlight plus an optional margin note. Clicking an existing highlight reopens it to edit or remove. Offsets into the Markdown source are the durable record, as the plan requires, but the rendered pass matches on the stored text — source offsets do not map onto the rendered tree, since `**bold**` is six characters shorter once rendered. Code and code blocks are skipped: a highlight spanning a token would break the highlighter's markup. Highlights paint as a tint plate so prose stays as readable inside them as outside; a note adds an underline, spending no second colour.
 - **User content blocks** (`user-block-editor.tsx`, `user-block.tsx`): between any two sections, insert Markdown text, a table, a Mermaid diagram, or an image. Images arrive by drop, paste, or picker and are stored as data URIs, so an article stays self-contained with no upload path to maintain. Blocks are visibly marked as the reader's own, so generated content and personal notes never blur.
+- **Full-screen reading** (`knowledge-client.tsx`): an overlay covering the rail and tab bar, exited with Escape. Body scroll is locked while it is open, since the nav is fixed and the page would otherwise scroll behind it.
+- **Export** (`export-menu.tsx`, `src/lib/knowledge/export.ts`): Markdown, a slide deck, or PDF. All three carry the reader's own blocks and highlights, and the two HTML outputs are self-contained — family palette inlined, zero external references, so they work offline.
 
 ---
 
@@ -441,6 +443,14 @@ Removes an annotation. Returns `{ ok: true }`.
 ### `POST /api/knowledge/[id]/block`
 
 `action` of `create` (`afterSectionId`, `blockType` one of text/image/table/mermaid, `content`), `update` (`blockId`, `content`), or `delete` (`blockId`). Content is capped at 2MB — an image block is a data URI in a text column — answering 413 past that. Blocks sharing an anchor keep insertion order behind it. Returns the whole updated `{ article }`.
+
+### `GET /api/knowledge/[id]/export?format=`
+
+`md` returns Markdown as a download, with the reader's blocks inlined and a "Your highlights" block per section. `slides` returns a self-contained HTML deck — one section per slide, per the plan, with arrow/space/click navigation and no library to load. `pdf` returns a print view served inline that calls `window.print()` on load, its palette flipping to ink-on-paper for the printer.
+
+The PDF comes from the browser's own engine rather than a headless Chromium in the image — a ~300MB dependency for one button. Mermaid keeps its fence in the Markdown export and renders as labelled source in the HTML ones: the diagram library is ~1MB and a downloaded file has nowhere to load it from. Export runs the same remark/rehype chain as the reader, minus React, since Next forbids `react-dom/server` in App Router code.
+
+400 on a bad ID or unknown format, 404 if the article does not exist.
 
 ### `GET/PUT /api/settings`
 
