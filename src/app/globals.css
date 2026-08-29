@@ -450,3 +450,26 @@ a:focus-visible,
 .hljs-strong {
   font-weight: 700;
 }
+
+/* Reader annotations. A highlight is a tint plate, never a fill: the prose has
+   to stay as readable inside the highlight as outside it. A note adds an
+   underline so an annotated phrase is distinguishable from a bare one without
+   spending a second colour. */
+.cb-annotation {
+  background-color: var(--cb-or-tint);
+  color: inherit;
+  border-radius: 3px;
+  padding: 0.05em 0.12em;
+  cursor: pointer;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+.cb-annotation:hover {
+  background-color: color-mix(in oklch, var(--cb-or) 26%, transparent);
+}
+.cb-annotation-note {
+  text-decoration: underline;
+  text-decoration-color: var(--cb-or);
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1.5px;
+}

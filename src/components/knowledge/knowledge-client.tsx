@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback } from "react";
 import { Search, X, ArrowLeft, Loader2, BadgeCheck } from "lucide-react";
 import { cn, assertOk } from "@/lib/utils";
 import { ArticleReader, type ReaderSection } from "./article-reader";
+import type { UserBlock } from "./user-block";
 
 type ArticleRef = {
   id: number;
@@ -29,6 +30,7 @@ type LoadedArticle = {
   competencyId: string;
   depthTier: number;
   sections: ReaderSection[];
+  userBlocks: UserBlock[];
 };
 
 const TIERS = [0, 1, 2, 3, 4, 5];
@@ -53,6 +55,7 @@ export function KnowledgeClient({
   const [search, setSearch] = useState("");
   const [article, setArticle] = useState<LoadedArticle | null>(null);
   const [loadingId, setLoadingId] = useState<number | null>(null);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const openArticle = useCallback(async (id: number) => {
@@ -69,6 +72,37 @@ export function KnowledgeClient({
     } finally {
       setLoadingId(null);
     }
+  }, []);
+
+  /** Every mutation returns the whole article, so the reader re-renders from
+   *  the server's version rather than a locally patched guess. */
+  const mutate = useCallback(
+    async (url: string, body: unknown, method: "POST" | "DELETE" = "POST") => {
+      setBusy(true);
+      setError(null);
+      try {
+        const res = await fetch(url, {
+          method,
+          headers: { "Content-Type": "application/json" },
+          ...(method === "DELETE" ? {} : { body: JSON.stringify(body) }),
+        });
+        await assertOk(res);
+        const data = await res.json();
+        if (data.article) setArticle(data.article as LoadedArticle);
+        return true;
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Something went wrong");
+        return false;
+      } finally {
+        setBusy(false);
+      }
+    },
+    []
+  );
+
+  const refetch = useCallback(async (id: number) => {
+    const res = await fetch(`/api/knowledge/${id}`);
+    if (res.ok) setArticle((await res.json()).article as LoadedArticle);
   }, []);
 
   const groups = useMemo(() => {
@@ -125,7 +159,49 @@ export function KnowledgeClient({
 
         <hr className="border-cb-line" />
 
-        <ArticleReader sections={article.sections} />
+        <ArticleReader
+          sections={article.sections}
+          userBlocks={article.userBlocks ?? []}
+          busy={busy}
+          onAnnotate={async (sectionId, text, start, end, note) => {
+            await mutate(`/api/knowledge/${article.id}/annotate`, {
+              sectionId,
+              highlightText: text,
+              startOffset: start,
+              endOffset: end,
+              noteText: note,
+            });
+          }}
+          onUpdateNote={async (annotationId, noteText) => {
+            await mutate(`/api/knowledge/${article.id}/annotate`, {
+              annotationId,
+              noteText,
+            });
+          }}
+          onDeleteAnnotation={async (annotationId) => {
+            // This route returns { ok } rather than the article, so refetch.
+            const ok = await mutate(
+              `/api/knowledge/annotations/${annotationId}`,
+              null,
+              "DELETE"
+            );
+            if (ok) await refetch(article.id);
+          }}
+          onAddBlock={async (afterSectionId, blockType, content) => {
+            await mutate(`/api/knowledge/${article.id}/block`, {
+              action: "create",
+              afterSectionId,
+              blockType,
+              content,
+            });
+          }}
+          onDeleteBlock={async (blockId) => {
+            await mutate(`/api/knowledge/${article.id}/block`, {
+              action: "delete",
+              blockId,
+            });
+          }}
+        />
       </div>
     );
   }

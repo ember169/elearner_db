@@ -1,11 +1,22 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useRef, useState, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import type { Components } from "react-markdown";
 import { MermaidBlock } from "./mermaid-block";
+import { rehypeAnnotations, type AnnotationMark } from "./annotate-plugin";
+import { UserBlockView, type UserBlock } from "./user-block";
+import { UserBlockEditor } from "./user-block-editor";
+import { AnnotationPopover, type PendingSelection } from "./annotation-popover";
+
+export type ReaderAnnotation = {
+  id: number;
+  sectionId: number;
+  highlightText: string;
+  noteText: string | null;
+};
 
 export type ReaderSection = {
   id: number;
@@ -13,6 +24,7 @@ export type ReaderSection = {
   content: string;
   sortOrder: number;
   isExpanded: boolean | null;
+  annotations: ReaderAnnotation[];
 };
 
 /** Mermaid arrives as a fenced block, so it is intercepted before the
@@ -116,32 +128,173 @@ const components: Components = {
   hr: () => <hr className="my-5 border-cb-line" />,
 };
 
-export function ArticleReader({ sections }: { sections: ReaderSection[] }) {
+export function ArticleReader({
+  sections,
+  userBlocks,
+  busy,
+  onAnnotate,
+  onUpdateNote,
+  onDeleteAnnotation,
+  onAddBlock,
+  onDeleteBlock,
+}: {
+  sections: ReaderSection[];
+  userBlocks: UserBlock[];
+  busy: boolean;
+  onAnnotate: (sectionId: number, text: string, start: number, end: number, note?: string) => Promise<void>;
+  onUpdateNote: (annotationId: number, note: string) => Promise<void>;
+  onDeleteAnnotation: (annotationId: number) => Promise<void>;
+  onAddBlock: (afterSectionId: number, blockType: string, content: string) => Promise<void>;
+  onDeleteBlock: (blockId: number) => Promise<void>;
+}) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [pending, setPending] = useState<PendingSelection | null>(null);
+  const [openAnnotation, setOpenAnnotation] = useState<ReaderAnnotation | null>(null);
+
   const ordered = useMemo(
     () => [...sections].sort((a, b) => a.sortOrder - b.sortOrder),
     [sections]
   );
 
+  const blocksAfter = useMemo(() => {
+    const map = new Map<number, UserBlock[]>();
+    for (const b of userBlocks) {
+      if (b.afterSectionId == null) continue;
+      const list = map.get(b.afterSectionId) ?? [];
+      list.push(b);
+      map.set(b.afterSectionId, list);
+    }
+    for (const list of map.values()) {
+      list.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+    }
+    return map;
+  }, [userBlocks]);
+
+  const annotationById = useMemo(() => {
+    const map = new Map<number, ReaderAnnotation>();
+    for (const s of sections) for (const a of s.annotations) map.set(a.id, a);
+    return map;
+  }, [sections]);
+
+  /** A selection becomes an offset range into the section's Markdown source,
+   *  which is the durable record. The rendered text can differ from the source,
+   *  so a phrase that is not found verbatim is stored at offset 0 rather than
+   *  refused — the highlight still paints, by text match. */
+  const captureSelection = useCallback(
+    (section: ReaderSection) => {
+      const sel = window.getSelection();
+      const text = sel?.toString().trim() ?? "";
+      if (!sel || sel.isCollapsed || text.length < 2) {
+        setPending(null);
+        return;
+      }
+      const start = section.content.indexOf(text);
+      setPending({
+        sectionId: section.id,
+        text,
+        start: start === -1 ? 0 : start,
+        end: start === -1 ? text.length : start + text.length,
+      });
+      setOpenAnnotation(null);
+    },
+    []
+  );
+
+  // Clicking an existing highlight opens its note rather than starting a new one.
+  const onReaderClick = useCallback(
+    (e: React.MouseEvent) => {
+      const target = (e.target as HTMLElement).closest("mark[data-annotation-id]");
+      if (!target) return;
+      const id = Number(target.getAttribute("data-annotation-id"));
+      const found = annotationById.get(id);
+      if (found) {
+        setOpenAnnotation(found);
+        setPending(null);
+      }
+    },
+    [annotationById]
+  );
+
   return (
-    <div className="space-y-7">
-      {ordered.map((section) => (
-        <section key={section.id} id={`section-${section.id}`}>
-          {/* Plain text headings — the family reserves icons for UI chrome. */}
-          <h2 className="cb-display mb-2 text-[26px] text-cb-text">{section.heading}</h2>
-          {section.isExpanded && (
-            <span className="cb-label-mono mb-2 inline-block rounded-cb-chip-sm bg-cb-or-tint px-2 py-1 text-[10px] text-cb-or">
-              expanded
-            </span>
-          )}
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            rehypePlugins={[[rehypeHighlight, { detect: false, ignoreMissing: true }]]}
-            components={components}
-          >
-            {section.content}
-          </ReactMarkdown>
-        </section>
-      ))}
+    <div ref={rootRef} className="space-y-7" onClick={onReaderClick}>
+      {ordered.map((section) => {
+        const marks: AnnotationMark[] = section.annotations.map((a) => ({
+          id: a.id,
+          highlightText: a.highlightText,
+          hasNote: Boolean(a.noteText),
+        }));
+
+        return (
+          <section key={section.id} id={`section-${section.id}`}>
+            {/* Plain text headings — the family reserves icons for UI chrome. */}
+            <h2 className="cb-display mb-2 text-[26px] text-cb-text">{section.heading}</h2>
+            {section.isExpanded && (
+              <span className="cb-label-mono mb-2 inline-block rounded-cb-chip-sm bg-cb-or-tint px-2 py-1 text-[10px] text-cb-or">
+                expanded
+              </span>
+            )}
+
+            <div onMouseUp={() => captureSelection(section)}>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                rehypePlugins={[
+                  [rehypeHighlight, { detect: false, ignoreMissing: true }],
+                  rehypeAnnotations(marks),
+                ]}
+                components={components}
+              >
+                {section.content}
+              </ReactMarkdown>
+            </div>
+
+            {blocksAfter.get(section.id)?.map((block) => (
+              <UserBlockView
+                key={block.id}
+                block={block}
+                busy={busy}
+                onDelete={() => void onDeleteBlock(block.id)}
+              />
+            ))}
+
+            <UserBlockEditor
+              busy={busy}
+              onAdd={(type, content) => onAddBlock(section.id, type, content)}
+            />
+          </section>
+        );
+      })}
+
+      <AnnotationPopover
+        pending={pending}
+        annotation={openAnnotation}
+        busy={busy}
+        onClose={() => {
+          setPending(null);
+          setOpenAnnotation(null);
+        }}
+        onCreate={async (note) => {
+          if (!pending) return;
+          await onAnnotate(
+            pending.sectionId,
+            pending.text,
+            pending.start,
+            pending.end,
+            note || undefined
+          );
+          setPending(null);
+          window.getSelection()?.removeAllRanges();
+        }}
+        onSaveNote={async (note) => {
+          if (!openAnnotation) return;
+          await onUpdateNote(openAnnotation.id, note);
+          setOpenAnnotation(null);
+        }}
+        onDelete={async () => {
+          if (!openAnnotation) return;
+          await onDeleteAnnotation(openAnnotation.id);
+          setOpenAnnotation(null);
+        }}
+      />
     </div>
   );
 }

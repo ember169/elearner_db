@@ -293,6 +293,8 @@ Pre-generated courses, six depth tiers per competency.
 - **Search**: matches competency label, description, area, and article titles.
 - **Article reader** (`article-reader.tsx`): Markdown via react-markdown + remark-gfm, so GFM tables render; code highlighted by rehype-highlight against a palette mapped onto the family tokens rather than a stock highlight.js theme. Section headings are plain text — the family reserves icons for UI chrome. Wide tables and code blocks scroll inside their own container.
 - **Mermaid** (`mermaid-block.tsx`): fenced ```mermaid blocks are intercepted before the highlighter and rendered by Mermaid, dynamically imported once per session so its ~1MB never enters the app bundle. Themed from the family tokens read off the document at init. A malformed diagram falls back to its source in a bordered block instead of taking the article down.
+- **Annotations** (`annotate-plugin.ts`, `annotation-popover.tsx`): select prose in a section and a docked panel offers a highlight plus an optional margin note. Clicking an existing highlight reopens it to edit or remove. Offsets into the Markdown source are the durable record, as the plan requires, but the rendered pass matches on the stored text — source offsets do not map onto the rendered tree, since `**bold**` is six characters shorter once rendered. Code and code blocks are skipped: a highlight spanning a token would break the highlighter's markup. Highlights paint as a tint plate so prose stays as readable inside them as outside; a note adds an underline, spending no second colour.
+- **User content blocks** (`user-block-editor.tsx`, `user-block.tsx`): between any two sections, insert Markdown text, a table, a Mermaid diagram, or an image. Images arrive by drop, paste, or picker and are stored as data URIs, so an article stays self-contained with no upload path to maintain. Blocks are visibly marked as the reader's own, so generated content and personal notes never blur.
 
 ---
 
@@ -427,6 +429,18 @@ Lists articles, optionally filtered by `competencyId`. Returns `{ articles }`.
 ### `GET /api/knowledge/[id]`
 
 Returns `{ article }` with its ordered sections, each section's annotations, and the article's user content blocks. 400 on a non-numeric ID, 404 if it does not exist.
+
+### `POST /api/knowledge/[id]/annotate`
+
+Creates a highlight (`sectionId`, `highlightText`, `startOffset`, `endOffset`, optional `noteText`) or edits an existing note (`annotationId`, `noteText`). Rejects a section or annotation belonging to another article. Returns the whole updated `{ article }`.
+
+### `DELETE /api/knowledge/annotations/[id]`
+
+Removes an annotation. Returns `{ ok: true }`.
+
+### `POST /api/knowledge/[id]/block`
+
+`action` of `create` (`afterSectionId`, `blockType` one of text/image/table/mermaid, `content`), `update` (`blockId`, `content`), or `delete` (`blockId`). Content is capped at 2MB — an image block is a data URI in a text column — answering 413 past that. Blocks sharing an anchor keep insertion order behind it. Returns the whole updated `{ article }`.
 
 ### `GET/PUT /api/settings`
 
