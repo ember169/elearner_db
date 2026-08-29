@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { db } from "@/lib/db";
 import {
   ftProfile,
@@ -1278,7 +1279,18 @@ function suggestPlatformForSkill(
   return mapping[skill] ?? null;
 }
 
-export function runGuidanceEngine(boardDoneSlugs?: Set<string>): GuidanceResult {
+/**
+ * The engine is expensive — it scans every platform table and runs the whole
+ * catalogue-matching pass — and several pages need it in the same request.
+ * `cache` from React dedupes it per request, so splitting the home page into a
+ * Dashboard and a Board does not pay for it twice.
+ *
+ * Memoisation is by argument identity: the common no-argument call dedupes, and
+ * a call with a distinct `boardDoneSlugs` set correctly computes its own result.
+ */
+export const runGuidanceEngine = cache(function runGuidanceEngine(
+  boardDoneSlugs?: Set<string>,
+): GuidanceResult {
   syncGoalValues();
   const snapshot = gatherSnapshot();
   const goalsWithPacing = analyzeGoals();
@@ -1299,4 +1311,4 @@ export function runGuidanceEngine(boardDoneSlugs?: Set<string>): GuidanceResult 
     skillProfile,
     recommendations,
   };
-}
+});
