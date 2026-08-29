@@ -268,6 +268,7 @@ Searchable catalog of every learning resource, grouped by competency.
 - **Competency-grouped grid**: sections ordered by competency area, then by the competency map's own ordering. A resource mapped to several competencies appears under each. Resources with no mapped competency fall into a trailing **Unmapped** group. Sections collapse individually; empty sections are omitted.
 - **Detail panel**: sticky beside the grid on desktop, an overlay sheet on mobile. Shows platform, difficulty, description, type, estimated hours, start/completion dates, competency and tag badges, status controls, and an external link to the resource on its platform. Start/completion dates are shown only when the current status justifies them.
 - **Status control**: three buttons write through `PATCH /api/learn/[id]` and update the row in place.
+- **Start learning**: posts to `POST /api/learn`, marking the resource in progress and adding it to the board. Confirms inline with "Added to your board" or "Already on your board".
 
 ---
 
@@ -379,13 +380,21 @@ Deletes a deadline and its auto-generated children.
 
 Lists learning resources. Optional query params, all AND-combined: `platform`, `difficulty`, `status`, `competencyId`, `search` (substring match on title). Returns `{ resources }`.
 
+### `POST /api/learn`
+
+Body `{ action: "start", id }` — the "Start learning" action. Moves a `not_started` resource to `in_progress` (a completed one keeps its status) and files a `todo` card on the board, deriving the board category from the resource platform the same way `populateBacklog()` does. Deduplicates on title against non-`done` cards, so starting twice does not stack a second card. Returns `{ resource, boardItem, createdBoardItem }`.
+
 ### `GET /api/learn/[id]`
 
 Returns `{ resource }` for one resource. 400 on a non-numeric ID, 404 if it does not exist.
 
 ### `PATCH /api/learn/[id]`
 
-Body `{ status }`, one of `not_started` / `in_progress` / `completed`. Sets `startedAt` on first move to `in_progress` and `completedAt` on completion. Returns the updated `{ resource }`. 400 on an invalid ID or status, 404 if the resource does not exist.
+Body `{ status }`, one of `not_started` / `in_progress` / `completed`. Sets `startedAt` on the move to `in_progress` and `completedAt` on completion; resetting to `not_started` clears both. Returns the updated `{ resource }`. 400 on an invalid ID or status, 404 if the resource does not exist.
+
+### `DELETE /api/learn/[id]`
+
+Removes a resource. Returns `{ ok: true }`. 400 on a non-numeric ID, 404 if it does not exist.
 
 ### `GET/PUT /api/settings`
 

@@ -17,6 +17,7 @@ import {
   ChevronDown,
   ChevronRight,
   Loader2,
+  Play,
 } from "lucide-react";
 import { cn, assertOk } from "@/lib/utils";
 import { PLATFORM_COLORS, PLATFORM_LABELS } from "@/lib/platform-colors";
@@ -160,6 +161,7 @@ export function LearnClient({
   const [collapsed, setCollapsed] = useState<string[]>([]);
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [started, setStarted] = useState<string | null>(null);
 
   const competencyById = useMemo(() => {
     const map: Record<string, CompetencyInfo> = {};
@@ -295,6 +297,34 @@ export function LearnClient({
     }
   }
 
+  async function startLearning(id: number) {
+    setUpdating(true);
+    setError(null);
+    setStarted(null);
+    try {
+      const res = await fetch("/api/learn", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "start", id }),
+      });
+      await assertOk(res);
+      const data = (await res.json()) as {
+        resource: LearnResource;
+        createdBoardItem: boolean;
+      };
+      setResources((prev) => prev.map((r) => (r.id === id ? data.resource : r)));
+      setStarted(
+        data.createdBoardItem
+          ? "Added to your board"
+          : "Already on your board"
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to start resource");
+    } finally {
+      setUpdating(false);
+    }
+  }
+
   return (
     <div className="space-y-5">
       <div>
@@ -418,7 +448,10 @@ export function LearnClient({
                         <button
                           key={`${group.key}-${r.id}`}
                           type="button"
-                          onClick={() => setSelectedId(r.id)}
+                          onClick={() => {
+                            setSelectedId(r.id);
+                            setStarted(null);
+                          }}
                           className={cn(
                             "rounded-md border px-3 py-2.5 text-left transition-colors",
                             selectedId === r.id
@@ -474,8 +507,13 @@ export function LearnClient({
                 competencyIds={parsed[selected.id]?.competencyIds ?? []}
                 competencyById={competencyById}
                 updating={updating}
-                onClose={() => setSelectedId(null)}
+                started={started}
+                onClose={() => {
+                  setSelectedId(null);
+                  setStarted(null);
+                }}
                 onStatusChange={(status) => setStatus(selected.id, status)}
+                onStart={() => startLearning(selected.id)}
               />
             </div>
           </>
@@ -491,16 +529,20 @@ function ResourceDetail({
   competencyIds,
   competencyById,
   updating,
+  started,
   onClose,
   onStatusChange,
+  onStart,
 }: {
   resource: LearnResource;
   tags: string[];
   competencyIds: string[];
   competencyById: Record<string, CompetencyInfo>;
   updating: boolean;
+  started: string | null;
   onClose: () => void;
   onStatusChange: (status: string) => void;
+  onStart: () => void;
 }) {
   // Only surface timestamps the current status actually justifies. The store
   // clears them on reset, but rows seeded from platform syncs predate that, so
@@ -612,6 +654,25 @@ function ResourceDetail({
               </Button>
             ))}
           </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <Button
+            size="sm"
+            className="w-full"
+            disabled={updating}
+            onClick={onStart}
+          >
+            {updating ? (
+              <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+            ) : (
+              <Play className="h-3.5 w-3.5 mr-1" />
+            )}
+            Start learning
+          </Button>
+          {started && (
+            <p className="text-[13px] text-muted-foreground text-center">{started}</p>
+          )}
         </div>
 
         {resource.url && (

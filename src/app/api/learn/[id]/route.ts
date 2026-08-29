@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getResource, updateResourceStatus } from "@/lib/learn/store";
+import { getResource, updateResourceStatus, deleteResource } from "@/lib/learn/store";
 
 const VALID_STATUSES = ["not_started", "in_progress", "completed"];
 
@@ -51,4 +51,22 @@ export async function PATCH(
 
   updateResourceStatus(id, status);
   return NextResponse.json({ resource: getResource(id) });
+}
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id: raw } = await params;
+  const id = parseId(raw);
+  if (id === null) {
+    return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
+  }
+
+  if (!getResource(id)) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  deleteResource(id);
+  return NextResponse.json({ ok: true });
 }
