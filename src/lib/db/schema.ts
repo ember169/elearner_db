@@ -439,10 +439,134 @@ export const competencyValidations = sqliteTable("competency_validations", {
 export const mentorPlan = sqliteTable("mentor_plan", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   version: integer("version").notNull().default(1),
-  // the objective the plan was generated for (staleness check)
   objective: text("objective").notNull(),
-  // the full plan JSON (focus items + competency assessment)
   plan: text("plan").notNull(),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+// --- V4: Learning Resources ---
+
+export const learningResources = sqliteTable("learning_resources", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  platform: text("platform").notNull(),
+  externalId: text("external_id"),
+  title: text("title").notNull(),
+  description: text("description"),
+  url: text("url"),
+  difficulty: text("difficulty"),
+  estimatedHours: real("estimated_hours"),
+  contentType: text("content_type"),
+  tagsJson: text("tags_json"),
+  competencyIds: text("competency_ids"),
+  status: text("status").notNull().default("not_started"),
+  startedAt: text("started_at"),
+  completedAt: text("completed_at"),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+export const learningPaths = sqliteTable("learning_paths", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  title: text("title").notNull(),
+  description: text("description"),
+  competencyId: text("competency_id"),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+export const learningPathItems = sqliteTable("learning_path_items", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  pathId: integer("path_id")
+    .notNull()
+    .references(() => learningPaths.id, { onDelete: "cascade" }),
+  resourceId: integer("resource_id")
+    .notNull()
+    .references(() => learningResources.id, { onDelete: "cascade" }),
+  sortOrder: integer("sort_order").default(0),
+});
+
+// --- V4: Knowledge Articles ---
+
+export const knowledgeArticles = sqliteTable("knowledge_articles", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  competencyId: text("competency_id").notNull(),
+  depthTier: integer("depth_tier").notNull(),
+  title: text("title").notNull(),
+  recommendedLevel: integer("recommended_level").notNull().default(0),
+  status: text("status").notNull().default("ready"),
+  generatedAt: text("generated_at"),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+export const articleSections = sqliteTable("article_sections", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  articleId: integer("article_id")
+    .notNull()
+    .references(() => knowledgeArticles.id, { onDelete: "cascade" }),
+  sortOrder: integer("sort_order").default(0),
+  heading: text("heading").notNull(),
+  content: text("content").notNull(),
+  isExpanded: integer("is_expanded", { mode: "boolean" }).default(false),
+  expansionPrompt: text("expansion_prompt"),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+export const articleAnnotations = sqliteTable("article_annotations", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  sectionId: integer("section_id")
+    .notNull()
+    .references(() => articleSections.id, { onDelete: "cascade" }),
+  startOffset: integer("start_offset").notNull(),
+  endOffset: integer("end_offset").notNull(),
+  highlightText: text("highlight_text").notNull(),
+  noteText: text("note_text"),
+  reviewCardId: integer("review_card_id"),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+export const userContentBlocks = sqliteTable("user_content_blocks", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  articleId: integer("article_id")
+    .notNull()
+    .references(() => knowledgeArticles.id, { onDelete: "cascade" }),
+  afterSectionId: integer("after_section_id")
+    .references(() => articleSections.id, { onDelete: "set null" }),
+  sortOrder: integer("sort_order").default(0),
+  blockType: text("block_type").notNull(),
+  content: text("content").notNull(),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+// --- V4: Mentor Chat ---
+
+export const mentorMessages = sqliteTable("mentor_messages", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  role: text("role").notNull(),
+  content: text("content").notNull(),
+  contextJson: text("context_json"),
+  articleId: integer("article_id")
+    .references(() => knowledgeArticles.id, { onDelete: "set null" }),
   createdAt: text("created_at")
     .notNull()
     .default(sql`(datetime('now'))`),

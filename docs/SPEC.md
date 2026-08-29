@@ -1,10 +1,10 @@
-# Learner DB -- Technical Specification
+# Cartableo -- Technical Specification
 
 ## Overview
 
-Learner DB is a personal learning dashboard for a cybersecurity student at 42 Paris. It aggregates progress across five platforms -- 42 Paris, TryHackMe, HackTheBox, Root-me, and a self-hosted malware development elearning app -- into a single adaptive planning system.
+Cartableo (from French "cartable" = schoolbag) is a personal cybersec e-learning platform for a student at 42 Paris. It aggregates progress across five platforms -- 42 Paris, TryHackMe, HackTheBox, Root-me, and a self-hosted malware development elearning app -- into an adaptive learning system with progressive knowledge content, annotations, and spaced repetition.
 
-The core value proposition is **intelligent weekly scheduling**: a deterministic rule engine allocates a 35-hour weekly study budget across platforms, adjusting for 42 project deadlines, goal urgency, and cross-platform competency levels. An optional LLM (Anthropic or local) provides narrative briefings and side project suggestions, but the scheduling itself requires no AI.
+The core value proposition is **a personal knowledge hub**: beyond intelligent weekly scheduling (35-hour budget, rule engine, backward planning), Cartableo generates and hosts structured courses for each competency area, lets the user annotate and deepen content via cloud LLM, and tracks retention through FSRS spaced repetition.
 
 **Target user**: a single student running the app self-hosted on a Linux server.
 

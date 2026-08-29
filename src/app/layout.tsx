@@ -4,12 +4,12 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 export const metadata: Metadata = {
-  title: "Learner DB",
-  description: "Personal learning dashboard",
+  title: "Cartableo",
+  description: "Personal cybersec e-learning platform",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Learner DB",
+    title: "Cartableo",
   },
 };
 

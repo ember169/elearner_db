@@ -4,6 +4,8 @@ import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import * as schema from "./schema";
 import fs from "fs";
 import path from "path";
+import { seedLearningResources } from "@/lib/learn/seed";
+import { seedKnowledgeArticles } from "@/lib/knowledge/seed";
 
 type DB = BetterSQLite3Database<typeof schema>;
 
@@ -31,7 +33,11 @@ function initDb(): DB {
 }
 
 function getDb(): DB {
-  if (!instance) instance = initDb();
+  if (!instance) {
+    instance = initDb();
+    seedLearningResources();
+    seedKnowledgeArticles();
+  }
   return instance;
 }
 
