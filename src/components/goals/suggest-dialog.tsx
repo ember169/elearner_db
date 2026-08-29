@@ -171,9 +171,9 @@ export function SuggestDialog({
                   variant="outline"
                   className="text-[11px] px-1.5 py-0.5 font-semibold shrink-0"
                   style={{
-                    borderColor: resultMode === "llm" ? "oklch(0.7 0.15 290)" : "oklch(0.7 0.15 150)",
-                    color: resultMode === "llm" ? "oklch(0.7 0.15 290)" : "oklch(0.7 0.15 150)",
-                    background: resultMode === "llm" ? "oklch(0.7 0.15 290 / 0.1)" : "oklch(0.7 0.15 150 / 0.1)",
+                    borderColor: resultMode === "llm" ? "var(--platform-maldev)" : "var(--cb-success)",
+                    color: resultMode === "llm" ? "var(--platform-maldev)" : "var(--cb-success)",
+                    background: resultMode === "llm" ? "color-mix(in oklch, var(--platform-maldev) 10%, transparent)" : "color-mix(in oklch, var(--cb-success) 10%, transparent)",
                   }}
                 >
                   {resultMode === "llm" ? "AI" : "RULE-BASED"}

@@ -766,7 +766,7 @@ export function DetailPane({
                   <span className="text-[15px] text-muted-foreground">/{childTotal} milestones</span>
                 </div>
                 <p className="text-[14px] text-muted-foreground mt-1">Child completion rollup</p>
-                <Progress value={childTotal > 0 ? (childCompleted / childTotal) * 100 : 0} className="h-[5px] mt-2.5" style={{ "--progress-foreground": "oklch(0.82 0.055 80)" } as React.CSSProperties} />
+                <Progress value={childTotal > 0 ? (childCompleted / childTotal) * 100 : 0} className="h-[5px] mt-2.5" style={{ "--progress-foreground": "var(--cb-or)" } as React.CSSProperties} />
               </div>
             )}
           </div>

@@ -124,10 +124,10 @@ export function Generate42Dialog({
           <DialogTitle className="flex items-center gap-2 text-[15px]">
             <svg width="20" height="20" viewBox="0 0 28 28" fill="none">
               <path d="M14 2L4 6.5V13C4 19.5 8.2 25.4 14 27C19.8 25.4 24 19.5 24 13V6.5L14 2Z"
-                fill="oklch(0.82 0.055 80)" stroke="oklch(0.82 0.055 80)" strokeWidth="0.5" />
-              <path d="M10 12L13 14.5L10 17" stroke="#1a1916" strokeWidth="1.8"
+                fill="var(--cb-or)" stroke="var(--cb-or)" strokeWidth="0.5" />
+              <path d="M10 12L13 14.5L10 17" stroke="var(--cb-bg)" strokeWidth="1.8"
                 strokeLinecap="round" strokeLinejoin="round" />
-              <line x1="14.5" y1="17" x2="18" y2="17" stroke="#1a1916" strokeWidth="1.6"
+              <line x1="14.5" y1="17" x2="18" y2="17" stroke="var(--cb-bg)" strokeWidth="1.6"
                 strokeLinecap="round" />
             </svg>
             {isSync ? "Sync with 42 plan" : "Generate from 42 plan"}
@@ -152,7 +152,7 @@ export function Generate42Dialog({
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-[14px] font-semibold">
                 <Badge variant="outline" className="text-[14px] px-1 py-0"
-                  style={{ borderColor: "oklch(0.82 0.055 80)", color: "oklch(0.82 0.055 80)" }}>
+                  style={{ borderColor: "var(--cb-or)", color: "var(--cb-or)" }}>
                   EPIC
                 </Badge>
                 Complete 42 Common-Core
@@ -217,8 +217,8 @@ export function Generate42Dialog({
                     <p className="text-[14px] text-muted-foreground">Auto-completed</p>
                   </div>
                   <div className="rounded-sm border border-border p-2 text-center"
-                    style={{ borderColor: "oklch(0.82 0.055 80 / 0.3)" }}>
-                    <span className="text-[18px] font-bold" style={{ color: "oklch(0.82 0.055 80)" }}>
+                    style={{ borderColor: "color-mix(in oklch, var(--cb-or) 30%, transparent)" }}>
+                    <span className="text-[18px] font-bold text-primary">
                       {syncDiff.newTasks.length}
                     </span>
                     <p className="text-[14px] text-muted-foreground">New tasks</p>

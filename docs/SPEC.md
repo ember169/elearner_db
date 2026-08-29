@@ -672,7 +672,7 @@ Avatar, Badge (6 variants), Button (multiple sizes including xs), Calendar, Card
 
 Cartableo shares the design system of the sibling apps (Leofresh, Decathleo, Comptableo). Per the Decathleo handoff, the family shares everything **except the accent**: the neutral ramp, elevation spaced in CIE L*, success/warn/danger, shadows, the 8-22 radius scale and the 4-48 spacing scale are common. Only the accent changes per app - mint for Leofresh, cuivre for Decathleo, and Cartableo's existing gold here, kept as its identity.
 
-Tokens are namespaced `--cb-*` and exposed through `@theme` as `cb-` utilities, living **alongside** the shadcn tokens the five older pages already use rather than replacing them. Knowledge is the first page built on them.
+Tokens are namespaced `--cb-*` and exposed through `@theme` as `cb-` utilities. **Every shadcn token the components consume now aliases a `--cb-*` token** (`--background: var(--cb-bg)`, `--primary: var(--cb-or)`, and so on), so the family system is the single source of truth and the two vocabularies cannot drift apart — changing a `--cb-*` value moves the whole app. All eight pages render on it.
 
 | Group | Values |
 |-------|--------|
@@ -681,7 +681,12 @@ Tokens are namespaced `--cb-*` and exposed through `@theme` as `cb-` utilities, 
 | Accent (Cartableo) | `--cb-or #d7c19c` — the hex of the `oklch(.82 .055 80)` gold the app already shipped. 10.7:1 on `--cb-bg`, against mint's 10.6 and cuivre's 8.5. Plus `-pressed`, `-tint`, `--cb-on-or` |
 | Status | `--cb-success #57b37f` · `--cb-warn #e08a3c` · `--cb-danger #e67078`, each with a tint. Unlike Decathleo, warn keeps the family orange: it collided with cuivre, but the gold here is far less saturated (C .055) |
 | Type | DM Serif Display (display titles, never uppercase) · Archivo 400/700 (body, buttons, card titles) · JetBrains Mono 500 (meta, numbers, uppercase labels at .1em). Self-hosted latin subsets in `public/fonts/`, vendored from the Leofresh bundle — no third-party origin, so the PWA is correct offline and on first paint |
-| Helpers | `.cb-display` and `.cb-label-mono` carry the two type roles that need more than a font family |
+| Info | `--cb-info #50a9d9` — the family defines no info role, so this is an app-local addition held to the family's bar: 7.1:1 on `--cb-bg`, above the family's own danger at 6.2 |
+| Radius | `--radius: 0.875rem` keys the scale off the family card: `sm` 8.4 (chip) · `md` 11.2 (button, field) · `lg` 14 (card) · `xl` 19.6 (hero) |
+| Reserved | Platform accents (`--platform-*`) name an external platform and are never used for buttons, body text, or surfaces — the same rule the family applies to its produce marks. Kept as Cartableo shipped them |
+| Helpers | `.cb-display` and `.cb-label-mono` carry the two type roles that need more than a font family. `.page-title` takes the display role, `.section-label` the mono-label role |
+
+The brand assets derive from `--cb-bg` the way the family requires: the PWA `theme_color` / `background_color`, the `themeColor` meta, and the generated `/icon` and `/apple-icon` are all `#131211` with the gold shield. Those three are rendered by Satori, which has no CSS variables, so they carry the family literals rather than `var()`.
 
 ### Platform colors (`src/lib/platform-colors.ts`)
 

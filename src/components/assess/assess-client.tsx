@@ -781,7 +781,7 @@ function CompetencyCard({
 
 function LevelBar({ level, color }: { level: number; color: "primary" | "validated" }) {
   const colors = {
-    primary: "bg-[oklch(0.82_0.055_80)]",
+    primary: "bg-primary",
     validated: "bg-blue-500",
   };
   return (

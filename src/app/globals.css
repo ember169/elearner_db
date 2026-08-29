@@ -7,8 +7,13 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
-  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+  /* Family type stack. Archivo carries body, buttons and card titles; JetBrains
+     Mono carries meta, numbers and uppercase labels. DM Serif Display is the
+     display face and is deliberately NOT --font-heading: the family puts card
+     and dialog titles in Archivo 700 and reserves the serif for display titles
+     (see .page-title / .cb-display). */
+  --font-sans: "Archivo", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
   --font-heading: var(--font-sans);
   --color-success: var(--status-success);
   --color-warning: var(--status-warning);
@@ -56,52 +61,65 @@
 }
 
 :root {
-  --radius: 0.625rem;
+  /* Family radius scale keyed off card = 14px:
+     sm 8.4 (chip) · md 11.2 (button, field) · lg 14 (card) · xl 19.6 (hero) */
+  --radius: 0.875rem;
 }
 
-/* Dark — warm near-black with gold. The only theme; app is dark-only. */
+/* Dark — the family's warm charcoal. The only theme; app is dark-only.
+   ---------------------------------------------------------------------------
+   These are the shadcn token names the components consume. Every one of them
+   now aliases a --cb-* token, so the family design system is the single source
+   of truth and the two vocabularies cannot drift apart. Change a value in the
+   --cb-* block at the bottom of this file and it moves everywhere. */
 .dark {
-  --background: oklch(0.135 0.004 75);
-  --foreground: oklch(0.93 0.01 85);
-  --card: oklch(0.19 0.006 75);
-  --card-foreground: oklch(0.93 0.01 85);
-  --popover: oklch(0.19 0.006 75);
-  --popover-foreground: oklch(0.93 0.01 85);
-  --primary: oklch(0.82 0.055 80);
-  --primary-foreground: oklch(0.135 0.004 75);
-  --secondary: oklch(0.21 0.006 75);
-  --secondary-foreground: oklch(0.82 0.015 85);
-  --muted: oklch(0.21 0.006 75);
-  --muted-foreground: oklch(0.55 0.01 80);
-  --accent: oklch(0.21 0.008 75);
-  --accent-foreground: oklch(0.90 0.01 85);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(0.25 0.007 70);
-  --input: oklch(0.25 0.007 70);
-  --ring: oklch(0.82 0.055 80);
-  --chart-1: oklch(0.82 0.055 80);
-  --chart-2: oklch(0.72 0.15 155);
-  --chart-3: oklch(0.65 0.12 250);
-  --chart-4: oklch(0.70 0.14 320);
-  --chart-5: oklch(0.75 0.14 30);
-  --sidebar: oklch(0.145 0.005 75);
-  --sidebar-foreground: oklch(0.82 0.015 85);
-  --sidebar-primary: oklch(0.82 0.055 80);
-  --sidebar-primary-foreground: oklch(0.135 0.004 75);
-  --sidebar-accent: oklch(0.21 0.008 75);
-  --sidebar-accent-foreground: oklch(0.90 0.01 85);
-  --sidebar-border: oklch(0.25 0.007 70);
-  --sidebar-ring: oklch(0.82 0.055 80);
+  --background: var(--cb-bg);
+  --foreground: var(--cb-text);
+  --card: var(--cb-card);
+  --card-foreground: var(--cb-text);
+  --popover: var(--cb-card);
+  --popover-foreground: var(--cb-text);
+  --primary: var(--cb-or);
+  --primary-foreground: var(--cb-on-or);
+  --secondary: var(--cb-raised);
+  --secondary-foreground: var(--cb-text-second);
+  --muted: var(--cb-raised);
+  --muted-foreground: var(--cb-text-muted);
+  --accent: var(--cb-raised);
+  --accent-foreground: var(--cb-text);
+  --destructive: var(--cb-danger);
+  --border: var(--cb-line);
+  --input: var(--cb-line);
+  --ring: var(--cb-or);
 
-  /* Status + platform accents sit lighter in dark mode for pop against near-black */
-  --status-success: oklch(0.72 0.14 152);
-  --status-warning: oklch(0.78 0.14 60);
-  --status-danger: oklch(0.70 0.18 25);
-  --status-info: oklch(0.70 0.11 235);
-  --status-done: oklch(0.72 0.14 152);
-  --status-blocked: oklch(0.78 0.14 60);
-  --status-stuck: oklch(0.70 0.18 25);
+  --chart-1: var(--cb-or);
+  --chart-2: var(--cb-success);
+  --chart-3: var(--cb-info);
+  --chart-4: var(--platform-maldev);
+  --chart-5: var(--cb-warn);
 
+  /* The rail and tab bar sit on the canvas and are separated by a hairline,
+     not by a fill — family rail spec. */
+  --sidebar: var(--cb-bg);
+  --sidebar-foreground: var(--cb-text-second);
+  --sidebar-primary: var(--cb-or);
+  --sidebar-primary-foreground: var(--cb-on-or);
+  --sidebar-accent: var(--cb-raised);
+  --sidebar-accent-foreground: var(--cb-text);
+  --sidebar-border: var(--cb-line);
+  --sidebar-ring: var(--cb-or);
+
+  --status-success: var(--cb-success);
+  --status-warning: var(--cb-warn);
+  --status-danger: var(--cb-danger);
+  --status-info: var(--cb-info);
+  --status-done: var(--cb-success);
+  --status-blocked: var(--cb-warn);
+  --status-stuck: var(--cb-danger);
+
+  /* Platform accents are reserved identity colours — the family's own rule for
+     its produce marks. They name an external platform and are never used for
+     buttons, body text or surfaces. Kept as Cartableo shipped them. */
   --platform-42: oklch(0.74 0.09 200);
   --platform-thm: oklch(0.70 0.16 25);
   --platform-htb: oklch(0.76 0.12 140);
@@ -115,9 +133,10 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Family body: Archivo 14-15px at lh 1.55-1.6. The old -0.011em tracking
+       was tuned for SF Pro and over-tightens Archivo, so it goes. */
     font-size: 0.875rem;
-    line-height: 1.5;
-    letter-spacing: -0.011em;
+    line-height: 1.55;
     overscroll-behavior-y: auto;
   }
   html {
@@ -125,8 +144,7 @@
     -webkit-tap-highlight-color: transparent;
   }
   h1, h2, h3, h4 {
-    letter-spacing: -0.025em;
-    font-feature-settings: "ss01", "cv01";
+    letter-spacing: -0.015em;
   }
   button, [role="button"], a {
     -webkit-user-select: none;
@@ -188,20 +206,25 @@ a:focus-visible,
 }
 
 /* Section label utility — small uppercase eyebrow for card/group headers */
+/* Family uppercase label role: JetBrains Mono 500 at .06-.16em tracking. */
 .section-label {
-  font-size: 0.8125rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--muted-foreground);
 }
 
 /* Page-level heading utilities */
+/* Family display role — DM Serif Display 400, never uppercase, lh 1.05-1.2. */
 .page-title {
+  font-family: var(--font-cb-display);
   font-size: 2.125rem;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1.1;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.12;
+  text-transform: none;
 }
 .page-subtitle {
   font-size: 0.875rem;
@@ -311,6 +334,11 @@ a:focus-visible,
   --cb-warn-tint: rgba(224, 138, 60, 0.16);
   --cb-danger: #e67078;
   --cb-danger-tint: rgba(201, 48, 60, 0.18);
+  /* The family defines no info role. Cartableo needs a fourth status, so
+     this is an app-local addition, held to the family's bar: 7.1:1 on
+     --cb-bg, above the family's own danger at 6.2. */
+  --cb-info: #50a9d9;
+  --cb-info-tint: rgba(80, 169, 217, 0.16);
   --cb-on-danger: #131211;
   --cb-scrim: rgba(19, 18, 17, 0.55);
 }
@@ -334,6 +362,8 @@ a:focus-visible,
   --color-cb-warn-tint: var(--cb-warn-tint);
   --color-cb-danger: var(--cb-danger);
   --color-cb-danger-tint: var(--cb-danger-tint);
+  --color-cb-info: var(--cb-info);
+  --color-cb-info-tint: var(--cb-info-tint);
 
   /* Typography — family stack. DM Serif Display for display titles (never
      uppercase), Archivo for body/buttons/card titles, JetBrains Mono for meta,

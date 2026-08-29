@@ -135,8 +135,7 @@ export function CreateForm({
             <button className="text-[15px] text-muted-foreground" onClick={onCancel}>Cancel</button>
             <span className="text-[15px] font-bold">{isEditing ? "Edit goal" : "New goal"}</span>
             <button
-              className="text-[15px] font-bold"
-              style={{ color: "oklch(0.82 0.055 80)" }}
+              className="text-[15px] font-bold text-primary"
               onClick={handleSubmit}
             >
               {isEditing ? "Save" : "Create"}
@@ -148,7 +147,7 @@ export function CreateForm({
               <Badge
                 variant="outline"
                 className="text-[15px] font-bold uppercase tracking-wider px-1.5 py-0"
-                style={{ borderColor: "oklch(0.82 0.055 80)", color: "oklch(0.82 0.055 80)" }}
+                style={{ borderColor: "var(--cb-or)", color: "var(--cb-or)" }}
               >
                 {isEditing ? "EDIT" : "NEW"}
               </Badge>

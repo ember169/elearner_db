@@ -456,7 +456,7 @@ export function LearnClient({
                             "rounded-md border px-3 py-2.5 text-left transition-colors",
                             selectedId === r.id
                               ? "border-primary/40 bg-primary/8"
-                              : "border-border hover:bg-[rgba(237,232,220,0.03)]"
+                              : "border-border hover:bg-accent"
                           )}
                         >
                           <div className="flex items-start gap-2">

@@ -49,7 +49,7 @@ function TreeItem({
       <button
         className={cn(
           "w-full text-left flex items-center gap-1.5 py-1.5 pr-2 text-[14px] transition-colors relative",
-          isSelected && "bg-[oklch(0.82_0.055_80/0.08)] border-l-2 border-l-[oklch(0.82_0.055_80)]",
+          isSelected && "bg-primary/8 border-l-2 border-l-primary",
           !isSelected && "border-l-2 border-l-transparent hover:bg-accent/50",
           isCompleted && "opacity-40"
         )}
