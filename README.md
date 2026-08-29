@@ -13,11 +13,17 @@ Personal learning dashboard that aggregates progress across five platforms and g
 
 ## Pages
 
+Five destinations, ordered on the learning loop — see what to do, do it, understand it, prove it. Settings sits in the header rather than the nav, and Goals and Assess are reached from Progress.
+
 | Page | What it shows |
 |------|--------------|
-| **Planner** (`/`) | Status-based kanban board (Backlog → To Do → In Progress → Done), mentor briefing, deadline warnings, competency spotlight, side project card with refresh button |
-| **Progress** (`/progress`) | Platform stat cards with 30-day deltas, competency map (20 areas), 42 Holy Graph (circle progress), activity chart, milestones timeline |
+| **Today** (`/`) | Daily focus (top board items with Done buttons), mentor briefing, competency mini-heatmap |
+| **Board** (`/board`) | Status-based kanban (Backlog → To Do → In Progress → Done), deadline warnings, competency spotlight, side project card |
+| **Learn** (`/learn`) | External catalogue — HTB modules and machines, Root-me challenges, THM rooms, 42 projects — grouped by competency, with search and filter chips |
+| **Knowledge** (`/knowledge`) | Courses written for each competency, six depth tiers deep; Markdown reader with Mermaid, annotations, user content blocks, export |
+| **Progress** (`/progress`) | Platform stat cards with 30-day deltas, competency map (20 areas), 42 Holy Graph, activity chart, milestones timeline. Entry point for Goals and Assess |
 | **Goals** (`/goals`) | Trackable targets with auto-sync from platform data, pacing analysis, suggested goals from competency gaps, resizable tree/detail split pane |
+| **Assess** (`/assess`) | LLM-graded assessments per competency, validating a level against evidence |
 | **Settings** (`/settings`) | Platform credentials, AI mentor config, 42 deadline planner with backward scheduling, sync controls |
 
 ## Stack

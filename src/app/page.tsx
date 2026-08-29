@@ -1,64 +1,58 @@
-import { db } from "@/lib/db";
-import { settings } from "@/lib/db/schema";
+import { loadBoard } from "@/lib/board/store";
 import { loadCurrentPlan } from "@/lib/mentor/store";
-import { runGuidanceEngine, flattenGoals } from "@/lib/guidance/engine";
+import { runGuidanceEngine } from "@/lib/guidance/engine";
 import { computeCompetencySignals } from "@/lib/mentor/competency-signals";
 import { COMPETENCIES } from "@/lib/mentor/competency-map";
-import { initializeBoard } from "@/lib/board/store";
-import { PlannerClient } from "@/components/planner/planner-client";
+import { DashboardClient } from "@/components/dashboard/dashboard-client";
 
 export const dynamic = "force-dynamic";
 
-export default function HomePage() {
-  const board = initializeBoard();
+const FOCUS_STATUSES = new Set(["in_progress", "todo"]);
+const PRIORITY_RANK: Record<string, number> = { high: 0, medium: 1, low: 2 };
 
-  const mentorResult = loadCurrentPlan();
-  const cfg = db.select().from(settings).limit(1).all()[0] ?? null;
-  const objective = cfg?.objective ?? "Red team / malware dev";
+export default function TodayPage() {
+  // loadBoard, never initializeBoard: the latter normalises titles, rewrites
+  // estimatedHours and can trigger the legacy-plan migration. Opening the
+  // Dashboard must not write to the database.
+  const board = loadBoard();
 
-  let sideProjectState = null;
-  if (cfg?.sideProjectState) {
-    try { sideProjectState = JSON.parse(cfg.sideProjectState); } catch {}
-  }
+  const focus = board.items
+    .filter((i) => FOCUS_STATUSES.has(i.boardStatus ?? ""))
+    .sort((a, b) => {
+      const p =
+        (PRIORITY_RANK[a.priority] ?? 3) - (PRIORITY_RANK[b.priority] ?? 3);
+      return p !== 0 ? p : (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
+    })
+    .slice(0, 4)
+    .map((i) => ({
+      id: i.id,
+      title: i.title,
+      type: i.type,
+      priority: i.priority,
+      estimatedHours: i.estimatedHours,
+      boardStatus: i.boardStatus,
+      link: i.link,
+    }));
 
   const guidance = runGuidanceEngine();
   const signals = computeCompetencySignals(guidance.snapshot, guidance.ftProgress);
-
   const competencies = COMPETENCIES.map((c) => ({
     id: c.id,
     label: c.label,
-    area: c.area,
+    area: c.area as string,
     level: signals[c.id]?.autoLevel ?? 0,
-    evidence: signals[c.id]?.evidence ?? "",
   }));
 
-  const activeGoals = flattenGoals(guidance.goals)
-    .filter((g) => g.status === "active" && g.children.length === 0)
-    .map((g) => ({
-      id: g.id,
-      title: g.title,
-      category: g.category,
-      goalType: g.goalType,
-      currentValue: g.currentValue,
-      targetValue: g.targetValue,
-      cadenceValue: g.cadenceValue,
-      cadenceUnit: g.cadenceUnit,
-      parentGoalId: g.parentGoalId,
-      pacing: g.pacing,
-    }));
+  const mentor = loadCurrentPlan();
 
   return (
-    <PlannerClient
-      boardItems={board.items}
-      mentorBriefing={board.mentorBriefing}
+    <DashboardClient
+      focus={focus}
+      briefing={board.mentorBriefing}
       collapsedBriefing={board.collapsedBriefing}
-      objective={objective}
       competencies={competencies}
-      goals={activeGoals}
-      sideProject={mentorResult.plan.side_project ?? null}
-      sideProjectState={sideProjectState}
-      hasKey={mentorResult.hasKey}
-      stale={mentorResult.stale}
+      briefingStale={mentor.stale}
+      boardCount={board.items.length}
     />
   );
 }

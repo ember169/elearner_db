@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Sidebar } from "@/components/layout/sidebar";
+import { AppHeader } from "@/components/layout/app-header";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 export const metadata: Metadata = {
@@ -35,6 +36,9 @@ export default function RootLayout({
           <div className="grid-bg fixed inset-0 pointer-events-none" />
           <Sidebar />
           <main className="relative min-h-dvh md:pl-24">
+            {/* Phone only: the lockup and the settings action, which the family
+                keeps out of the tab bar. */}
+            <AppHeader />
             {/* Family rule: the phone bar is a 52px row plus the home
                 indicator, so content clears 74px + the safe-area inset. */}
             <div className="px-5 pt-4 pb-[calc(74px+env(safe-area-inset-bottom))] md:px-8 md:py-8">
