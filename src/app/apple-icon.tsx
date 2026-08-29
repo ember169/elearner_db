@@ -17,25 +17,38 @@ export default function AppleIcon() {
           borderRadius: "36px",
         }}
       >
-        <svg width="130" height="130" viewBox="0 0 28 28" fill="none">
-          <path
-            d="M14 2L4 6.5V13C4 19.5 8.2 25.4 14 27C19.8 25.4 24 19.5 24 13V6.5L14 2Z"
-            fill="#d7c19c"
+        <svg width="132" height="132" viewBox="0 0 32 32" fill="none">
+          <circle
+            cx="16"
+            cy="16"
+            r="13"
+            stroke="#d7c19c"
+            strokeWidth="2.5"
+            strokeDasharray="8.6 1.61"
           />
+          <circle
+            cx="16"
+            cy="16"
+            r="9"
+            stroke="#d7c19c"
+            strokeWidth="1.5"
+            opacity="0.75"
+          />
+          <circle cx="16" cy="16" r="5.75" fill="#d7c19c" />
           <path
-            d="M10 12L13 14.5L10 17"
+            d="M13.35 13.4L15.95 16L13.35 18.6"
             stroke="#131211"
-            strokeWidth="1.8"
+            strokeWidth="1.9"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
           <line
-            x1="14.5"
-            y1="17"
-            x2="18"
-            y2="17"
+            x1="17.15"
+            y1="18.6"
+            x2="18.65"
+            y2="18.6"
             stroke="#131211"
-            strokeWidth="1.6"
+            strokeWidth="1.7"
             strokeLinecap="round"
           />
         </svg>

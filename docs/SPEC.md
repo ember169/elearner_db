@@ -668,6 +668,18 @@ Avatar, Badge (6 variants), Button (multiple sizes including xs), Calendar, Card
 
 **Nav Rail** (`sidebar.tsx`): fixed left icon-only rail, 56px (w-14) wide, desktop only. Gold shield SVG logo (28x28) at top, 6 nav buttons (40x40, 20x20 Lucide icons): Planner (/), Goals (/goals), Learn (/learn), Progress (/progress), Assess (/assess), Settings (/settings). Active state: `oklch(0.82 0.055 80 / 0.1)` bg with gold icon. Inactive: `rgba(237,232,220,.35)` icons. Mobile: iOS-style bottom tab bar with the same six destinations, blurred translucent background, safe-area inset padding. Main content offset: `md:pl-14`.
 
+### Brand mark (`src/components/brand/mark.tsx`)
+
+The family's marks are all discs built the same way: one structural move plus one contrasting core, with the core taking the surface colour so a single drawing works on charcoal and on paper. Leofresh cuts through produce; Decathleo looks down a weight plate. Cartableo reads as concentric layers around a terminal prompt:
+
+- **Segmented outer ring** — the perimeter you probe or defend, its eight gorges the way in (cyber). Uses the family's segmented move, the same one Leofresh's citron and Decathleo's grooves use.
+- **Inner ring** — depth. The app is literally six tiers deep, L0 to L5 (learning).
+- **Core** — a prompt chevron in the surface colour (dev).
+
+Family rules that apply and are implemented: the disc never rotates and is never cropped, minimum size 20px, and below 28px the ring gaps and inner ring stop resolving, so `CartableoMark` ships the simplified disc + core variant instead.
+
+One drawing, three renderings: `CartableoMark` for the app (referencing `var(--cb-or)` / `var(--cb-bg)`), literal-colour copies in `src/app/icon.tsx` and `src/app/apple-icon.tsx` because Satori has no CSS variables, and `public/icon.svg` for PWA install. The last scales the mark to 0.78 so its content radius (11.1 of 32) stays inside the 12.8 maskable safe zone.
+
 ### Family design system (`src/app/globals.css`)
 
 Cartableo shares the design system of the sibling apps (Leofresh, Decathleo, Comptableo). Per the Decathleo handoff, the family shares everything **except the accent**: the neutral ramp, elevation spaced in CIE L*, success/warn/danger, shadows, the 8-22 radius scale and the 4-48 spacing scale are common. Only the accent changes per app - mint for Leofresh, cuivre for Decathleo, and Cartableo's existing gold here, kept as its identity.

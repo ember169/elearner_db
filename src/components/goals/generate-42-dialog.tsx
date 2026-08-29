@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Check, RefreshCw, ArrowRight } from "lucide-react";
+import { CartableoMark } from "@/components/brand/mark";
 
 type CircleInfo = {
   circle: number;
@@ -122,14 +123,7 @@ export function Generate42Dialog({
       <DialogContent className="max-w-[520px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-[15px]">
-            <svg width="20" height="20" viewBox="0 0 28 28" fill="none">
-              <path d="M14 2L4 6.5V13C4 19.5 8.2 25.4 14 27C19.8 25.4 24 19.5 24 13V6.5L14 2Z"
-                fill="var(--cb-or)" stroke="var(--cb-or)" strokeWidth="0.5" />
-              <path d="M10 12L13 14.5L10 17" stroke="var(--cb-bg)" strokeWidth="1.8"
-                strokeLinecap="round" strokeLinejoin="round" />
-              <line x1="14.5" y1="17" x2="18" y2="17" stroke="var(--cb-bg)" strokeWidth="1.6"
-                strokeLinecap="round" />
-            </svg>
+            <CartableoMark size={20} />
             {isSync ? "Sync with 42 plan" : "Generate from 42 plan"}
           </DialogTitle>
         </DialogHeader>

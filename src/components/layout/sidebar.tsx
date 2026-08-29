@@ -12,6 +12,7 @@ import {
   Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CartableoMark } from "@/components/brand/mark";
 
 const navItems = [
   { href: "/", label: "Planner", icon: CalendarDays },
@@ -23,35 +24,6 @@ const navItems = [
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
-function ShieldLogo() {
-  return (
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-      <path
-        d="M14 2L4 6.5V13C4 19.5 8.2 25.4 14 27C19.8 25.4 24 19.5 24 13V6.5L14 2Z"
-        fill="var(--cb-or)"
-        stroke="var(--cb-or)"
-        strokeWidth="0.5"
-      />
-      <path
-        d="M10 12L13 14.5L10 17"
-        stroke="var(--cb-bg)"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <line
-        x1="14.5"
-        y1="17"
-        x2="18"
-        y2="17"
-        stroke="var(--cb-bg)"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
 export function Sidebar() {
   const pathname = usePathname();
 
@@ -61,7 +33,7 @@ export function Sidebar() {
       <aside className="fixed inset-y-0 left-0 z-40 hidden md:flex w-14 flex-col items-center border-r border-border bg-sidebar">
         <div className="flex h-14 items-center justify-center">
           <div className="flex h-[30px] w-[30px] items-center justify-center">
-            <ShieldLogo />
+            <CartableoMark size={28} />
           </div>
         </div>
 
