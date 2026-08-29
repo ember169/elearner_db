@@ -69,7 +69,7 @@ const components: Components = {
     );
   },
   h1: ({ children }) => (
-    <h3 className="cb-display mt-6 mb-2 text-[22px] text-cb-text">{children}</h3>
+    <h3 className="mt-6 mb-2 font-cb-sans text-[19px] font-bold text-cb-text">{children}</h3>
   ),
   h2: ({ children }) => (
     <h4 className="mt-5 mb-2 font-cb-sans text-[17px] font-bold text-cb-text">{children}</h4>
@@ -227,7 +227,7 @@ export function ArticleReader({
         return (
           <section key={section.id} id={`section-${section.id}`}>
             {/* Plain text headings — the family reserves icons for UI chrome. */}
-            <h2 className="cb-display mb-2 text-[26px] text-cb-text">{section.heading}</h2>
+            <h2 className="mb-2 font-cb-sans text-[21px] font-bold leading-snug text-cb-text">{section.heading}</h2>
             {section.isExpanded && (
               <span className="cb-label-mono mb-2 inline-block rounded-cb-chip-sm bg-cb-or-tint px-2 py-1 text-[10px] text-cb-or">
                 expanded

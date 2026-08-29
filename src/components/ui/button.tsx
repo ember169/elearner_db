@@ -4,15 +4,20 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-md border border-transparent bg-clip-padding text-[14px] font-medium whitespace-nowrap transition-all duration-150 outline-none select-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
+  // Family buttons are Archivo 700 with a centred label, radius 11-16, and a
+  // 44px minimum so every tap target clears the floor the handoff sets.
+  "group/button inline-flex shrink-0 items-center justify-center rounded-[12px] border border-transparent bg-clip-padding font-cb-sans text-[15px] font-bold whitespace-nowrap transition-all duration-150 outline-none select-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:brightness-110",
+        // Primary: accent fill, ink label, pressed step on hover.
+        default: "bg-cb-or text-cb-on-or hover:bg-cb-or-pressed",
+        // Ghost/tertiary: 1px line, second-tier label, accent on hover.
         outline:
-          "border-border bg-transparent hover:bg-accent hover:text-foreground dark:border-input dark:hover:bg-input/50",
+          "border-cb-line bg-transparent text-cb-second hover:border-cb-or hover:text-cb-or",
+        // Secondary: raised fill.
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)]",
+          "bg-cb-raised text-cb-text hover:bg-cb-raised-hover",
         ghost:
           "hover:bg-muted hover:text-foreground dark:hover:bg-muted/50",
         destructive:
@@ -20,11 +25,13 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
-        default:
-          "h-11 gap-1.5 px-4",
-        xs: "h-8 gap-1 px-2.5 text-[14px]",
-        sm: "h-9 gap-1 px-3 text-[15px]",
-        lg: "h-12 gap-1.5 px-5 text-[15px]",
+        // 44 is the family's tap-target floor; 48 for phone rows and 52-56 for
+        // an action bar, which `block` pairs with for a full-width action.
+        default: "h-11 gap-1.5 px-4",
+        xs: "h-8 gap-1 rounded-[9px] px-2.5 text-[13px]",
+        sm: "h-11 gap-1 px-3.5 text-[14px]",
+        lg: "h-13 gap-1.5 rounded-[14px] px-5 text-[17px]",
+        block: "h-14 w-full gap-2 rounded-[14px] px-5 text-[17px]",
         icon: "size-8",
         "icon-xs": "size-6 [&_svg:not([class*='size-'])]:size-3",
         "icon-sm": "size-7",

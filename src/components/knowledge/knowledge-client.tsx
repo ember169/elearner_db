@@ -196,7 +196,7 @@ export function KnowledgeClient({
               </span>
             )}
           </div>
-          <h1 className="cb-display text-[34px] text-cb-text">{article.title}</h1>
+          <h1 className="cb-content-title text-[32px] text-cb-text">{article.title}</h1>
         </header>
 
         <hr className="border-cb-line" />
@@ -253,7 +253,7 @@ export function KnowledgeClient({
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="cb-display text-[34px] text-cb-text">Knowledge</h1>
+        <h1 className="page-title text-cb-text">Knowledge</h1>
         <p className="mt-1 font-cb-sans text-[14px] text-cb-muted">
           Courses written for each competency, six depth tiers deep. Every tier is
           readable — the level badge is a marker, not a gate.

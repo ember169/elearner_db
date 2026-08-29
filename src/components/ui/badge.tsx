@@ -5,17 +5,20 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const badgeVariants = cva(
-  "group/badge inline-flex h-5 w-fit shrink-0 items-center justify-center gap-0.5 overflow-hidden rounded-full border border-transparent px-2 text-[15px] font-semibold whitespace-nowrap tracking-wide transition-all [&>svg]:pointer-events-none [&>svg]:size-2.5!",
+  // Family chip: JetBrains Mono 10-11, radius 8-9, raised fill, 5-7 x 8-11
+  // padding. Not a pill and not a sans label — meta reads as mono across the
+  // family, and only *labels* are uppercased, never values like "30 min".
+  "group/badge inline-flex w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-[9px] border border-transparent px-2.5 py-1 font-cb-mono text-[11px] font-medium whitespace-nowrap transition-all [&>svg]:pointer-events-none [&>svg]:size-3!",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground",
-        secondary:
-          "bg-secondary text-secondary-foreground",
+        // The truth chip: accent tint, accent label. Reserved for facts the app
+        // vouches for, the way the family reserves it for pantry and season.
+        default: "bg-cb-or-tint text-cb-or",
+        secondary: "bg-cb-raised text-cb-second",
         destructive:
           "bg-destructive/10 text-destructive border-destructive/20",
-        outline:
-          "border-border text-muted-foreground",
+        outline: "border-cb-line text-cb-muted",
         ghost:
           "text-muted-foreground",
         success: "bg-success/12 text-success border-success/25",

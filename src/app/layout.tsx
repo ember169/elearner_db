@@ -34,8 +34,12 @@ export default function RootLayout({
         <TooltipProvider>
           <div className="grid-bg fixed inset-0 pointer-events-none" />
           <Sidebar />
-          <main className="md:pl-14 min-h-dvh relative">
-            <div className="px-5 pt-4 pb-20 md:px-8 md:py-8 md:pb-8">{children}</div>
+          <main className="relative min-h-dvh md:pl-24">
+            {/* Family rule: the phone bar is a 52px row plus the home
+                indicator, so content clears 74px + the safe-area inset. */}
+            <div className="px-5 pt-4 pb-[calc(74px+env(safe-area-inset-bottom))] md:px-8 md:py-8">
+              {children}
+            </div>
           </main>
         </TooltipProvider>
       </body>

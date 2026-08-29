@@ -217,13 +217,24 @@ a:focus-visible,
 }
 
 /* Page-level heading utilities */
-/* Family display role — DM Serif Display 400, never uppercase, lh 1.05-1.2. */
+/* Screen title. The handoff mockups are explicit — "Screen titles Archivo
+   700/19; recipe names DM Serif Display" — so the serif is NOT used here. It
+   belongs to content names only: see .cb-content-title. */
 .page-title {
+  font-family: var(--font-cb-sans);
+  font-size: 1.625rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+/* Content-name role: article titles, the equivalent of the family's recipe and
+   session names. DM Serif Display 400, never uppercase. */
+.cb-content-title {
   font-family: var(--font-cb-display);
-  font-size: 2.125rem;
   font-weight: 400;
-  letter-spacing: -0.01em;
   line-height: 1.12;
+  letter-spacing: -0.01em;
   text-transform: none;
 }
 .page-subtitle {
