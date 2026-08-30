@@ -105,11 +105,13 @@ export function StatusKanbanBoard({
   onItemUpdate,
   onReorder,
   onDelete,
+  onOpenDetail,
 }: {
   items: PlanItemData[];
   onItemUpdate: (id: number, updates: Record<string, unknown>) => void;
   onReorder: (id: number, boardStatus: string, category: string, sortOrder: number) => void;
   onDelete?: (id: number) => void;
+  onOpenDetail?: (id: number) => void;
 }) {
   const dndId = useId();
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -307,6 +309,7 @@ export function StatusKanbanBoard({
                   isDone={col.id === "done"}
                   onItemUpdate={onItemUpdate}
                   onDelete={onDelete}
+                  onOpenDetail={onOpenDetail}
                 />
               );
             })}
@@ -328,12 +331,14 @@ function BoardCell({
   isDone,
   onItemUpdate,
   onDelete,
+  onOpenDetail,
 }: {
   cellId: string;
   items: PlanItemData[];
   isDone: boolean;
   onItemUpdate: (id: number, updates: Record<string, unknown>) => void;
   onDelete?: (id: number) => void;
+  onOpenDetail?: (id: number) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: cellId });
 
@@ -362,6 +367,7 @@ function BoardCell({
             isDone={isDone}
             onItemUpdate={onItemUpdate}
             onDelete={onDelete}
+            onOpenDetail={onOpenDetail}
           />
         ))}
       </SortableContext>
@@ -374,11 +380,13 @@ function SortableBoardCard({
   isDone,
   onItemUpdate,
   onDelete,
+  onOpenDetail,
 }: {
   item: PlanItemData;
   isDone: boolean;
   onItemUpdate: (id: number, updates: Record<string, unknown>) => void;
   onDelete?: (id: number) => void;
+  onOpenDetail?: (id: number) => void;
 }) {
   const {
     attributes,
@@ -397,7 +405,7 @@ function SortableBoardCard({
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <BoardCard item={item} isDone={isDone} onItemUpdate={onItemUpdate} onDelete={onDelete} />
+      <BoardCard item={item} isDone={isDone} onItemUpdate={onItemUpdate} onDelete={onDelete} onOpenDetail={onOpenDetail} />
     </div>
   );
 }
@@ -408,12 +416,14 @@ function BoardCard({
   isDone,
   onItemUpdate,
   onDelete,
+  onOpenDetail,
 }: {
   item: PlanItemData;
   overlay?: boolean;
   isDone?: boolean;
   onItemUpdate?: (id: number, updates: Record<string, unknown>) => void;
   onDelete?: (id: number) => void;
+  onOpenDetail?: (id: number) => void;
 }) {
   const statusStyle = getStatusStyle(item.status);
   const StatusIcon = statusStyle.icon;
@@ -482,6 +492,17 @@ function BoardCard({
               ···
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" side="bottom" sideOffset={2}>
+              {onOpenDetail && (
+                <DropdownMenuItem
+                  className="font-cb-sans text-[13px]"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenDetail(item.id);
+                  }}
+                >
+                  View details
+                </DropdownMenuItem>
+              )}
               {moveActions.map((a) => (
                 <DropdownMenuItem
                   key={a.id}
@@ -554,6 +575,18 @@ function BoardCard({
           >
             {item.title}
           </a>
+        ) : onOpenDetail ? (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenDetail(item.id);
+            }}
+            className="block text-left text-[14px] font-medium leading-snug hover:underline"
+            style={{ textDecoration: done ? "line-through" : undefined }}
+          >
+            {item.title}
+          </button>
         ) : (
           <p
             className="text-[14px] font-medium leading-snug"

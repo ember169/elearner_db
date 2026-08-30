@@ -54,8 +54,11 @@ const FALLBACK_RULES: { test: RegExp; competencies: string[] }[] = [
   { test: /^c-piscine-shell-/, competencies: ["linux-admin"] },
   // Everything else in the piscine, plus its exams, is C fundamentals.
   { test: /^c-piscine-/, competencies: ["c-core"] },
-  // Common-core exams test the C the cursus has covered so far.
-  { test: /^exam-rank-/, competencies: ["c-core"] },
+  // Common-core exams test the C the cursus has covered so far. Two slug forms
+  // are in play: exam-rank-04 (the 42 API / DB) and exam04 (the catalogue and
+  // board refs).
+  { test: /^exam-rank-\d/, competencies: ["c-core"] },
+  { test: /^exam\d/, competencies: ["c-core"] },
   { test: /^(so_long|cub3d)$/, competencies: ["algorithms"] },
 ];
 

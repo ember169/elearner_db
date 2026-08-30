@@ -22,7 +22,7 @@ export type ExamExercise = {
 };
 
 const EXAMS = examData.exams as Record<string, ExamExercise[]>;
-export const EXAM_SOURCE_URL = examData._source as string;
+export const EXAM_SOURCES = examData._sources as { name: string; url: string }[];
 
 /** Board items and 42 catalogue slugs both use `examNN`; normalise either. */
 function examKey(ref: string): string | null {

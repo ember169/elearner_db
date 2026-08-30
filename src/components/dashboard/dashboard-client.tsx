@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { cn, assertOk } from "@/lib/utils";
+import { CardDetail } from "./card-detail";
 import { PLATFORM_LABELS } from "@/lib/platform-colors";
 
 type FocusItem = {
@@ -70,6 +71,7 @@ export function DashboardClient({
   const [busyId, setBusyId] = useState<number | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [detailId, setDetailId] = useState<number | null>(null);
 
   async function markDone(id: number) {
     setBusyId(id);
@@ -120,36 +122,40 @@ export function DashboardClient({
           focus.map((item) => (
             <article
               key={item.id}
-              className="rounded-cb-card border border-cb-line bg-cb-card p-4"
+              className="flex items-start justify-between gap-3 rounded-cb-card border border-cb-line bg-cb-card p-4 transition-colors hover:bg-cb-raised"
             >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <span className="cb-label-mono inline-block rounded-cb-chip-sm bg-cb-raised px-2 py-1 text-[10px] text-cb-second">
-                    {PLATFORM_LABELS[item.type] ?? item.type}
-                  </span>
-                  <h3 className="mt-2 font-cb-sans text-[15px] font-bold leading-snug text-cb-text">
-                    {item.title}
-                  </h3>
-                  <p className="mt-1 font-cb-mono text-[11px] text-cb-muted">
-                    {[
-                      item.boardStatus === "in_progress" ? "in progress" : "todo",
-                      item.estimatedHours ? `${item.estimatedHours}h` : null,
-                      item.priority,
-                    ]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => void markDone(item.id)}
-                  disabled={busyId === item.id}
-                  className="flex h-9 shrink-0 items-center gap-1 rounded-[12px] bg-cb-raised px-3 font-cb-sans text-[13px] font-bold text-cb-text transition-colors hover:bg-cb-raised-hover disabled:opacity-50"
-                >
-                  {busyId === item.id && <Loader2 className="h-3 w-3 animate-spin" />}
-                  Done
-                </button>
-              </div>
+              {/* The card body opens the detail; Done stays a separate control
+                  so marking done never means "and open the panel". */}
+              <button
+                type="button"
+                onClick={() => setDetailId(item.id)}
+                className="min-w-0 flex-1 text-left"
+              >
+                <span className="cb-label-mono inline-block rounded-cb-chip-sm bg-cb-raised px-2 py-1 text-[10px] text-cb-second">
+                  {PLATFORM_LABELS[item.type] ?? item.type}
+                </span>
+                <h3 className="mt-2 font-cb-sans text-[15px] font-bold leading-snug text-cb-text">
+                  {item.title}
+                </h3>
+                <p className="mt-1 font-cb-mono text-[11px] text-cb-muted">
+                  {[
+                    item.boardStatus === "in_progress" ? "in progress" : "todo",
+                    item.estimatedHours ? `${item.estimatedHours}h` : null,
+                    item.priority,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+              </button>
+              <button
+                type="button"
+                onClick={() => void markDone(item.id)}
+                disabled={busyId === item.id}
+                className="flex h-9 shrink-0 items-center gap-1 rounded-[12px] bg-cb-raised px-3 font-cb-sans text-[13px] font-bold text-cb-text transition-colors hover:bg-cb-raised-hover disabled:opacity-50"
+              >
+                {busyId === item.id && <Loader2 className="h-3 w-3 animate-spin" />}
+                Done
+              </button>
             </article>
           ))
         )}
@@ -195,6 +201,10 @@ export function DashboardClient({
           <MiniHeatmap competencies={competencies} />
         </div>
       </section>
+
+      {detailId !== null && (
+        <CardDetail itemId={detailId} onClose={() => setDetailId(null)} />
+      )}
     </div>
   );
 }

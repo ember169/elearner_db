@@ -8,6 +8,7 @@ import { StatusKanbanBoard } from "./kanban-board";
 import { SideProjectBrief } from "./side-project-brief";
 import { CompetencySpotlight } from "./competency-spotlight";
 import { PacingAlerts } from "./pacing-alerts";
+import { CardDetail } from "@/components/dashboard/card-detail";
 import { MobileBoardView } from "./mobile-board";
 import type { PlanItemData, GoalSlim, SideProject, CompetencyEntry } from "./types";
 import { assertOk } from "@/lib/utils";
@@ -45,6 +46,7 @@ export function PlannerClient({
 }: PlannerClientProps) {
   const router = useRouter();
   const [items, setItems] = useState<PlanItemData[]>(initialItems);
+  const [detailId, setDetailId] = useState<number | null>(null);
   const [briefing, setBriefing] = useState(initialBriefing);
   const [collapsedBriefing, setCollapsedBriefing] = useState(initialCollapsed);
   const [sideProject, setSideProject] = useState(initialSideProject);
@@ -447,6 +449,7 @@ export function PlannerClient({
           onItemUpdate={handleItemUpdate}
           onReorder={handleReorder}
           onDelete={handleDeleteItem}
+          onOpenDetail={setDetailId}
         />
       </div>
 
@@ -457,6 +460,7 @@ export function PlannerClient({
           sideProject={sideProject}
           goals={goals}
           onItemUpdate={handleItemUpdate}
+          onOpenDetail={setDetailId}
         />
       </div>
 
@@ -467,6 +471,10 @@ export function PlannerClient({
           <PacingAlerts goals={goals} />
         </div>
       </div>
+
+      {detailId !== null && (
+        <CardDetail itemId={detailId} onClose={() => setDetailId(null)} />
+      )}
     </div>
   );
 }

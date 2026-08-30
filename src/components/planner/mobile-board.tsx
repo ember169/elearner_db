@@ -48,11 +48,13 @@ export function MobileBoardView({
   sideProject,
   goals,
   onItemUpdate,
+  onOpenDetail,
 }: {
   items: PlanItemData[];
   sideProject?: SideProject | null;
   goals: GoalSlim[];
   onItemUpdate: (id: number, updates: Record<string, unknown>) => void;
+  onOpenDetail?: (id: number) => void;
 }) {
   const [tab, setTab] = useState<MobileTab>("in_progress");
 
@@ -116,6 +118,7 @@ export function MobileBoardView({
             sideProject={sideProject}
             goals={goals}
             onItemUpdate={onItemUpdate}
+            onOpenDetail={onOpenDetail}
             actions={(item) => [
               { label: "Done", action: () => onItemUpdate(item.id, { boardStatus: "done" }) },
               { label: "Stuck", action: () => onItemUpdate(item.id, { status: "stuck" }) },
@@ -127,13 +130,14 @@ export function MobileBoardView({
             items={todoItems}
             emptyText="Nothing to do. Move something from the backlog."
             onItemUpdate={onItemUpdate}
+            onOpenDetail={onOpenDetail}
             actions={(item) => [
               { label: "Start", action: () => onItemUpdate(item.id, { boardStatus: "in_progress" }) },
             ]}
           />
         )}
         {tab === "backlog" && (
-          <BacklogListView items={backlogItems} onItemUpdate={onItemUpdate} />
+          <BacklogListView items={backlogItems} onItemUpdate={onItemUpdate} onOpenDetail={onOpenDetail} />
         )}
       </div>
     </div>
@@ -146,6 +150,7 @@ function StatusListView({
   sideProject,
   goals,
   onItemUpdate,
+  onOpenDetail,
   actions,
 }: {
   items: PlanItemData[];
@@ -153,6 +158,7 @@ function StatusListView({
   sideProject?: SideProject | null;
   goals?: GoalSlim[];
   onItemUpdate: (id: number, updates: Record<string, unknown>) => void;
+  onOpenDetail?: (id: number) => void;
   actions: (item: PlanItemData) => { label: string; action: () => void }[];
 }) {
   return (
@@ -174,6 +180,7 @@ function StatusListView({
                 key={item.id}
                 item={item}
                 onItemUpdate={onItemUpdate}
+                onOpenDetail={onOpenDetail}
                 actions={actions(item)}
               />
             ))}
@@ -202,9 +209,11 @@ function StatusListView({
 function BacklogListView({
   items,
   onItemUpdate,
+  onOpenDetail,
 }: {
   items: PlanItemData[];
   onItemUpdate: (id: number, updates: Record<string, unknown>) => void;
+  onOpenDetail?: (id: number) => void;
 }) {
   return (
     <div className="space-y-2">
@@ -225,6 +234,7 @@ function BacklogListView({
                 key={item.id}
                 item={item}
                 onItemUpdate={onItemUpdate}
+                onOpenDetail={onOpenDetail}
                 actions={[
                   { label: "Plan it", action: () => onItemUpdate(item.id, { boardStatus: "todo" }) },
                   { label: "Drop", action: () => onItemUpdate(item.id, { status: "deferred" }) },
@@ -252,11 +262,13 @@ function LaneBadge({ lane }: { lane: { label: string; color: string } }) {
 function MobileCard({
   item,
   onItemUpdate,
+  onOpenDetail,
   actions,
   compact,
 }: {
   item: PlanItemData;
   onItemUpdate: (id: number, updates: Record<string, unknown>) => void;
+  onOpenDetail?: (id: number) => void;
   actions?: { label: string; action: () => void }[];
   compact?: boolean;
 }) {
@@ -290,6 +302,15 @@ function MobileCard({
           >
             {item.title}
           </a>
+        ) : onOpenDetail ? (
+          <button
+            type="button"
+            onClick={() => onOpenDetail(item.id)}
+            className="block w-full truncate text-left text-[15px] font-medium"
+            style={{ textDecoration: isDone ? "line-through" : undefined }}
+          >
+            {item.title}
+          </button>
         ) : (
           <span
             className={`${compact ? "text-[15px]" : "text-[15px]"} font-medium truncate block`}
