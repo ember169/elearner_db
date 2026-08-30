@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useEffect } from "react";
+import Link from "next/link";
 import { Search, X, ArrowLeft, Loader2, BadgeCheck, Maximize2, Minimize2 } from "lucide-react";
 import { cn, assertOk } from "@/lib/utils";
 import { ArticleReader, type ReaderSection } from "./article-reader";
@@ -339,9 +340,15 @@ function CompetencyCard({
   return (
     <article className="rounded-cb-card border border-cb-line bg-cb-card p-4">
       <div className="flex items-start justify-between gap-2">
-        <h3 className="font-cb-sans text-[15px] font-bold text-cb-text">
+        {/* The card title opens the competency hub — its six tiers and its
+            Learn resources side by side. The tier chips below still open an
+            article inline; this is the whole-competency view. */}
+        <Link
+          href={`/knowledge/${competency.id}`}
+          className="font-cb-sans text-[15px] font-bold text-cb-text hover:text-cb-or"
+        >
           {competency.label}
-        </h3>
+        </Link>
         <span
           className={cn(
             "cb-label-mono flex shrink-0 items-center gap-1 rounded-cb-chip-sm px-2 py-1 text-[10px]",
