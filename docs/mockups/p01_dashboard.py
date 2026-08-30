@@ -1,4 +1,4 @@
-"""Dashboard / — the morning hub: review queue, daily focus, streak, mentor
+"""Dashboard / — the morning hub, as built: review queue, daily focus, streak, mentor
 briefing, competency mini-heatmap (PLAN §6 "Morning Ritual")."""
 import sys, os
 sys.path.insert(0, os.path.dirname(__file__))
@@ -28,41 +28,13 @@ def content(c, x, y, w, compact=False):
     t = c.t
 
     c.text(x, y + 24, "Today", SANS, 26, t["text"], bold=True)
-    c.label_mono(x + width_of("Today", SANS, 26, True) + 14, y + 20, "thu 29 aug")
-    y += 46
+    c.label_mono(x + width_of("Today", SANS, 26, True) + 14, y + 20, "fri 30 aug")
+    y += 58
 
-    # Review queue — the gold card, the one thing that wants doing first.
-    blurb = "Kerberos delegation, ASLR bypass, and three more."
-    if compact:
-        lines = wrap(blurb, SANS, 14, w - 36)
-        qh = 40 + 26 + len(lines) * 22 + 60
-        c.card(x, y, w, qh, r=16, accent=True)
-        c.label_mono(x + 18, y + 28, "review queue", t["accent"])
-        c.text(x + 18, y + 58, "5 cards due", SANS, 21, t["text"], bold=True)
-        c.para(x + 18, y + 82, blurb, SANS, 14, t["muted"], max_w=w - 36)
-        c.button(x + 18, y + qh - 62, w - 36, "Start review", "primary", h=48)
-    else:
-        qh = 128
-        c.card(x, y, w, qh, r=16, accent=True)
-        c.label_mono(x + 18, y + 28, "review queue", t["accent"])
-        c.text(x + 18, y + 60, "5 cards due", SANS, 21, t["text"], bold=True)
-        c.para(x + 18, y + 86, blurb, SANS, 14, t["muted"], max_w=w - 210)
-        c.button(x + w - 178, y + qh / 2 - 24, 160, "Start review", "primary", h=48)
-    y += qh + 12
-
-    # Streak and XP: two figures in mono. Never a chart — an attendance curve
-    # that dips reads as a reproach (family dataviz rule).
-    sh = 74
-    half = (w - 12) / 2
-    for i, (lab, val, col) in enumerate([("streak", "14 days", t["accent"]),
-                                         ("xp", "2 340", t["text"])]):
-        cx = x + i * (half + 12)
-        c.card(cx, y, half, sh, r=14)
-        c.label_mono(cx + 16, y + 26, lab)
-        c.text(cx + 16, y + 56, val, MONO, 21, col)
-    y += sh + 24
-
+    # Daily focus header carries a "see board" link — the accueil -> board path
+    # in one tap, on either size.
     c.text(x, y, "Daily focus", SANS, 19, t["text"], bold=True)
+    c.text(x + w, y, "see board · 26", MONO, 11, t["accent"], anchor="end")
     y += 14
 
     for plat, title, meta in FOCUS:
@@ -129,7 +101,7 @@ def build(theme=DARK):
     c.rect(dx - 8, dy - 8, dw + 16, dh + 16, theme["line"], r=20, op=0.45)
     c.rect(dx, dy, dw, dh, theme["bg"], r=14)
     sub = Canvas(dw, dh, theme); sub.parts = []
-    rail(sub, "planner", 0, dh)
+    rail(sub, "today", 0, dh)
     content(sub, RAIL_W + (dw - RAIL_W - inner_w) / 2, pad, inner_w)
     c.raw(f'<g transform="translate({dx},{dy})"><clipPath id="dclip">'
           f'<rect width="{dw}" height="{dh}" rx="14"/></clipPath>'
@@ -138,7 +110,7 @@ def build(theme=DARK):
     ox, oy = phone(c, 1400, dy, pw, ph, theme)
     sub2 = Canvas(pw, ph - 44, theme); sub2.parts = []
     content(sub2, mpad, mpad, pw - 2 * mpad, compact=True)
-    tabbar(sub2, "planner", 0, body_h, pw)
+    tabbar(sub2, "today", 0, body_h, pw)
     c.raw(f'<g transform="translate({ox},{oy})"><clipPath id="mclip">'
           f'<rect width="{pw}" height="{ph - 44}"/></clipPath>'
           f'<g clip-path="url(#mclip)">{"".join(sub2.parts)}</g></g>')

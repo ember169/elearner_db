@@ -179,10 +179,11 @@ class Canvas:
 
 # ── App chrome ───────────────────────────────────────────────────────────────
 RAIL_W = 96
-NAV = [("planner", "cal"), ("goals", "target"), ("learn", "book"),
-       ("knowledge", "note"), ("progress", "map"), ("assess", "check")]
-TAB = [("planner", "cal"), ("learn", "book"), ("knowledge", "note"),
-       ("progress", "map"), ("more", "dots")]
+# Five destinations on the learning loop; settings lives in the header, not the
+# nav. The rail and the phone bar carry the same five — nothing overflows.
+NAV = [("today", "dash"), ("board", "cal"), ("learn", "book"),
+       ("knowledge", "note"), ("progress", "map")]
+TAB = NAV
 
 
 def _icon(c, kind, cx, cy, s, col):
@@ -212,6 +213,14 @@ def _icon(c, kind, cx, cy, s, col):
     elif kind == "check":
         c.rect(cx - h + 2, cy - h + 1, s - 4, s - 2, None, r=2.5, stroke=col, sw=2)
         c.path(f"M{cx - 3} {cy}l2.5 2.5 4.5 -5", stroke=col, sw=2)
+    elif kind == "dash":
+        g = s * 0.42
+        for dx in (-g / 1.6, g / 1.6):
+            for dy in (-g / 1.6, g / 1.6):
+                c.rect(cx + dx - g / 2, cy + dy - g / 2, g, g, None, r=2, stroke=col, sw=2)
+    elif kind == "settings_gear":
+        c.circle(cx, cy, s * 0.24, None, stroke=col, sw=2)
+        c.circle(cx, cy, s * 0.45, None, stroke=col, sw=2)
     elif kind == "dots":
         for dx in (-5, 0, 5):
             c.circle(cx + dx, cy, 1.9, col)
@@ -288,3 +297,19 @@ def back_link(c, x, y, label="All competencies"):
     c.line(x, y, x + 13, y, t["muted"], 1.8)
     c.path(f"M{x + 5} {y - 4.5}L{x} {y}L{x + 5} {y + 4.5}", stroke=t["muted"], sw=1.8)
     c.text(x + 22, y + 5, label, SANS, 14, t["muted"])
+
+
+def phone_header(c, x, y, w):
+    """Phone-only header: the lockup and a settings action, which the family
+    keeps out of the tab bar."""
+    t = c.t
+    c.mark(x + 18, y + 4, 22)
+    c.text(x + 36, y + 10, "Cartableo", SERIF, 17, t["text"])
+    c.rect(x + w - 52, y - 8, 34, 34, t["raised"], r=12)
+    _icon(c, "settings_gear", x + w - 35, y + 9, 17, t["second"])
+
+
+def _settings_gear(c, cx, cy, s, col):
+    h = s / 2
+    c.circle(cx, cy, h * 0.5, None, stroke=col, sw=2)
+    c.circle(cx, cy, h, None, stroke=col, sw=2)

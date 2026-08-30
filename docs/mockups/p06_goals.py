@@ -104,7 +104,7 @@ def build(theme=DARK):
           f'<g clip-path="url(#gc)">{"".join(sub.parts)}</g></g>')
     ox, oy = phone(c, 1400, dy, pw, ph, theme)
     sub2 = Canvas(pw, ph - 44, theme); sub2.parts = []
-    content(sub2, mpad, mpad, pw - 2 * mpad, True); tabbar(sub2, "more", 0, body_h, pw)
+    content(sub2, mpad, mpad, pw - 2 * mpad, True); tabbar(sub2, "", 0, body_h, pw)
     c.raw(f'<g transform="translate({ox},{oy})"><clipPath id="gm">'
           f'<rect width="{pw}" height="{ph - 44}"/></clipPath>'
           f'<g clip-path="url(#gm)">{"".join(sub2.parts)}</g></g>')

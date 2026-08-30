@@ -74,13 +74,13 @@ def build(theme=DARK):
     c.rect(dx - 8, dy - 8, dw + 16, dh + 16, theme["line"], r=20, op=0.45)
     c.rect(dx, dy, dw, dh, theme["bg"], r=14)
     sub = Canvas(dw, dh, theme); sub.parts = []
-    rail(sub, "planner", 0, dh); content(sub, RAIL_W + pad, pad, cw)
+    rail(sub, "board", 0, dh); content(sub, RAIL_W + pad, pad, cw)
     c.raw(f'<g transform="translate({dx},{dy})"><clipPath id="bc">'
           f'<rect width="{dw}" height="{dh}" rx="14"/></clipPath>'
           f'<g clip-path="url(#bc)">{"".join(sub.parts)}</g></g>')
     ox, oy = phone(c, 1400, dy, pw, ph, theme)
     sub2 = Canvas(pw, ph - 44, theme); sub2.parts = []
-    content(sub2, mpad, mpad, pw - 2 * mpad, True); tabbar(sub2, "planner", 0, body_h, pw)
+    content(sub2, mpad, mpad, pw - 2 * mpad, True); tabbar(sub2, "board", 0, body_h, pw)
     c.raw(f'<g transform="translate({ox},{oy})"><clipPath id="bm">'
           f'<rect width="{pw}" height="{ph - 44}"/></clipPath>'
           f'<g clip-path="url(#bm)">{"".join(sub2.parts)}</g></g>')
