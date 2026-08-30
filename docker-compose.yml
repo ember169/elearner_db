@@ -3,8 +3,11 @@ services:
     build: .
     # host:container — the app always listens on 3000 inside the container
     # (Dockerfile sets PORT=3000); change only the host side (left) if 3001 is taken.
+    # Bound to 127.0.0.1: the app has no auth and Settings holds platform
+    # credentials, so it must not be reachable from the LAN. Same as the rest of
+    # the family. Reach it through an SSH tunnel or a reverse proxy, not directly.
     ports:
-      - "3001:3000"
+      - "127.0.0.1:3001:3000"
     volumes:
       - db-data:/app/data
       # Mount the directory, not the bare .db file: SQLite WAL mode keeps
