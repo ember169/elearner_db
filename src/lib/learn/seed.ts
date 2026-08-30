@@ -4,11 +4,16 @@ import {
   ftProjects,
   thmRooms,
 } from "@/lib/db/schema";
-import { sql } from "drizzle-orm";
+import { eq, or, isNull, sql } from "drizzle-orm";
 import { upsertResource, resourceCount } from "./store";
 import { HTB_ACADEMY_MODULES } from "@/lib/mentor/htb-academy-catalog";
 import { HTB_MACHINES } from "@/lib/mentor/htb-machine-catalog";
 import { ROOTME_CHALLENGE_CATALOG } from "@/lib/mentor/rootme-challenge-catalog";
+import {
+  competenciesForFtProject,
+  competenciesForThmRoom,
+} from "@/lib/mentor/competency-resolver";
+import { getProjectBySlug } from "@/lib/guidance/ft-project-tree";
 
 const AREA_TO_COMPETENCIES: Record<string, string[]> = {
   "Low-level & C": ["c-core", "c-systems", "algorithms", "cpp-oop"],
@@ -122,7 +127,7 @@ function seedFromSyncedThmRooms() {
       url: `https://tryhackme.com/room/${room.roomCode}`,
       difficulty: room.difficulty ?? "beginner",
       contentType: "room",
-      competencyIds: "[]",
+      competencyIds: JSON.stringify(competenciesForThmRoom(room.roomCode)),
       status: room.completedAt ? "completed" : "not_started",
       completedAt: room.completedAt ?? undefined,
     });
@@ -138,7 +143,12 @@ function seedFromSynced42Projects() {
       title: proj.name,
       url: `https://projects.intra.42.fr/projects/${proj.slug ?? proj.name.toLowerCase()}`,
       contentType: "project",
-      competencyIds: "[]",
+      tagsJson: JSON.stringify(
+        getProjectBySlug(proj.slug ?? proj.name)?.skills ?? [],
+      ),
+      competencyIds: JSON.stringify(
+        competenciesForFtProject(proj.slug, proj.name),
+      ),
       status: proj.validated ? "completed" : proj.status === "in_progress" ? "in_progress" : "not_started",
       completedAt: proj.markedAt ?? undefined,
     });
@@ -154,4 +164,66 @@ export function seedLearningResources() {
   seedRootMe();
   seedFromSyncedThmRooms();
   seedFromSynced42Projects();
+}
+
+
+/**
+ * Attach competencies to catalogue rows that have none.
+ *
+ * `seedLearningResources` returns early once the table has any row, so fixing
+ * the seeders alone would never reach the 181 rows already in a live database.
+ * Re-running the seeders unconditionally is not an option either: `upsertResource`
+ * writes the whole record, so it would reset every hand-set HTB and Root-Me
+ * status back to not_started.
+ *
+ * This touches `competencyIds` and, for 42 rows, `tagsJson` — nothing else. It
+ * is idempotent, and costs one indexed read when there is nothing to do.
+ */
+export function backfillCompetencyIds(): number {
+  const orphans = db
+    .select()
+    .from(learningResources)
+    .where(
+      or(
+        eq(learningResources.competencyIds, "[]"),
+        isNull(learningResources.competencyIds),
+      ),
+    )
+    .all();
+
+  if (orphans.length === 0) return 0;
+
+  const ftRows = db.select().from(ftProjects).all();
+  const bySlug = new Map(
+    ftRows.map((p) => [p.slug ?? `ft-${p.projectId}`, p]),
+  );
+
+  let fixed = 0;
+  for (const row of orphans) {
+    let competencies: string[] = [];
+    const updates: Record<string, unknown> = {};
+
+    if (row.platform === "42") {
+      const proj = bySlug.get(row.externalId ?? "");
+      competencies = competenciesForFtProject(
+        proj?.slug ?? row.externalId,
+        proj?.name ?? row.title,
+      );
+      const skills = getProjectBySlug(proj?.slug ?? row.title)?.skills;
+      if (skills?.length) updates.tagsJson = JSON.stringify(skills);
+    } else if (row.platform === "thm") {
+      competencies = competenciesForThmRoom(row.externalId);
+    }
+
+    if (competencies.length === 0 && !updates.tagsJson) continue;
+    if (competencies.length) updates.competencyIds = JSON.stringify(competencies);
+
+    db.update(learningResources)
+      .set(updates)
+      .where(eq(learningResources.id, row.id))
+      .run();
+    fixed += 1;
+  }
+
+  return fixed;
 }

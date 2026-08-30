@@ -401,7 +401,15 @@ export function analyzeFtProgress(snapshot: PlatformSnapshot) {
   };
 }
 
-function matchProjectSlug(rawSlug: string): string {
+/**
+ * Canonicalise a 42 project slug or name onto a FT_COMMON_CORE slug.
+ *
+ * Exported because the codebase already carries four competing slug
+ * normalisers and a fifth would be a mistake: this is the only one that copes
+ * with both the inconsistent `42cursus-` prefix and the name-only cases like
+ * `cpp-module-00` against the signal vocabulary's `cpp00`.
+ */
+export function matchProjectSlug(rawSlug: string): string {
   const normalized = rawSlug.toLowerCase().replace(/[^a-z0-9]/g, "");
   const match = FT_COMMON_CORE.find((p) => {
     const canonical = p.slug.replace(/[^a-z0-9]/g, "");
