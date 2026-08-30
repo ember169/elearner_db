@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { formatRelative } from "@/lib/format";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -52,6 +53,8 @@ interface CompetencyEntry {
 }
 
 interface ProgressClientProps {
+  goalsEntry: { active: number; behind: number };
+  assessEntry: { validated: number; total: number; open: number };
   ft: FtProfileData | null;
   htb: {
     username: string;
@@ -84,6 +87,8 @@ type Period = "week" | "month" | "all";
 const LEVEL_LABELS = ["None", "Basics", "Familiar", "Proficient", "Strong", "Expert"];
 
 export function ProgressClient({
+  goalsEntry,
+  assessEntry,
   ft,
   htb,
   maldev,
@@ -127,6 +132,44 @@ export function ProgressClient({
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Goals and Assess left the navigation; these are their entry points, and
+          they carry state rather than being mute links. */}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Link
+          href="/goals"
+          className="rounded-cb-card border border-cb-line bg-cb-card p-4 transition-colors hover:bg-cb-raised"
+        >
+          <p className="cb-label-mono text-[10px] text-cb-muted">Goals</p>
+          <p className="mt-2 font-cb-sans text-[19px] font-bold text-cb-text">
+            {goalsEntry.active} active
+          </p>
+          <p className="mt-1 font-cb-mono text-[11px] text-cb-muted">
+            {goalsEntry.behind > 0 ? (
+              <span className="text-cb-warn">{goalsEntry.behind} behind pace</span>
+            ) : (
+              "all on pace"
+            )}
+          </p>
+        </Link>
+
+        <Link
+          href="/assess"
+          className="rounded-cb-card border border-cb-line bg-cb-card p-4 transition-colors hover:bg-cb-raised"
+        >
+          <p className="cb-label-mono text-[10px] text-cb-muted">Assess</p>
+          <p className="mt-2 font-cb-sans text-[19px] font-bold text-cb-text">
+            {assessEntry.validated} of {assessEntry.total} validated
+          </p>
+          <p className="mt-1 font-cb-mono text-[11px] text-cb-muted">
+            {assessEntry.open > 0 ? (
+              <span className="text-cb-or">{assessEntry.open} in progress</span>
+            ) : (
+              "no assessment running"
+            )}
+          </p>
+        </Link>
       </div>
 
       {/* Narrative summary — week/month views */}

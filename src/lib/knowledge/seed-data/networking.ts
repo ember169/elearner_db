@@ -71,9 +71,9 @@ In practice, the TCP/IP model matters more. The OSI model is useful as a shared 
   Usable:    192.168.1.1 - 192.168.1.254 (254 hosts)
   Mask:      255.255.255.0
 
-10.0.0.0/8     → 16,777,214 hosts (Class A private)
-172.16.0.0/12  → 1,048,574 hosts  (Class B private)
-192.168.0.0/16 → 65,534 hosts     (Class C private)
+10.0.0.0/8     → 16,777,214 hosts (RFC 1918 — in the class A range)
+172.16.0.0/12  → 1,048,574 hosts  (RFC 1918 — in the class B range)
+192.168.0.0/16 → 65,534 hosts     (RFC 1918 — in the class C range, but this is a /16 block)
 \`\`\`
 
 Quick subnet math: a /24 has 256 addresses, each additional bit halves it. /25 = 128, /26 = 64, /27 = 32, /28 = 16.`,

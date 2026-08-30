@@ -164,8 +164,9 @@ AllowUsers admin deploy
 # Change default port (security through obscurity, but reduces noise)
 Port 2222
 
-# Use only protocol 2
-Protocol 2
+# Protocol 1 was removed in OpenSSH 7.6 (2017) — no directive needed
+# Restrict key exchange algorithms to modern ones
+KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org
 \`\`\`
 
 Generate an Ed25519 key pair (recommended over RSA per NIST SP 800-186):

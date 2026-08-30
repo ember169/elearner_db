@@ -352,7 +352,7 @@ Security consideration: if the string is not properly null-terminated, \`strlen\
         content: `glibc's \`malloc\` uses ptmalloc2, a thread-aware allocator based on Doug Lea's dlmalloc. Key concepts:
 
 - **Chunks** — the internal unit of allocation. Each chunk has a header containing its size and flags (\`PREV_INUSE\`, \`IS_MMAPPED\`, \`NON_MAIN_ARENA\`).
-- **Bins** — linked lists grouping free chunks by size: fast bins (LIFO, 16-112 bytes on 64-bit), unsorted bin (catch-all), small bins, large bins.
+- **Bins** — linked lists grouping free chunks by size: fast bins (LIFO, 32-176 bytes on 64-bit, per DEFAULT_MXFAST), unsorted bin (catch-all), small bins, large bins.
 - **Top chunk (wilderness)** — the chunk at the top of the heap; extends via \`brk\` or \`sbrk\` when bins cannot satisfy a request.
 - **mmap threshold** — allocations above 128 KB (default) use \`mmap\` instead of \`brk\`, so \`free\` returns the pages to the OS with \`munmap\`.
 
@@ -568,12 +568,18 @@ LD_PRELOAD=./libft_malloc.so ls -la
 # define BUFFER_SIZE 42
 #endif
 
+// Note: OPEN_MAX is not defined by glibc (it is optional per POSIX).
+// A portable alternative uses a linked list keyed by fd.
+// Here we use a fixed-size array for simplicity — works on macOS/BSDs.
 char *get_next_line(int fd) {
     static char *remainder[OPEN_MAX]; // per-fd remainder
-    char         buf[BUFFER_SIZE + 1];
+    char        *buf;
     ssize_t      bytes_read;
 
     if (fd < 0 || fd >= OPEN_MAX || BUFFER_SIZE <= 0)
+        return NULL;
+    buf = malloc(BUFFER_SIZE + 1); // heap-allocated — safe for large BUFFER_SIZE
+    if (!buf)
         return NULL;
     while (!has_newline(remainder[fd])) {
         bytes_read = read(fd, buf, BUFFER_SIZE);
@@ -582,6 +588,7 @@ char *get_next_line(int fd) {
         buf[bytes_read] = '\\0';
         remainder[fd] = ft_strjoin_free(remainder[fd], buf);
     }
+    free(buf);
     return extract_line(&remainder[fd]);
 }
 \`\`\`
@@ -589,7 +596,7 @@ char *get_next_line(int fd) {
 Security-relevant lessons:
 - Validate \`fd\` before use — an attacker-controlled fd value indexing into a fixed-size array is an out-of-bounds access.
 - \`read\` can return fewer bytes than requested (\`EINTR\`, short reads on pipes/sockets). Always loop.
-- A \`BUFFER_SIZE\` of 1 must work correctly (though slowly). A \`BUFFER_SIZE\` of 10000000 must not stack-overflow — allocate the read buffer on the heap if \`BUFFER_SIZE\` is large.`,
+- A \`BUFFER_SIZE\` of 1 must work correctly (though slowly). A \`BUFFER_SIZE\` of 10000000 must not stack-overflow — the code above uses \`malloc\` to allocate the read buffer on the heap, avoiding this issue.`,
         sortOrder: 3,
       },
       {
@@ -667,7 +674,7 @@ Understanding these tradeoffs prepares you for analysing allocator behaviour in 
 
 4. **Thread-safety races** — if your lock granularity is wrong, a race between \`malloc\` and \`free\` on different threads can corrupt the free list.
 
-These are the same bug classes found in CVEs against real allocators (e.g., CVE-2017-7047 in iOS's libmalloc, CVE-2020-6418 in V8's garbage collector).`,
+These are the same bug classes found in CVEs against real allocators (e.g., CVE-2017-7047 in iOS's libmalloc, CVE-2020-6418 — a type confusion in V8's TurboFan JIT compiler).`,
         sortOrder: 6,
       },
       {
@@ -779,7 +786,7 @@ char *evil = malloc(0x20);  // points to target_addr
 **Mitigations added over time:**
 - glibc 2.29: double-free check via a \`key\` field in freed tcache chunks.
 - glibc 2.32: pointer mangling (\`PROTECT_PTR\`): the \`next\` pointer is XOR'd with the chunk's own address right-shifted by 12. Bypassing this requires leaking a heap address.
-- glibc 2.34: safe-linking extended to fastbins.
+- glibc 2.32: safe-linking also covers fastbin free lists (same commit as tcache, per Check Point Research disclosure).
 
 \`\`\`c
 // glibc 2.32+ PROTECT_PTR macro
@@ -2863,7 +2870,7 @@ void radix_sort_pushswap(t_stack *a, t_stack *b, int n) {
 }
 \`\`\`
 
-This uses approximately n * log2(n) operations — not optimal (around 8000 for 500 numbers), but the implementation is simple and the operation count is predictable.`,
+This uses approximately n × number_of_bits × 2 operations (each bit-pass does ~2n moves). For 500 numbers (9 bits needed), that is roughly 500 × 9 × 2 ≈ 9000 operations — not optimal, but the implementation is simple and the operation count is predictable.`,
         sortOrder: 2,
       },
       {
@@ -3559,7 +3566,7 @@ public:
 
 In 42's CPP modules, abstract classes are prefixed with \`A\` (e.g., \`AAnimal\`, \`ACharacter\`). This naming convention makes the design intent clear.
 
-Always make base-class destructors virtual. If a derived object is deleted through a base pointer without a virtual destructor, the derived destructor is not called, leaking resources (undefined behaviour per C++, Section 8.5.3.5).`,
+Always make base-class destructors virtual. If a derived object is deleted through a base pointer without a virtual destructor, the derived destructor is not called, leaking resources (undefined behaviour per C++ standard [expr.delete]).`,
         sortOrder: 2,
       },
       {
@@ -4463,7 +4470,7 @@ c++filt _ZN5MyApp7processEPKc
 
 **Name mangling**: C++ compilers encode type information into symbol names. The Itanium ABI (used by GCC and Clang) prepends \`_Z\`, followed by the namespace/class nesting and parameter types. Understanding mangling helps when reading disassembly.
 
-**Exception handling tables**: the \`.eh_frame\` and \`.gcc_except_table\` sections contain unwind information used for stack unwinding during exception propagation. These tables also serve as a source of gadgets for advanced exploitation techniques.`,
+**Exception handling tables**: the \`.eh_frame\` and \`.gcc_except_table\` sections contain DWARF CFI (Call Frame Information) descriptors used for stack unwinding during exception propagation. These are data tables, not executable code. Advanced exploitation techniques can abuse forged unwind metadata to hijack control flow during exception unwinding — a different mechanism from traditional ROP gadgets (see "Exception-Oriented Programming" research).`,
         sortOrder: 5,
       },
       {
