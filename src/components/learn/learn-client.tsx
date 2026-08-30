@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { cn, assertOk } from "@/lib/utils";
 import { PLATFORM_COLORS, PLATFORM_LABELS } from "@/lib/platform-colors";
+import { RelatedArticles } from "@/components/knowledge/related-articles";
 
 export type LearnResource = {
   id: number;
@@ -157,7 +158,14 @@ export function LearnClient({
   const [platforms, setPlatforms] = useState<string[]>([]);
   const [difficulties, setDifficulties] = useState<string[]>([]);
   const [statuses, setStatuses] = useState<string[]>([]);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  // Deep link from Knowledge: /learn?resource=N opens that resource's panel on
+  // first render. A lazy initialiser rather than an effect, so nothing sets
+  // state after mount and no Suspense boundary is needed.
+  const [selectedId, setSelectedId] = useState<number | null>(() => {
+    if (typeof window === "undefined") return null;
+    const id = Number(new URLSearchParams(window.location.search).get("resource"));
+    return Number.isInteger(id) && id > 0 ? id : null;
+  });
   const [collapsed, setCollapsed] = useState<string[]>([]);
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -617,6 +625,12 @@ function ResourceDetail({
               ))}
             </div>
           </div>
+        )}
+
+        {/* The Knowledge articles for these competencies — the crossing the
+            audit found missing. Links out to the reader on /knowledge. */}
+        {competencyIds.length > 0 && (
+          <RelatedArticles competencyIds={competencyIds} />
         )}
 
         {tags.length > 0 && (

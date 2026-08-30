@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import { Search, X, ArrowLeft, Loader2, BadgeCheck, Maximize2, Minimize2 } from "lucide-react";
 import { cn, assertOk } from "@/lib/utils";
 import { ArticleReader, type ReaderSection } from "./article-reader";
+import { RelatedResources } from "@/components/learn/related-resources";
 import type { UserBlock } from "./user-block";
 import { ExportMenu } from "./export-menu";
 
@@ -75,6 +76,16 @@ export function KnowledgeClient({
       setLoadingId(null);
     }
   }, []);
+
+  // Deep link from Learn: /knowledge?article=N opens that article. openArticle
+  // is a fetch, not a lazy initialiser, so it runs from the effect — deferred a
+  // tick so its setState is not synchronous with mount.
+  useEffect(() => {
+    const id = Number(new URLSearchParams(window.location.search).get("article"));
+    if (!Number.isInteger(id) || id <= 0) return;
+    const t = setTimeout(() => void openArticle(id), 0);
+    return () => clearTimeout(t);
+  }, [openArticle]);
 
   /** Every mutation returns the whole article, so the reader re-renders from
    *  the server's version rather than a locally patched guess. */
@@ -197,6 +208,9 @@ export function KnowledgeClient({
             )}
           </div>
           <h1 className="cb-content-title text-[32px] text-cb-text">{article.title}</h1>
+          {/* The other half of the Learn/Knowledge crossing: the resources that
+              practise this competency. */}
+          <RelatedResources competencyId={article.competencyId} />
         </header>
 
         <hr className="border-cb-line" />
