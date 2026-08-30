@@ -156,12 +156,15 @@
   }
 }
 
+/* Kanban card hover. The family puts shadows in the light theme only — on a
+   dark surface elevation is a step in L*, not a drop shadow, which on charcoal
+   reads as a smudge rather than as lift. */
 .kanban-card {
-  transition: box-shadow 150ms ease, transform 150ms ease;
+  transition: background-color 150ms ease, border-color 150ms ease;
 }
 .kanban-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-  transform: translateY(-1px);
+  background-color: var(--cb-raised);
+  border-color: var(--cb-raised-hover);
 }
 
 /* Global focus-visible ring for all interactive elements */

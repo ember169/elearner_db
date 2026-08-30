@@ -230,28 +230,23 @@ export function PlannerClient({
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <div className="min-w-0">
-          <h1 className="page-title">Planner</h1>
-          <p className="text-[15px] text-muted-foreground mt-0.5 truncate">
+          <h1 className="page-title text-cb-text">Board</h1>
+          <p className="mt-1 truncate font-cb-sans text-[14px] text-cb-muted">
             {objective}
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0 pt-2">
           <div
-            className="flex items-center gap-1.5 rounded-sm px-2.5 py-1"
-            style={{ background: "var(--muted)" }}
+            className="flex items-center gap-2 rounded-cb-chip bg-cb-raised px-2.5 py-1.5"
           >
-            <span className="text-[15px] font-semibold tabular-nums">
+            <span className="font-cb-mono text-[11px] tabular-nums text-cb-second">
               {totalHours.toFixed(0)}h
             </span>
-            <div
-              className="w-[40px] h-1 rounded-[1px] overflow-hidden"
-              style={{ background: "var(--accent)" }}
-            >
+            <div className="h-[3px] w-[40px] overflow-hidden rounded-[2px] bg-cb-line">
               <div
-                className="h-full rounded-[1px]"
+                className="h-full rounded-[2px] bg-cb-or"
                 style={{
                   width: `${Math.min(100, (doneHours / Math.max(totalHours + doneHours, 1)) * 100)}%`,
-                  background: "var(--primary)",
                 }}
               />
             </div>
@@ -273,14 +268,10 @@ export function PlannerClient({
       </div>
 
       {/* Mentor briefing + Side project (desktop) */}
-      <p className="section-label mb-2 hidden md:block">Briefing</p>
+      <p className="cb-label-mono mb-2 hidden text-[10px] text-cb-muted md:block">Briefing</p>
       <div className="hidden md:grid md:grid-cols-2 gap-3">
         <div
-          className="rounded-sm px-4 py-3"
-          style={{
-            background: "var(--card)",
-            border: "1px solid var(--border)",
-          }}
+          className="rounded-cb-card border border-cb-line bg-cb-card px-4 py-3"
         >
           <div className="flex items-start gap-3">
             <div
@@ -348,7 +339,7 @@ export function PlannerClient({
           />
         ) : (
           <div
-            className="rounded-sm border border-border px-4 py-4 flex items-center justify-center"
+            className="flex items-center justify-center rounded-cb-card border border-dashed border-cb-line px-4 py-4"
             style={{ background: "var(--card)" }}
           >
             <p className="text-[14px] text-muted-foreground">
@@ -368,11 +359,7 @@ export function PlannerClient({
       <div className="md:hidden">
         {briefing && (
           <div
-            className="rounded-sm px-4 py-3"
-            style={{
-              background: "var(--card)",
-              border: "1px solid var(--border)",
-            }}
+            className="rounded-cb-card border border-cb-line bg-cb-card px-4 py-3"
           >
             <div className="flex items-start gap-3">
               <div
@@ -400,7 +387,7 @@ export function PlannerClient({
       {/* Deadline warnings */}
       {deadlineWarnings.length > 0 && (
         <div
-          className="rounded-sm px-4 py-2.5 space-y-1"
+          className="space-y-1 rounded-cb-card px-4 py-2.5"
           style={{
             background:
               deadlineUrgency === "critical"
@@ -453,7 +440,7 @@ export function PlannerClient({
       )}
 
       {/* Desktop: Kanban Board */}
-      <p className="section-label mb-2 hidden md:block">Board</p>
+      <p className="cb-label-mono mb-2 hidden text-[10px] text-cb-muted md:block">Board</p>
       <div className="hidden md:block">
         <StatusKanbanBoard
           items={items}

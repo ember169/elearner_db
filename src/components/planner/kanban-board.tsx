@@ -246,18 +246,18 @@ export function StatusKanbanBoard({
                 }}
               />
               <span
-                className="text-[13px] font-bold uppercase tracking-wider"
+                className="cb-label-mono text-[10px]"
                 style={{
                   color:
                     col.id === "in_progress"
-                      ? "var(--primary)"
-                      : "var(--muted-foreground)",
+                      ? "var(--cb-or)"
+                      : "var(--cb-text-muted)",
                 }}
               >
                 {col.label}
               </span>
               {colTotals[ci].count > 0 && (
-                <span className="text-[12px] text-muted-foreground/50 tabular-nums">
+                <span className="font-cb-mono text-[10px] tabular-nums text-cb-muted">
                   {colTotals[ci].count} · {colTotals[ci].hours.toFixed(0)}h
                 </span>
               )}
@@ -283,7 +283,7 @@ export function StatusKanbanBoard({
                   style={{ background: lane.color }}
                 />
                 <span
-                  className="text-[13px] font-bold uppercase tracking-wider"
+                  className="cb-label-mono text-[10px]"
                   style={{
                     color: lane.color,
                     writingMode: "vertical-lr",
@@ -429,15 +429,13 @@ function BoardCard({
 
   return (
     <div
-      className="kanban-card px-3 py-2.5 rounded-lg relative group overflow-hidden"
+      className="kanban-card group relative overflow-hidden rounded-[12px] border border-cb-line bg-cb-card px-3 py-2.5"
       style={{
-        border: "1px solid var(--border)",
-        background: overlay ? "var(--card)" : "var(--card)",
         cursor: overlay ? "grabbing" : "grab",
+        // A card being dragged is the one case that earns a shadow: it is
+        // genuinely lifted off the board rather than merely hovered.
+        boxShadow: overlay ? "0 8px 20px rgba(0,0,0,0.35)" : undefined,
         opacity: done && !overlay ? 0.55 : 1,
-        boxShadow: overlay
-          ? "0 8px 20px rgba(0,0,0,0.35)"
-          : "0 1px 3px rgba(0,0,0,0.12)",
       }}
     >
       {/* Left accent bar */}
@@ -453,7 +451,7 @@ function BoardCard({
           style={{ color: statusStyle.color }}
         />
         <span
-          className="text-[11px] font-bold uppercase px-1.5 py-0.5 rounded"
+          className="rounded-cb-chip-sm px-2 py-0.5 font-cb-mono text-[10px]"
           style={{
             color: platformColor,
             background: `color-mix(in oklch, ${platformColor} 12%, transparent)`,
@@ -464,7 +462,7 @@ function BoardCard({
 
         {(item.status === "blocked" || item.status === "stuck") && (
           <span
-            className="text-[11px] font-semibold uppercase px-1.5 py-0.5 rounded ml-auto"
+            className="cb-label-mono ml-auto rounded-cb-chip-sm px-2 py-0.5 text-[10px]"
             style={{
               color: statusStyle.color,
               background: `color-mix(in oklch, ${statusStyle.color} 12%, transparent)`,
@@ -487,7 +485,7 @@ function BoardCard({
               {moveActions.map((a) => (
                 <DropdownMenuItem
                   key={a.id}
-                  className="text-[13px]"
+                  className="font-cb-sans text-[13px]"
                   onClick={(e) => {
                     e.stopPropagation();
                     onItemUpdate(item.id, { boardStatus: a.id });
@@ -497,7 +495,7 @@ function BoardCard({
                 </DropdownMenuItem>
               ))}
               <DropdownMenuItem
-                className="text-[13px]"
+                className="font-cb-sans text-[13px]"
                 onClick={(e) => {
                   e.stopPropagation();
                   onItemUpdate(item.id, { status: "blocked" });
@@ -506,7 +504,7 @@ function BoardCard({
                 Mark blocked
               </DropdownMenuItem>
               <DropdownMenuItem
-                className="text-[13px]"
+                className="font-cb-sans text-[13px]"
                 onClick={(e) => {
                   e.stopPropagation();
                   onItemUpdate(item.id, { status: "stuck" });
@@ -516,13 +514,13 @@ function BoardCard({
               </DropdownMenuItem>
               {onDelete && (
                 <DropdownMenuItem
-                  className="text-[13px] text-destructive"
+                  className="font-cb-mono text-[11px] text-cb-danger"
                   onClick={(e) => {
                     e.stopPropagation();
                     onDelete(item.id);
                   }}
                 >
-                  <Trash2 className="h-3 w-3 mr-1.5" />
+                  <Trash2 className="mr-1.5 h-3.5 w-3.5" />
                   Remove
                 </DropdownMenuItem>
               )}

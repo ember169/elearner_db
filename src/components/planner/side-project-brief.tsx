@@ -48,7 +48,7 @@ export function SideProjectBrief({
 
   return (
     <div
-      className="rounded-sm border border-border overflow-hidden"
+      className="overflow-hidden rounded-cb-card border border-cb-line"
       style={{ borderLeft: `3px solid ${isAccepted ? "var(--status-done)" : "var(--primary)"}` }}
     >
       <div className="px-5 py-4">
@@ -100,7 +100,7 @@ export function SideProjectBrief({
             {project.skills.map((skill) => (
               <span
                 key={skill}
-                className="text-[14px] font-medium px-2 py-0.5 rounded-sm border border-border"
+                className="rounded-cb-chip-sm border border-cb-line px-2 py-0.5 font-cb-mono text-[11px]"
                 style={{ color: "var(--primary)" }}
               >
                 {skill}
@@ -156,23 +156,22 @@ export function SideProjectBrief({
                 </Button>
               )}
               {onAbort && !confirmAbort && (
-                <Button
-                  variant="ghost"
-                  size="sm"
+                <button
+                  type="button"
                   onClick={() => setConfirmAbort(true)}
-                  className="text-[13px] text-red-400 hover:text-red-300"
+                  className="font-cb-mono text-[11px] text-cb-muted transition-colors hover:text-cb-danger"
                 >
-                  Abort side project
-                </Button>
+                  abort side project
+                </button>
               )}
               {onAbort && confirmAbort && (
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[13px] text-red-400">Are you sure?</span>
+                  <span className="font-cb-mono text-[11px] text-cb-danger">Are you sure?</span>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => { setConfirmAbort(false); onAbort(); }}
-                    className="text-[13px] text-red-400 border-red-500/30 hover:bg-red-500/10"
+                    className="font-cb-mono text-[11px] text-cb-danger"
                   >
                     Yes, abort
                   </Button>
@@ -198,8 +197,8 @@ export function SideProjectBrief({
           </p>
 
           {project.prerequisites && project.prerequisites.length > 0 && (
-            <div className="rounded-sm px-4 py-3" style={{ background: "var(--muted)" }}>
-              <p className="text-[15px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+            <div className="rounded-cb-card bg-cb-raised px-4 py-3">
+              <p className="cb-label-mono mb-2 text-[10px] text-cb-muted">
                 Prerequisites
               </p>
               <div className="space-y-1">
@@ -226,7 +225,7 @@ export function SideProjectBrief({
               {project.steps.map((step, i) => (
                 <div
                   key={i}
-                  className="flex items-start gap-3 px-4 py-2.5 rounded-sm border border-border"
+                  className="flex items-start gap-3 rounded-cb-card border border-cb-line px-4 py-2.5"
                 >
                   <span className="text-[14px] font-bold text-muted-foreground mt-0.5 shrink-0">
                     {i + 1}.
@@ -243,7 +242,7 @@ export function SideProjectBrief({
 
           {project.capstone_connection && (
             <div
-              className="rounded-sm px-4 py-3 text-[14px] text-muted-foreground leading-relaxed"
+              className="rounded-cb-card px-4 py-3 font-cb-sans text-[14px] leading-relaxed text-cb-muted"
               style={{ background: "color-mix(in oklch, var(--primary) 6%, transparent)" }}
             >
               <span className="font-semibold text-primary">Capstone:</span> {project.capstone_connection}

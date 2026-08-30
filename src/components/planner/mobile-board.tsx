@@ -69,30 +69,43 @@ export function MobileBoardView({
   return (
     <div>
       {/* Tab bar */}
-      <div className="flex gap-1 p-1 rounded-lg" style={{ background: "var(--muted)" }}>
+      {/* Family segmented control: raised track, 5px padding, radius 12; the
+          active segment is an accent fill at radius 9 — not a white pill with a
+          shadow, which is the light-theme idiom. */}
+      <div className="flex gap-1 rounded-[12px] bg-cb-raised p-[5px]">
         {(
           [
             { id: "in_progress" as const, label: "In progress", count: inProgressItems.length },
             { id: "todo" as const, label: "To do", count: todoItems.length },
             { id: "backlog" as const, label: "Backlog", count: backlogItems.length },
           ] as const
-        ).map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className="flex-1 py-2 rounded-md text-[14px] font-medium transition-colors"
-            style={{
-              background: tab === t.id ? "var(--background)" : "transparent",
-              color: tab === t.id ? "var(--foreground)" : "var(--muted-foreground)",
-              boxShadow: tab === t.id ? "0 1px 3px rgba(0,0,0,0.15)" : "none",
-            }}
-          >
-            {t.label}
-            {t.count > 0 && (
-              <span className="ml-1 text-[14px] text-muted-foreground">{t.count}</span>
-            )}
-          </button>
-        ))}
+        ).map((t) => {
+          const active = tab === t.id;
+          return (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={
+                active
+                  ? "flex-1 rounded-[9px] bg-cb-or py-2 font-cb-sans text-[13px] font-bold text-cb-on-or transition-colors"
+                  : "flex-1 rounded-[9px] py-2 font-cb-sans text-[13px] font-bold text-cb-muted transition-colors"
+              }
+            >
+              {t.label}
+              {t.count > 0 && (
+                <span
+                  className={
+                    active
+                      ? "ml-1.5 font-cb-mono text-[11px] text-cb-on-or/70"
+                      : "ml-1.5 font-cb-mono text-[11px] text-cb-muted"
+                  }
+                >
+                  {t.count}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       <div className="mt-3">
@@ -254,15 +267,12 @@ function MobileCard({
 
   return (
     <div
-      className={`flex items-center gap-2 ${compact ? "py-1.5 px-2" : "py-2.5 px-3"} rounded-sm border border-border mb-1`}
-      style={{
-        opacity: isDone ? 0.6 : 1,
-        background: "var(--card)",
-      }}
+      className={`mb-1 flex items-center gap-2 ${compact ? "px-2 py-1.5" : "px-3 py-2.5"} rounded-[12px] border border-cb-line bg-cb-card`}
+      style={{ opacity: isDone ? 0.6 : 1 }}
     >
       <Icon className="h-3 w-3 shrink-0" style={{ color }} />
       <span
-        className="text-[15px] font-bold uppercase px-1 py-[1px] rounded-sm shrink-0"
+        className="shrink-0 rounded-cb-chip-sm px-2 py-0.5 font-cb-mono text-[10px]"
         style={{
           color: platformColor,
           background: `color-mix(in oklch, ${platformColor} 15%, transparent)`,
@@ -300,11 +310,7 @@ function MobileCard({
             <button
               key={a.label}
               onClick={a.action}
-              className="text-[14px] px-1.5 py-0.5 rounded-sm font-medium transition-colors"
-              style={{
-                color: "var(--primary)",
-                background: "color-mix(in oklch, var(--primary) 10%, transparent)",
-              }}
+              className="rounded-cb-chip-sm bg-cb-or-tint px-2 py-1 font-cb-mono text-[11px] text-cb-or transition-colors"
             >
               {a.label}
             </button>
