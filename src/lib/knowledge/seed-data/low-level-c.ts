@@ -286,6 +286,16 @@ ASan and Valgrind can also detect stack buffer overflows, heap overflows, and me
         sortOrder: 5,
       },
       {
+        heading: "Struct padding and alignment",
+        content: `The compiler inserts invisible padding bytes between struct members to satisfy hardware alignment requirements. This affects \`sizeof\`, binary protocols, and exploit payloads.\n\n\`\`\`c\n// Poorly ordered — 24 bytes on 64-bit\nstruct Bad {\n    char  a;    // 1 byte  + 7 padding (align next to 8)\n    double b;   // 8 bytes\n    char  c;    // 1 byte  + 3 padding (align next to 4)\n    int   d;    // 4 bytes\n};              // total: 24 bytes\n\n// Well ordered — 16 bytes\nstruct Good {\n    double b;   // 8 bytes\n    int    d;   // 4 bytes\n    char   a;   // 1 byte\n    char   c;   // 1 byte + 2 trailing padding (struct size must be multiple of max alignment)\n};              // total: 16 bytes\n\`\`\`\n\n**Rules**:\n1. Each member is aligned to a multiple of its own size (\`int\` to 4, \`double\` to 8, etc.)\n2. Struct total size is padded to a multiple of the largest member's alignment\n3. Order members from largest to smallest to minimize padding\n\n\`\`\`c\n// Verify with offsetof and sizeof\n#include <stddef.h>\nprintf("sizeof(Bad)  = %zu\\n", sizeof(struct Bad));  // 24\nprintf("sizeof(Good) = %zu\\n", sizeof(struct Good)); // 16\nprintf("offsetof(Bad, b) = %zu\\n", offsetof(struct Bad, b)); // 8 (not 1!)\n\`\`\`\n\n**Security relevance**: when serializing structs for network protocols or file formats, padding bytes leak uninitialized stack/heap data — always use \`memset\` or initialize all bytes. In exploit development, knowing the exact layout is essential for crafting payloads.\n\nGCC: \`__attribute__((packed))\` removes padding (but causes unaligned access on some architectures).\n\nSource: System V AMD64 ABI §3.1; \`man 3 offsetof\`; ISO C17 §6.7.2.1`,
+        sortOrder: 6,
+      },
+      {
+        heading: "Bitwise operations and bitmasks",
+        content: `Bitwise operators manipulate individual bits — essential for permissions, flags, hardware registers, and binary protocols.\n\n\`\`\`c\n// Bitwise operators\na & b   // AND — both bits 1 → 1\na | b   // OR  — either bit 1 → 1\na ^ b   // XOR — bits differ → 1\n~a      // NOT — flip all bits\na << n  // Left shift — multiply by 2^n\na >> n  // Right shift — divide by 2^n (arithmetic for signed)\n\`\`\`\n\n\`\`\`c\n// Permission bitmask system (like Unix file permissions)\n#define PERM_READ    (1 << 0)  // 0b001 = 1\n#define PERM_WRITE   (1 << 1)  // 0b010 = 2\n#define PERM_EXEC    (1 << 2)  // 0b100 = 4\n\nunsigned int perms = 0;\n\n// Grant permissions\nperms |= PERM_READ;              // set read bit\nperms |= PERM_WRITE | PERM_EXEC; // set multiple\n\n// Check permissions\nif (perms & PERM_READ)  // non-zero if read is set\n    printf("can read\\n");\n\n// Revoke permission\nperms &= ~PERM_WRITE;  // clear write bit\n\n// Toggle permission\nperms ^= PERM_EXEC;    // flip exec bit\n\`\`\`\n\nCommon idioms: \`n & (n-1)\` clears the lowest set bit (power-of-2 check: \`n && !(n & (n-1))\`). \`n & (-n)\` isolates the lowest set bit. \`__builtin_popcount(n)\` counts set bits (GCC/Clang).\n\nSource: Hacker's Delight (Warren, 2nd ed.), Chapter 2; K&R, §2.9`,
+        sortOrder: 7,
+      },
+      {
         heading: "Sources",
         content: `- ISO/IEC 9899:2018 (C17), Section 7.22.3 (Memory management functions)
 - CWE-416: Use After Free — https://cwe.mitre.org/data/definitions/416.html
@@ -294,7 +304,7 @@ ASan and Valgrind can also detect stack buffer overflows, heap overflows, and me
 - CWE-190: Integer Overflow — https://cwe.mitre.org/data/definitions/190.html
 - glibc malloc internals — https://sourceware.org/glibc/wiki/MallocInternals
 - \`man 1 valgrind\`, GCC AddressSanitizer docs — https://gcc.gnu.org/onlinedocs/gcc/Instrumentation-Options.html`,
-        sortOrder: 6,
+        sortOrder: 8,
       },
     ],
   },
@@ -454,6 +464,16 @@ Knowing which version of glibc a target runs is crucial — gadget offsets chang
         sortOrder: 5,
       },
       {
+        heading: "Function pointers and dispatch tables",
+        content: `A function pointer stores the address of a function. Combined with arrays, they create dispatch tables — the C precursor to virtual method tables.\n\n\`\`\`c\n// Function pointer declaration\nint (*operation)(int, int); // pointer to a function taking two ints, returning int\n\n// Typedef makes it readable\ntypedef int (*binop_t)(int, int);\n\nint add(int a, int b) { return a + b; }\nint sub(int a, int b) { return a - b; }\nint mul(int a, int b) { return a * b; }\n\n// Dispatch table — array of function pointers\nbinop_t ops[] = { add, sub, mul };\nconst char *names[] = { "add", "sub", "mul" };\n\n// Call via index\nint result = ops[choice](x, y);\nprintf("%s(%d, %d) = %d\\n", names[choice], x, y, result);\n\`\`\`\n\n\`\`\`mermaid\nflowchart LR\n    Input[User choice: 0,1,2] --> Table[ops array]\n    Table -->|0| Add[add]\n    Table -->|1| Sub[sub]\n    Table -->|2| Mul[mul]\n\`\`\`\n\n\`\`\`c\n// Callback pattern — pass behavior as argument\nvoid ft_foreach(int *arr, int len, void (*f)(int)) {\n    for (int i = 0; i < len; i++)\n        f(arr[i]);\n}\n\nvoid print_int(int n) { printf("%d\\n", n); }\nft_foreach(arr, 5, print_int);\n\`\`\`\n\n**Security note**: function pointer overwrite is a classic exploitation technique — overwriting a stored function pointer redirects execution. This is why modern systems use \`-fstack-protector\` and CFI (Control Flow Integrity).\n\nSource: K&R, §5.11-5.12; ISO C17 §6.7.6.3`,
+        sortOrder: 6,
+      },
+      {
+        heading: "Const correctness in C",
+        content: `The \`const\` qualifier tells the compiler (and the reader) that a value should not be modified. Reading the declaration right-to-left clarifies its meaning:\n\n\`\`\`c\nconst int *p;         // pointer to a const int — can't modify *p\nint *const p;         // const pointer to int — can't modify p itself\nconst int *const p;   // const pointer to const int — can't modify either\n\nconst char *str = "hello";\n// str[0] = 'H';  // ERROR: data is const\nstr = "world";     // OK: pointer itself is not const\n\nchar *const fixed = buf;\n// fixed = other;  // ERROR: pointer is const\nfixed[0] = 'X';    // OK: data is not const\n\`\`\`\n\n**In function parameters**: \`const\` documents intent and enables compiler optimizations:\n\`\`\`c\nsize_t ft_strlen(const char *s);     // promises not to modify the string\nvoid ft_swap(int *a, int *b);         // no const — will modify\nint ft_max(const int *arr, size_t n); // read-only access to array\n\`\`\`\n\n**Integer promotion and implicit conversions**: C silently converts between types in expressions. Key rules:\n- \`char\`/\`short\` promote to \`int\` in expressions\n- Signed + unsigned → unsigned (can cause surprising results: \`-1 > 0U\` is true!)\n- Narrowing on assignment truncates silently\n\nSource: ISO C17 §6.7.3 (Type qualifiers), §6.3.1 (Arithmetic conversions)`,
+        sortOrder: 7,
+      },
+      {
         heading: "Sources",
         content: `- ISO/IEC 9899:2018 (C17), Section 7.24 (String handling), 7.22 (General utilities)
 - glibc source — https://sourceware.org/git/glibc.git
@@ -463,7 +483,7 @@ Knowing which version of glibc a target runs is crucial — gadget offsets chang
 - one_gadget — https://github.com/david942j/one_gadget
 - ROPgadget — https://github.com/JonathanSalwan/ROPgadget
 - libc-database — https://github.com/niklasb/libc-database`,
-        sortOrder: 6,
+        sortOrder: 8,
       },
     ],
   },
@@ -1568,13 +1588,18 @@ Use \`valgrind --tool=helgrind\` or ThreadSanitizer for detecting data races in 
         sortOrder: 5,
       },
       {
+        heading: "I/O multiplexing: select, poll, and epoll",
+        content: `A server handling multiple clients cannot simply call \`read()\` on each fd sequentially — a blocking read on one fd stalls all others. I/O multiplexing solves this by monitoring multiple fds and telling you which ones are ready.\n\n\`\`\`mermaid\nflowchart TB\n    subgraph select/poll\n        S[Call select/poll with fd list] --> W[Kernel checks all fds]\n        W --> R[Returns ready fd set]\n        R --> P[Process ready fds]\n        P --> S\n    end\n    subgraph epoll\n        E1[epoll_create] --> E2[epoll_ctl: add fds once]\n        E2 --> E3[epoll_wait: blocks]\n        E3 --> E4[Returns ONLY ready fds]\n        E4 --> E3\n    end\n\`\`\`\n\n\`\`\`c\n// select() — POSIX, portable, limited to FD_SETSIZE (typically 1024)\nfd_set read_fds;\nFD_ZERO(&read_fds);\nFD_SET(listen_fd, &read_fds);\nfor (int i = 0; i < n_clients; i++)\n    FD_SET(client_fds[i], &read_fds);\n\nint ready = select(max_fd + 1, &read_fds, NULL, NULL, &timeout);\nfor (int fd = 0; fd <= max_fd; fd++) {\n    if (FD_ISSET(fd, &read_fds)) {\n        // fd is ready for reading\n    }\n}\n\`\`\`\n\n\`\`\`c\n// epoll — Linux-specific, scales to millions of connections\nint epfd = epoll_create1(0);\nstruct epoll_event ev = { .events = EPOLLIN, .data.fd = listen_fd };\nepoll_ctl(epfd, EPOLL_CTL_ADD, listen_fd, &ev);\n\nstruct epoll_event events[MAX_EVENTS];\nwhile (1) {\n    int n = epoll_wait(epfd, events, MAX_EVENTS, -1);\n    for (int i = 0; i < n; i++) {\n        if (events[i].data.fd == listen_fd)\n            accept_new_client(epfd, listen_fd);\n        else\n            handle_client(events[i].data.fd);\n    }\n}\n\`\`\`\n\n| | \`select\` | \`poll\` | \`epoll\` |\n|---|---|---|---|\n| **Portability** | POSIX (everywhere) | POSIX | Linux only |\n| **fd limit** | FD_SETSIZE (~1024) | No hard limit | No hard limit |\n| **Complexity** | O(max_fd) per call | O(n_fds) per call | O(ready_fds) per call |\n| **Fd passing** | Copy entire set each call | Copy array each call | Register once, kernel tracks |\n| **Best for** | Small fd counts, portability | Medium fd counts | High-concurrency servers |\n\nBSD/macOS equivalent of epoll: \`kqueue\` (\`kevent()\`).\n\nSource: \`man 2 select\`, \`man 2 poll\`, \`man 7 epoll\`; Kerrisk, *TLPI*, Chapter 63`,
+        sortOrder: 6,
+      },
+      {
         heading: "Sources",
         content: `- \`man 7 fifo\`, \`man 3 sem_open\`, \`man 2 mmap\`, \`man 2 sigqueue\`
 - POSIX.1-2017, Sections on Shared Memory, Semaphores, Message Queues
 - Kerrisk, M. *The Linux Programming Interface*, Chapters 47-54 (System V and POSIX IPC)
 - Stevens & Rago, *APUE*, Chapter 15 (IPC)
 - \`man 1 strace\`, \`man 1 ipcs\``,
-        sortOrder: 6,
+        sortOrder: 7,
       },
     ],
   },
@@ -1832,6 +1857,16 @@ Common concurrency CVEs in the wild:
 - **TOCTOU (time-of-check-time-of-use)** — checking a condition and acting on it non-atomically. Example: checking file permissions with \`access()\` then opening with \`open()\` — another process can change the file between the two calls (CWE-367).
 - **Race in signal handlers** — modifying non-atomic, non-\`sig_atomic_t\` data in a signal handler while the main thread reads it.`,
         sortOrder: 6,
+      },
+      {
+        heading: "The double-fork daemon pattern",
+        content: `A daemon is a long-running background process with no controlling terminal. The classic UNIX double-fork idiom ensures the daemon cannot accidentally reacquire a terminal:\n\n\`\`\`mermaid\nsequenceDiagram\n    participant P as Parent (PID 100)\n    participant C as Child 1 (PID 101)\n    participant D as Daemon (PID 102)\n    P->>C: fork() — first fork\n    P->>P: exit(0) — parent exits\n    Note over C: Child is now orphan, reparented to init\n    C->>C: setsid() — new session leader, no controlling tty\n    C->>D: fork() — second fork\n    C->>C: exit(0) — session leader exits\n    Note over D: Not a session leader → cannot acquire a tty\n    D->>D: chdir("/"), umask(0), close fds\n    D->>D: Run daemon loop\n\`\`\`\n\n\`\`\`c\n#include <unistd.h>\n#include <stdlib.h>\n#include <sys/stat.h>\n\nvoid daemonize(void) {\n    pid_t pid = fork();\n    if (pid < 0) exit(EXIT_FAILURE);\n    if (pid > 0) exit(EXIT_SUCCESS); // parent exits\n\n    // Child: become session leader\n    if (setsid() < 0) exit(EXIT_FAILURE);\n\n    pid = fork(); // second fork\n    if (pid < 0) exit(EXIT_FAILURE);\n    if (pid > 0) exit(EXIT_SUCCESS); // session leader exits\n\n    // Grandchild: the daemon\n    umask(0);\n    chdir("/");\n\n    // Close stdin/stdout/stderr, reopen to /dev/null\n    close(STDIN_FILENO);\n    close(STDOUT_FILENO);\n    close(STDERR_FILENO);\n    open("/dev/null", O_RDONLY); // fd 0\n    open("/dev/null", O_WRONLY); // fd 1\n    open("/dev/null", O_WRONLY); // fd 2\n}\n\`\`\`\n\nWhy double-fork? After \`setsid()\`, the child is a session leader — it *could* acquire a controlling terminal by opening a tty device. The second fork creates a non-session-leader, which cannot.\n\nModern alternative: \`systemd\` handles daemonization — services should run in the foreground (\`Type=simple\`) and let systemd manage the lifecycle.\n\nSource: Stevens, W.R. *Advanced Programming in the UNIX Environment*, §13.3; \`man 7 daemon\``,
+        sortOrder: 7,
+      },
+      {
+        heading: "TOCTOU races and symlink attacks",
+        content: `TOCTOU (Time-of-Check to Time-of-Use) is a race condition where a resource changes between checking its state and acting on it:\n\n\`\`\`mermaid\nsequenceDiagram\n    participant Root as Root Process\n    participant Attacker as Attacker\n    participant FS as Filesystem\n    Root->>FS: access("/tmp/output", F_OK) → not found\n    Note over Attacker: Window of opportunity!\n    Attacker->>FS: ln -s /etc/shadow /tmp/output\n    Root->>FS: open("/tmp/output", O_WRONLY|O_CREAT)\n    Note over FS: Follows symlink → overwrites /etc/shadow!\n\`\`\`\n\n\`\`\`c\n// VULNERABLE: TOCTOU between access() and open()\nif (access("/tmp/output", F_OK) == -1) {\n    // attacker creates symlink here\n    int fd = open("/tmp/output", O_WRONLY | O_CREAT, 0644);\n    write(fd, data, len); // writes to attacker's target\n}\n\n// SAFE: atomic create-or-fail with O_EXCL | O_NOFOLLOW\nint fd = open("/tmp/output", O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW, 0644);\nif (fd == -1) {\n    if (errno == EEXIST)\n        // file already exists — handle safely\n}\n// O_EXCL: fails if file exists (atomic check+create)\n// O_NOFOLLOW: fails if path is a symlink\n\`\`\`\n\n**Classic /tmp symlink attack scenario**: A SUID-root program writes to a predictable file in /tmp. The attacker creates a symlink at that path pointing to /etc/passwd or /etc/shadow. The root process follows the symlink and overwrites the target file.\n\n**Defenses**:\n- Use \`O_EXCL | O_NOFOLLOW\` for atomic file creation\n- Use \`mkstemp()\` for unpredictable temp file names\n- Use \`openat()\` with a dirfd to avoid path races\n- Set sticky bit on /tmp (\`chmod +t\`) — prevents users from renaming/deleting other users' files\n- Linux: \`fs.protected_symlinks = 1\` (sysctl) blocks following symlinks in sticky-bit directories unless the owner matches\n\nSource: CWE-367, Kerrisk, M. *The Linux Programming Interface*, §38.7; \`man 2 open\` (O_EXCL, O_NOFOLLOW)`,
+        sortOrder: 8,
       },
       {
         heading: "Sources",
@@ -2557,6 +2592,11 @@ For 42 projects, linked lists and arrays cover most needs. Hash tables appear in
         sortOrder: 5,
       },
       {
+        heading: "Floyd's cycle detection (tortoise and hare)",
+        content: `Floyd's algorithm detects a cycle in a linked list using two pointers — one moving one step at a time (tortoise), the other two steps (hare). If there is a cycle, they will eventually meet.\n\n\`\`\`mermaid\nflowchart LR\n    A((1)) --> B((2)) --> C((3)) --> D((4)) --> E((5)) --> F((6))\n    F --> C\n    style C fill:#e8a840,color:#000\n    style F fill:#e8a840,color:#000\n\`\`\`\n\n\`\`\`c\n// Returns the node where the cycle begins, or NULL\nt_list *detect_cycle(t_list *head) {\n    t_list *slow = head;\n    t_list *fast = head;\n\n    // Phase 1: detect if cycle exists\n    while (fast && fast->next) {\n        slow = slow->next;          // 1 step\n        fast = fast->next->next;    // 2 steps\n        if (slow == fast)\n            break;  // they meet inside the cycle\n    }\n    if (!fast || !fast->next)\n        return NULL; // no cycle\n\n    // Phase 2: find cycle start\n    // Move one pointer back to head, advance both by 1\n    slow = head;\n    while (slow != fast) {\n        slow = slow->next;\n        fast = fast->next;\n    }\n    return slow; // cycle start\n}\n\`\`\`\n\n**Why it works**: let d = distance from head to cycle start, c = cycle length. When they first meet, the tortoise has traveled d + k steps and the hare 2(d + k) steps. The difference (d + k) is a multiple of c. Resetting one pointer to head and advancing both by 1, they meet at exactly the cycle start after d more steps.\n\n**Complexity**: O(n) time, O(1) space — the key advantage over using a hash set (O(n) space).\n\nSource: Floyd, R.W. "Non-deterministic Algorithms" (1967); Knuth, *The Art of Computer Programming* Vol. 2, §3.1, Exercise 6`,
+        sortOrder: 6,
+      },
+      {
         heading: "Sources",
         content: `- Cormen et al. (CLRS), *Introduction to Algorithms*, Chapters 2 (Merge Sort), 7 (Quicksort), 11 (Hash Tables)
 - Bernstein, D.J. "SipHash: a fast short-input PRF" — https://cr.yp.to/siphash.html
@@ -3004,6 +3044,11 @@ Techniques:
 
 Example: for a dynamic array that doubles on overflow, the amortised cost of append is 3 units (each element pays for its own copy plus helping copy two elements during future resize operations).`,
         sortOrder: 6,
+      },
+      {
+        heading: "Bloom filters",
+        content: `A Bloom filter is a space-efficient probabilistic data structure for set membership testing. It can say "definitely not in set" or "probably in set" — false positives are possible, false negatives are not.\n\n\`\`\`mermaid\nflowchart LR\n    subgraph Insert x\n        X[x] --> H1[h1 x = 2]\n        X --> H2[h2 x = 5]\n        X --> H3[h3 x = 9]\n    end\n    subgraph Bit Array m=12\n        B["0 0 1 0 0 1 0 0 0 1 0 0"]\n    end\n    H1 -->|set bit 2| B\n    H2 -->|set bit 5| B\n    H3 -->|set bit 9| B\n\`\`\`\n\n**How it works**:\n1. Allocate a bit array of m bits, all initialized to 0\n2. Choose k independent hash functions, each mapping to [0, m)\n3. **Insert**: hash the element with all k functions, set those k bits to 1\n4. **Query**: hash the element with all k functions — if all k bits are 1, "probably in set"; if any bit is 0, "definitely not in set"\n\n**Sizing formula** (from Bloom, 1970):\n- m = -(n × ln(p)) / (ln2)² where n = expected elements, p = desired false positive rate\n- k = (m/n) × ln2 (optimal number of hash functions)\n- For n=10M, p=1%: m ≈ 95.8M bits ≈ **~12 MB**, k = 7\n- Rule of thumb: ~9.6 bits per element for 1% FP rate\n\n\`\`\`c\n// Minimal Bloom filter implementation\ntypedef struct {\n    uint8_t *bits;\n    size_t   m; // number of bits\n    size_t   k; // number of hash functions\n} bloom_t;\n\nvoid bloom_insert(bloom_t *bf, const void *key, size_t len) {\n    for (size_t i = 0; i < bf->k; i++) {\n        uint64_t h = murmurhash3(key, len, i); // seed = i\n        bf->bits[(h % bf->m) / 8] |= 1 << (h % bf->m % 8);\n    }\n}\n\nbool bloom_query(bloom_t *bf, const void *key, size_t len) {\n    for (size_t i = 0; i < bf->k; i++) {\n        uint64_t h = murmurhash3(key, len, i);\n        if (!(bf->bits[(h % bf->m) / 8] & (1 << (h % bf->m % 8))))\n            return false; // definitely not in set\n    }\n    return true; // probably in set\n}\n\`\`\`\n\n**Security applications**: malware signature prefiltering, safe browsing URL checks (Chrome uses a Bloom filter for malicious URLs), spam filtering, network intrusion detection.\n\nSource: Bloom, B.H. "Space/Time Trade-offs in Hash Coding with Allowable Errors" (CACM, 1970); Mitzenmacher & Upfal, *Probability and Computing*, Ch. 5`,
+        sortOrder: 7,
       },
       {
         heading: "Sources",
@@ -3634,6 +3679,11 @@ When analysing C++ binaries with tools like IDA or Ghidra, identifying vtables h
         sortOrder: 5,
       },
       {
+        heading: "Object slicing",
+        content: `When a derived object is assigned or passed **by value** to a base-type variable, the derived part is silently discarded — this is object slicing:\n\n\`\`\`mermaid\nflowchart LR\n    subgraph Derived Object\n        B1[Base members]\n        D1[Derived members]\n        V1[vtable → Derived]\n    end\n    subgraph After Slicing\n        B2[Base members copied]\n        V2[vtable → Base]\n        X[Derived members lost]\n    end\n    Derived Object -->|copy by value| After Slicing\n    style X fill:#c0392b,color:#fff\n    style D1 fill:#e8605a,color:#fff\n\`\`\`\n\n\`\`\`cpp\nclass Animal {\npublic:\n    virtual std::string speak() const { return "..."; }\n};\n\nclass Dog : public Animal {\n    std::string _name;\npublic:\n    Dog(std::string name) : _name(name) {}\n    std::string speak() const override { return _name + " says Woof!"; }\n};\n\n// SLICING: Dog is copied into an Animal value — _name is lost, vtable is Animal's\nAnimal a = Dog("Rex");\nstd::cout << a.speak(); // prints "..." not "Rex says Woof!"\n\n// SLICING in a container:\nstd::vector<Animal> animals;\nanimals.push_back(Dog("Rex")); // sliced!\n\n// FIX: use pointers or references for polymorphic collections\nstd::vector<std::unique_ptr<Animal>> animals;\nanimals.push_back(std::make_unique<Dog>("Rex"));\nstd::cout << animals[0]->speak(); // "Rex says Woof!" — correct\n\`\`\`\n\nRule: if a class has virtual functions, always pass and store it by pointer or reference, never by value.\n\nSource: Meyers, S. *Effective C++*, Item 20: "Prefer pass-by-reference-to-const to pass-by-value"`,
+        sortOrder: 6,
+      },
+      {
         heading: "Sources",
         content: `- ISO/IEC 14882:2020, Sections 11 (Classes), 13 (Derived classes), 11.7.3 (Virtual functions)
 - Meyers, S. *Effective C++*, Items 7 (virtual destructors), 32-40 (inheritance and OOP design)
@@ -4173,6 +4223,16 @@ Prefer explicit captures over \`[=]\` or \`[&]\` to make dependencies clear and 
         sortOrder: 6,
       },
       {
+        heading: "Iterator invalidation rules",
+        content: `Modifying a container can invalidate iterators, references, and pointers to its elements. The rules differ per container:\n\n| Container | Insert | Erase |\n|-----------|--------|-------|\n| \`vector\` | All iterators invalidated if reallocation; otherwise only those at/after insertion point | Iterators at/after erased element |\n| \`deque\` | All iterators invalidated (insertion at front/back may preserve references) | All iterators if not at front/back; front/back erase only invalidates erased |\n| \`list\` | No iterators invalidated | Only iterator to erased element |\n| \`map/set\` | No iterators invalidated | Only iterator to erased element |\n| \`unordered_map\` | All iterators if rehash occurs (when load_factor > max_load_factor) | Only iterator to erased element |\n\n\`\`\`cpp\n// Classic bug: erasing while iterating\nstd::vector<int> v = {1, 2, 3, 4, 5};\nfor (auto it = v.begin(); it != v.end(); ++it) {\n    if (*it % 2 == 0)\n        v.erase(it); // BUG: invalidates it, ++it is UB\n}\n\n// Correct: erase returns next valid iterator\nfor (auto it = v.begin(); it != v.end(); ) {\n    if (*it % 2 == 0)\n        it = v.erase(it);\n    else\n        ++it;\n}\n\n// Modern: std::erase_if (C++20)\nstd::erase_if(v, [](int x) { return x % 2 == 0; });\n\`\`\`\n\nSource: cppreference.com "Iterator invalidation rules", C++ standard [container.requirements.general]`,
+        sortOrder: 7,
+      },
+      {
+        heading: "Const-reference lifetime extension",
+        content: `A \`const\` lvalue reference (or rvalue reference) bound to a temporary extends that temporary's lifetime to match the reference's lifetime:\n\n\`\`\`cpp\nstd::string make_greeting() { return "Hello, World!"; }\n\n// Temporary would normally be destroyed at end of full-expression\n// But binding to const& extends its lifetime\nconst std::string& greeting = make_greeting(); // OK: lifetime extended\nstd::cout << greeting; // safe — temporary still alive\n\n// Does NOT extend through function calls:\nconst std::string& bad = std::min(std::string("a"), std::string("b"));\n// BAD: temporaries destroyed after min() returns — dangling reference\n\n// Rvalue references also extend lifetime:\nstd::string&& rref = make_greeting(); // OK: lifetime extended\n\`\`\`\n\nCritical gotchas:\n- Lifetime extension does **not** propagate through function return values or member access chains\n- \`auto&&\` extends lifetime (it deduces to an rvalue reference for temporaries)\n- Structured bindings (C++17) to a temporary also extend its lifetime\n\nSource: C++ standard [class.temporary]/6, cppreference.com "Reference initialization"`,
+        sortOrder: 8,
+      },
+      {
         heading: "Sources",
         content: `- ISO/IEC 14882:2020, Sections 13.7 (Templates), 7.5.5 (Lambda expressions)
 - Meyers, S. *Effective Modern C++*, Items 18-21 (Smart pointers), 31-34 (Lambdas)
@@ -4524,6 +4584,11 @@ clang++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST -o test test.cpp
 
 These modes add bounds checks to \`operator[]\`, iterator validity checks, and precondition assertions — catching bugs that the non-debug mode leaves as undefined behaviour.`,
         sortOrder: 6,
+      },
+      {
+        heading: "Type erasure pattern",
+        content: `Type erasure hides concrete types behind a uniform interface without virtual inheritance at the call site — the pattern behind \`std::function\`, \`std::any\`, and \`std::packaged_task\`.\n\n\`\`\`mermaid\nclassDiagram\n    class AnyCallable {\n        -unique_ptr~Concept~ impl\n        +operator()(Args...) R\n    }\n    class Concept {\n        <<interface>>\n        +call(Args...) R*\n        +clone() unique_ptr~Concept~*\n    }\n    class Model~T~ {\n        -T callable\n        +call(Args...) R\n        +clone() unique_ptr~Concept~\n    }\n    AnyCallable --> Concept\n    Concept <|-- Model\n\`\`\`\n\n\`\`\`cpp\n// Simplified std::function-like type erasure\ntemplate<typename R, typename... Args>\nclass Function<R(Args...)> {\n    // Abstract base — the "Concept"\n    struct Concept {\n        virtual R call(Args... args) = 0;\n        virtual std::unique_ptr<Concept> clone() const = 0;\n        virtual ~Concept() = default;\n    };\n\n    // Templated derived — the "Model"\n    template<typename F>\n    struct Model : Concept {\n        F func;\n        Model(F f) : func(std::move(f)) {}\n        R call(Args... args) override { return func(std::forward<Args>(args)...); }\n        std::unique_ptr<Concept> clone() const override {\n            return std::make_unique<Model>(func);\n        }\n    };\n\n    std::unique_ptr<Concept> impl;\npublic:\n    template<typename F>\n    Function(F f) : impl(std::make_unique<Model<F>>(std::move(f))) {}\n    R operator()(Args... args) { return impl->call(std::forward<Args>(args)...); }\n};\n\`\`\`\n\nThe key insight: the template parameter \`F\` only appears in the constructor (and Model) — it is "erased" from the class type. The caller uses \`Function<int(int)>\` regardless of what callable it wraps (lambda, function pointer, functor).\n\nSource: Sean Parent, "Inheritance Is the Base Class of Evil" (GoingNative 2013); cppreference.com/w/cpp/utility/any`,
+        sortOrder: 7,
       },
       {
         heading: "Sources",
