@@ -8,6 +8,7 @@ import { competenciesForFtProject } from "@/lib/mentor/competency-resolver";
 import { listResources } from "@/lib/learn/store";
 import { listArticles } from "@/lib/knowledge/store";
 import { examExercises, EXAM_SOURCES } from "@/lib/exams/store";
+import { difficultyToLevel, circleToLevel, LEVEL_LABEL } from "@/lib/levels";
 
 /**
  * The context behind a Today/Board card: what the app knows about the task,
@@ -41,6 +42,7 @@ export async function GET(
     item.type === "42" ? getProjectBySlug(refOrTitle) : undefined;
 
   let competencyIds: string[];
+  let matchedDifficulty: string | null | undefined;
   if (item.type === "42") {
     competencyIds = competenciesForFtProject(item.ref, item.title);
   } else {
@@ -56,10 +58,18 @@ export async function GET(
         cleaned.includes(rt) ||
         (item.ref != null && (r.externalId ?? "").includes(item.ref));
       if (!match) continue;
+      matchedDifficulty ??= r.difficulty;
       for (const cid of JSON.parse(r.competencyIds ?? "[]") as string[]) ids.add(cid);
     }
     competencyIds = [...ids];
   }
+
+  // The item's required level, on the shared 0-5 scale. Related content is then
+  // filtered to a window around it rather than showing every tier.
+  const itemLevel =
+    difficultyToLevel(matchedDifficulty) ??
+    circleToLevel(project?.circle) ??
+    2;
 
   const competencies = competencyIds
     .map((cid) => {
@@ -68,19 +78,28 @@ export async function GET(
     })
     .filter((c): c is { id: string; label: string } => c !== null);
 
-  // Related content, deduped across the item's competencies, capped for the panel.
-  const seenR = new Map<number, { id: number; title: string; platform: string }>();
-  const seenA = new Map<number, { id: number; title: string; depthTier: number }>();
+  // Related content, deduped across the item's competencies, filtered to the
+  // item's level. Resources within two bands of it (a stretch above is allowed),
+  // articles within one — so a task shows the course at its level, not L0-L5.
+  const seenR = new Map<number, { id: number; title: string; platform: string; dist: number }>();
+  const seenA = new Map<number, { id: number; title: string; depthTier: number; dist: number }>();
   for (const cid of competencyIds) {
     for (const r of listResources({ competencyId: cid })) {
+      // A null-difficulty resource (a 42 peer) counts as the item's own level.
+      const lvl = difficultyToLevel(r.difficulty) ?? itemLevel;
+      const dist = Math.abs(lvl - itemLevel);
+      if (dist > 2) continue;
       if (!seenR.has(r.id))
-        seenR.set(r.id, { id: r.id, title: r.title, platform: r.platform });
+        seenR.set(r.id, { id: r.id, title: r.title, platform: r.platform, dist });
     }
     for (const a of listArticles(cid)) {
+      const dist = Math.abs(a.recommendedLevel - itemLevel);
+      if (dist > 1) continue;
       if (!seenA.has(a.id))
-        seenA.set(a.id, { id: a.id, title: a.title, depthTier: a.depthTier });
+        seenA.set(a.id, { id: a.id, title: a.title, depthTier: a.depthTier, dist });
     }
   }
+  const nearest = (a: { dist: number }, b: { dist: number }) => a.dist - b.dist;
 
   const exercises = examExercises(item.ref ?? item.title);
 
@@ -105,10 +124,15 @@ export async function GET(
     skills: project?.skills ?? [],
     circle: project?.circle ?? null,
     competencies,
-    relatedResources: [...seenR.values()].slice(0, 12),
+    level: { value: itemLevel, label: LEVEL_LABEL[itemLevel] ?? null },
+    relatedResources: [...seenR.values()]
+      .sort(nearest)
+      .slice(0, 10)
+      .map(({ id, title, platform }) => ({ id, title, platform })),
     relatedArticles: [...seenA.values()]
-      .sort((a, b) => a.depthTier - b.depthTier)
-      .slice(0, 6),
+      .sort((a, b) => nearest(a, b) || a.depthTier - b.depthTier)
+      .slice(0, 4)
+      .map(({ id, title, depthTier }) => ({ id, title, depthTier })),
     exam:
       exercises.length > 0
         ? { exercises, sources: EXAM_SOURCES }

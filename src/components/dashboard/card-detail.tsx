@@ -23,6 +23,7 @@ type Context = {
   item: { title: string; type: string; why: string | null; link: string | null };
   goal: { id: number; title: string } | null;
   summary: string | null;
+  level: { value: number; label: string | null } | null;
   skills: string[];
   competencies: { id: string; label: string }[];
   relatedResources: { id: number; title: string; platform: string }[];
@@ -141,6 +142,11 @@ export function CardDetail({ itemId, onClose }: { itemId: number; onClose: () =>
                 <span className="cb-label-mono rounded-cb-chip-sm bg-cb-raised px-2 py-1 text-[10px] text-cb-second">
                   {PLATFORM_LABELS[ctx.item.type] ?? ctx.item.type}
                 </span>
+                {ctx.level?.label && (
+                  <span className="cb-label-mono rounded-cb-chip-sm bg-cb-or-tint px-2 py-1 text-[10px] text-cb-or">
+                    {ctx.level.label}
+                  </span>
+                )}
               </div>
               <button type="button" onClick={onClose} aria-label="Close" className="text-cb-muted hover:text-cb-text">
                 <X className="h-4 w-4" />
@@ -221,7 +227,7 @@ export function CardDetail({ itemId, onClose }: { itemId: number; onClose: () =>
             {ctx.relatedArticles.length > 0 && (
               <div className="space-y-1.5">
                 <p className="cb-label-mono flex items-center gap-1 text-[10px] text-cb-muted">
-                  <Notebook className="h-3 w-3" /> read in Knowledge
+                  <Notebook className="h-3 w-3" /> read at this level
                 </p>
                 <div className="space-y-1">
                   {ctx.relatedArticles.map((a) => (
@@ -241,7 +247,7 @@ export function CardDetail({ itemId, onClose }: { itemId: number; onClose: () =>
             {ctx.relatedResources.length > 0 && (
               <div className="space-y-1.5">
                 <p className="cb-label-mono flex items-center gap-1 text-[10px] text-cb-muted">
-                  <BookOpen className="h-3 w-3" /> practise in Learn · {ctx.relatedResources.length}
+                  <BookOpen className="h-3 w-3" /> practise at this level · {ctx.relatedResources.length}
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   {ctx.relatedResources.map((r) => (
