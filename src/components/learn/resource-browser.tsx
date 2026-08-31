@@ -144,7 +144,7 @@ function PlatformBadge({ platform }: { platform: string }) {
   );
 }
 
-export function LearnClient({
+export function ResourceBrowser({
   resources: initialResources,
   competencies,
   areas,
@@ -335,13 +335,6 @@ export function LearnClient({
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="page-title">Learn</h1>
-        <p className="page-subtitle mt-1">
-          Every module, machine, challenge, and project, grouped by competency
-        </p>
-      </div>
-
       {/* Search + filter chips */}
       <div className="space-y-3">
         <div className="relative">

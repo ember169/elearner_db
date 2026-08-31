@@ -7,7 +7,6 @@ import {
   CalendarDays,
   LayoutDashboard,
   Map,
-  Notebook,
   Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -25,7 +24,6 @@ const NAV: NavItem[] = [
   { href: "/", label: "today", icon: LayoutDashboard },
   { href: "/board", label: "board", icon: CalendarDays },
   { href: "/learn", label: "learn", icon: BookOpen },
-  { href: "/knowledge", label: "knowledge", icon: Notebook },
   { href: "/progress", label: "progress", icon: Map },
 ];
 

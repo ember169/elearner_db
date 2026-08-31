@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { competencyValidations } from "@/lib/db/schema";
 import { listArticles } from "@/lib/knowledge/store";
@@ -8,7 +9,17 @@ import { KnowledgeClient } from "@/components/knowledge/knowledge-client";
 
 export const dynamic = "force-dynamic";
 
-export default function KnowledgePage() {
+export default async function KnowledgePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ article?: string }>;
+}) {
+  // Knowledge is merged into Learn. The grid lives there now; this route
+  // survives only as the article reader (opened via ?article=N from the hub and
+  // Learn cross-links). Without an article, send the visitor to Learn.
+  const { article } = await searchParams;
+  if (!article) redirect("/learn");
+
   const guidance = runGuidanceEngine();
   const signals = computeCompetencySignals(guidance.snapshot, guidance.ftProgress);
 

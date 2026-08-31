@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, BadgeCheck } from "lucide-react";
+import { ArrowLeft, BadgeCheck, Check } from "lucide-react";
 import { PLATFORM_LABELS } from "@/lib/platform-colors";
 
 type ArticleRef = { id: number; title: string; depthTier: number };
@@ -54,6 +54,19 @@ export function CompetencyHub({
 }) {
   const byTier = new Map(articles.map((a) => [a.depthTier, a]));
 
+  // Practise resources, ordered beginner -> expert so a reader works up, not
+  // down. Null difficulty (42 projects) sorts after the graded ones.
+  const DIFF_ORDER: Record<string, number> = {
+    beginner: 0, intermediate: 1, advanced: 2, expert: 3,
+  };
+  const orderedResources = [...resources].sort(
+    (a, b) =>
+      (DIFF_ORDER[a.difficulty ?? ""] ?? 4) - (DIFF_ORDER[b.difficulty ?? ""] ?? 4),
+  );
+  const resDone = resources.filter((r) => r.status === "completed").length;
+  // Reading progress is how far up the tier ladder the level reaches.
+  const readDone = Math.min(level + 1, articles.length);
+
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <Link
@@ -90,7 +103,12 @@ export function CompetencyHub({
       <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
         {/* Understand — the six tiers. */}
         <section className="space-y-2">
-          <h2 className="font-cb-sans text-[17px] font-bold text-cb-text">Understand</h2>
+          <h2 className="font-cb-sans text-[17px] font-bold text-cb-text">
+            Understand
+            <span className="cb-label-mono ml-2 text-[10px] text-cb-muted">
+              {readDone}/{articles.length || 6}
+            </span>
+          </h2>
           <div className="space-y-1.5">
             {Array.from({ length: 6 }, (_, tier) => {
               const found = byTier.get(tier);
@@ -143,7 +161,7 @@ export function CompetencyHub({
           <h2 className="font-cb-sans text-[17px] font-bold text-cb-text">
             Practise
             <span className="cb-label-mono ml-2 text-[10px] text-cb-muted">
-              {resources.length}
+              {resDone}/{resources.length}
             </span>
           </h2>
           {resources.length === 0 ? (
@@ -152,21 +170,23 @@ export function CompetencyHub({
             </div>
           ) : (
             <div className="space-y-1.5">
-              {resources.map((r) => (
+              {orderedResources.map((r) => (
                 <Link
                   key={r.id}
                   href={`/learn?resource=${r.id}`}
                   className="group flex items-center gap-2.5 rounded-cb-card border border-cb-line bg-cb-card px-3 py-2.5 transition-colors hover:bg-cb-raised"
                 >
-                  <span
-                    className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                      r.status === "completed"
-                        ? "bg-cb-success"
-                        : r.status === "in_progress"
-                          ? "bg-cb-info"
-                          : "bg-cb-line"
-                    }`}
-                  />
+                  {r.status === "completed" ? (
+                    <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-cb-success">
+                      <Check className="h-2.5 w-2.5 text-cb-bg" strokeWidth={3} />
+                    </span>
+                  ) : (
+                    <span
+                      className={`h-3.5 w-3.5 shrink-0 rounded-full border ${
+                        r.status === "in_progress" ? "border-cb-or" : "border-cb-line"
+                      }`}
+                    />
+                  )}
                   <span className="min-w-0 flex-1 truncate font-cb-sans text-[14px] text-cb-second group-hover:text-cb-text">
                     {r.title}
                   </span>
