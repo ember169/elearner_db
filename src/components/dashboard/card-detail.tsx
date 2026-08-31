@@ -17,6 +17,7 @@ type Exercise = {
   subject: string;
   solution: string | null;
   solutionLang: string | null;
+  tests: string[];
 };
 
 type Context = {
@@ -58,6 +59,19 @@ function ExerciseBlock({ ex }: { ex: Exercise }) {
 
       {open && (
         <div className="space-y-3 border-t border-cb-line px-3 py-3">
+          {ex.tests.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="cb-label-mono text-[10px] text-cb-muted">tests</span>
+              {ex.tests.map((t) => (
+                <span
+                  key={t}
+                  className="cb-label-mono rounded-cb-chip-sm bg-cb-or-tint px-2 py-0.5 text-[10px] text-cb-or"
+                >
+                  {t}
+                </span>
+              ))}
+            </div>
+          )}
           {ex.allowedFunctions && (
             <p className="font-cb-mono text-[11px] text-cb-second">
               <span className="text-cb-muted">allowed: </span>

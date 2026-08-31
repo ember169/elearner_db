@@ -7,7 +7,7 @@ import { getCompetency } from "@/lib/mentor/competency-map";
 import { competenciesForFtProject } from "@/lib/mentor/competency-resolver";
 import { listResources } from "@/lib/learn/store";
 import { listArticles } from "@/lib/knowledge/store";
-import { examExercises, examSources } from "@/lib/exams/store";
+import { examExercises, examSources, examTestedConcepts } from "@/lib/exams/store";
 import { difficultyToLevel, circleToLevel, LEVEL_LABEL } from "@/lib/levels";
 
 /**
@@ -101,7 +101,10 @@ export async function GET(
   }
   const nearest = (a: { dist: number }, b: { dist: number }) => a.dist - b.dist;
 
-  const exercises = examExercises(item.ref ?? item.title);
+  const exercises = examExercises(item.ref ?? item.title).map((e) => ({
+    ...e,
+    tests: examTestedConcepts(e.allowedFunctions),
+  }));
 
   const goal = item.goalId
     ? db.select().from(goals).where(eq(goals.id, item.goalId)).get()

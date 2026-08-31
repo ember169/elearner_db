@@ -59,3 +59,28 @@ export function examExercise(
 export function hasExamSubjects(ref: string | null | undefined): boolean {
   return examExercises(ref).length > 0;
 }
+
+/**
+ * What an exercise tests, derived from its allowed functions. The subject names
+ * the task; the allowed set reveals the mechanisms — an exercise that permits
+ * fork/execve is testing process control whether or not the prose says so.
+ */
+const CONCEPT_GROUPS: { concept: string; fns: string[] }[] = [
+  { concept: "processes", fns: ["fork", "execve", "execvp", "wait", "waitpid", "exit"] },
+  { concept: "pipes & fds", fns: ["pipe", "dup", "dup2", "close"] },
+  { concept: "signals", fns: ["signal", "kill", "sigaction"] },
+  { concept: "memory", fns: ["malloc", "free", "calloc", "realloc"] },
+  { concept: "file I/O", fns: ["open", "read", "write", "opendir", "readdir"] },
+  { concept: "strings", fns: ["strcmp", "strncmp", "strlen", "strdup", "strcpy"] },
+  { concept: "filesystem", fns: ["chdir", "getcwd", "stat", "access"] },
+];
+
+export function examTestedConcepts(allowedFunctions: string | null): string[] {
+  if (!allowedFunctions) return [];
+  const fns = new Set(
+    allowedFunctions.toLowerCase().split(/[,\s]+/).map((f) => f.trim()).filter(Boolean),
+  );
+  return CONCEPT_GROUPS.filter((g) => g.fns.some((f) => fns.has(f))).map(
+    (g) => g.concept,
+  );
+}
