@@ -12,6 +12,7 @@ import {
   type BoardCategory,
   BOARD_STATUSES,
   BOARD_CATEGORIES,
+  type BoardItem,
 } from "@/lib/board/store";
 
 export async function GET() {
@@ -34,7 +35,18 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "id required" }, { status: 400 });
   }
   const item = updateBoardItem(id, updates);
-  return NextResponse.json(item);
+
+  // Finishing a 42 project unlocks its successors (CPP 00 -> 01, ...). Re-run
+  // population so the next module drops into the backlog without waiting for a
+  // manual Regenerate or a 42 sync.
+  let newItems: BoardItem[] = [];
+  if (updates.boardStatus === "done" && item?.type === "42") {
+    const before = new Set(loadBoard().items.map((i) => i.id));
+    populateBacklog();
+    newItems = loadBoard().items.filter((i) => !before.has(i.id));
+  }
+
+  return NextResponse.json({ ...item, unlocked: newItems.length });
 }
 
 export async function POST(request: Request) {

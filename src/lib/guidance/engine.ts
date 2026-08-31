@@ -365,7 +365,10 @@ function daysSinceCreation(createdAt: string, deadline: string): number {
   return Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
 }
 
-export function analyzeFtProgress(snapshot: PlatformSnapshot) {
+export function analyzeFtProgress(
+  snapshot: PlatformSnapshot,
+  boardDoneSlugs?: Set<string>,
+) {
   const completedSlugs: string[] = [];
   const inProgressSlugs: string[] = [];
 
@@ -378,7 +381,13 @@ export function analyzeFtProgress(snapshot: PlatformSnapshot) {
     }
   }
 
-  const normalizedCompleted = completedSlugs.map((s) => matchProjectSlug(s));
+  // A project marked done on the board unlocks its successors even before 42
+  // validates it — otherwise finishing CPP Module 00 on the board never
+  // surfaces Module 01, because the sync still shows 00 as in_progress.
+  const normalizedCompleted = [
+    ...completedSlugs.map((s) => matchProjectSlug(s)),
+    ...(boardDoneSlugs ? [...boardDoneSlugs].map((s) => matchProjectSlug(s)) : []),
+  ];
   const circleBreakdown = getCircleProgress(normalizedCompleted);
   const availableProjects = getAvailableProjects(normalizedCompleted);
   const upcomingProjects = getUpcomingProjects(normalizedCompleted);
@@ -542,7 +551,7 @@ export function generateRecommendations(
     : ftProgress.availableProjects;
 
   const alreadyAdded = new Set<string>();
-  for (const project of available.slice(0, 3)) {
+  for (const project of available) {
     if (ftProgress.inProgressProjects.includes(project.slug)) continue;
     alreadyAdded.add(project.slug);
     recs.push({
@@ -1302,7 +1311,7 @@ export const runGuidanceEngine = cache(function runGuidanceEngine(
   syncGoalValues();
   const snapshot = gatherSnapshot();
   const goalsWithPacing = analyzeGoals();
-  const ftProgress = analyzeFtProgress(snapshot);
+  const ftProgress = analyzeFtProgress(snapshot, boardDoneSlugs);
   const skillProfile = buildSkillProfile(snapshot);
   const recommendations = generateRecommendations(
     snapshot,
