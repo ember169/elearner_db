@@ -22,7 +22,17 @@ export type ExamExercise = {
 };
 
 const EXAMS = examData.exams as Record<string, ExamExercise[]>;
-export const EXAM_SOURCES = examData._sources as { name: string; url: string }[];
+type ExamSource = { name: string; url: string; match: string };
+const SOURCES = examData._sources as ExamSource[];
+
+/** Only the sources an exam's exercises actually come from, matched on the
+ *  exercise sourcePath prefix — so exam04 (microshell, llefranc) does not cite
+ *  the terminal-42s repo, and vice versa. */
+export function examSources(ref: string | null | undefined): { name: string; url: string }[] {
+  const paths = examExercises(ref).map((e) => e.sourcePath);
+  return SOURCES.filter((src) => paths.some((p) => p.startsWith(src.match)))
+    .map(({ name, url }) => ({ name, url }));
+}
 
 /** Board items and 42 catalogue slugs both use `examNN`; normalise either. */
 function examKey(ref: string): string | null {

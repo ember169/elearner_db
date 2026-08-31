@@ -7,7 +7,7 @@ import { getCompetency } from "@/lib/mentor/competency-map";
 import { competenciesForFtProject } from "@/lib/mentor/competency-resolver";
 import { listResources } from "@/lib/learn/store";
 import { listArticles } from "@/lib/knowledge/store";
-import { examExercises, EXAM_SOURCES } from "@/lib/exams/store";
+import { examExercises, examSources } from "@/lib/exams/store";
 import { difficultyToLevel, circleToLevel, LEVEL_LABEL } from "@/lib/levels";
 
 /**
@@ -135,7 +135,7 @@ export async function GET(
       .map(({ id, title, depthTier }) => ({ id, title, depthTier })),
     exam:
       exercises.length > 0
-        ? { exercises, sources: EXAM_SOURCES }
+        ? { exercises, sources: examSources(item.ref ?? item.title) }
         : null,
   });
 }
