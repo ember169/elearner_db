@@ -182,7 +182,7 @@ RAIL_W = 96
 # Five destinations on the learning loop; settings lives in the header, not the
 # nav. The rail and the phone bar carry the same five — nothing overflows.
 NAV = [("today", "dash"), ("board", "cal"), ("learn", "book"),
-       ("knowledge", "note"), ("progress", "map")]
+       ("progress", "map")]
 TAB = NAV
 
 

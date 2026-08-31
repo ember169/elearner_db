@@ -7,14 +7,13 @@ design system shared with Leofresh, Decathleo and Comptableo.
 |------|--------|-------|
 | `01-dashboard.png` | Today `/` | Daily focus with a see-board link, mentor briefing, competency mini-heatmap |
 | `02-board.png` | Board `/board` | Kanban on the family system; mobile is the segmented column control |
-| `03-learn.png` | Learn `/learn` | Search, filter chips, competency-grouped grid, detail panel |
-| `04-knowledge.png` | Knowledge `/knowledge` | Competency grid, six tiers each, at/above-level indicators |
 | `05-article-reader.png` | Article reader | Markdown, code, Mermaid, highlight + annotation margin, export, fullscreen |
 | `06-goals.png` | Goals `/goals` | Goal hierarchy with pacing, tree + detail split |
 | `07-progress.png` | Progress `/progress` | Activity bars, competency heatmap, year streak grid, platform sparklines |
 | `08-settings.png` | Settings `/settings` | Objective, cloud key, platform credentials, sync scheduling |
 | `09-light-theme.png` | Today, light | The warm-paper token set — a separate set, never an inversion |
 | `10-competency-hub.png` | Competency hub `/knowledge/[id]` | One competency's six tiers and its Learn resources side by side |
+| `11-merged-learn.png` | Learn `/learn` | Learn and Knowledge merged — competency-first with read/do counts, a browse lens |
 
 ## How they are made
 

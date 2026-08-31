@@ -142,8 +142,8 @@ def build(theme=DARK):
     ph = 44 + body_h + 74
     H = max(dh, ph) + 130
     c = Canvas(W, H, theme, page_bg="#0d0c0b")
-    screen_label(c, 40, 40, "11a", "Learn  (merged)", "desktop 1280 · competency-first, one competency expanded")
-    screen_label(c, 1400, 40, "11b", "Learn  (merged)", "mobile 375")
+    screen_label(c, 40, 40, "03a", "Learn", "desktop 1280 · competency-first · Learn + Knowledge merged")
+    screen_label(c, 1400, 40, "03b", "Learn", "mobile 375")
     c.rect(dx - 8, dy - 8, dw + 16, dh + 16, theme["line"], r=20, op=0.45)
     c.rect(dx, dy, dw, dh, theme["bg"], r=14)
     sub = Canvas(dw, dh, theme); sub.parts = []
