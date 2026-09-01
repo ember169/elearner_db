@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowLeft, BadgeCheck, Check } from "lucide-react";
 import { PLATFORM_LABELS } from "@/lib/platform-colors";
 
-type ArticleRef = { id: number; title: string; depthTier: number };
+type ArticleRef = { id: number; title: string; depthTier: number; isRead: boolean };
 type ResourceRef = {
   id: number;
   title: string;
@@ -26,15 +26,6 @@ const STATUS_TONE: Record<string, string> = {
   not_started: "text-cb-muted",
 };
 
-/**
- * The competency hub: one competency, its six tiers of Knowledge and its Learn
- * resources side by side.
- *
- * This is what the audit's page-per-competency argument asked for — the two
- * halves of a competency in one place — while Learn and Knowledge stay as the
- * cross-cutting browse surfaces. Server-rendered; tiers and resources deep-link
- * into their existing readers.
- */
 export function CompetencyHub({
   label,
   area,
@@ -54,8 +45,6 @@ export function CompetencyHub({
 }) {
   const byTier = new Map(articles.map((a) => [a.depthTier, a]));
 
-  // Practise resources, ordered beginner -> expert so a reader works up, not
-  // down. Null difficulty (42 projects) sorts after the graded ones.
   const DIFF_ORDER: Record<string, number> = {
     beginner: 0, intermediate: 1, advanced: 2, expert: 3,
   };
@@ -64,13 +53,12 @@ export function CompetencyHub({
       (DIFF_ORDER[a.difficulty ?? ""] ?? 4) - (DIFF_ORDER[b.difficulty ?? ""] ?? 4),
   );
   const resDone = resources.filter((r) => r.status === "completed").length;
-  // Reading progress is how far up the tier ladder the level reaches.
-  const readDone = Math.min(level + 1, articles.length);
+  const readDone = articles.filter((a) => a.isRead || a.depthTier <= level).length;
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <Link
-        href="/knowledge"
+        href="/learn"
         className="flex items-center gap-1.5 font-cb-sans text-[14px] text-cb-muted transition-colors hover:text-cb-text"
       >
         <ArrowLeft className="h-4 w-4" />
@@ -112,7 +100,7 @@ export function CompetencyHub({
           <div className="space-y-1.5">
             {Array.from({ length: 6 }, (_, tier) => {
               const found = byTier.get(tier);
-              const atLevel = tier <= level;
+              const reached = found ? (found.isRead || tier <= level) : false;
               if (!found) {
                 return (
                   <div
@@ -134,7 +122,7 @@ export function CompetencyHub({
                 >
                   <span
                     className={
-                      atLevel
+                      reached
                         ? "cb-label-mono shrink-0 rounded-cb-chip-sm bg-cb-or-tint px-2 py-1 text-[10px] text-cb-or"
                         : "cb-label-mono shrink-0 rounded-cb-chip-sm bg-cb-raised px-2 py-1 text-[10px] text-cb-second"
                     }
@@ -147,7 +135,7 @@ export function CompetencyHub({
                     </span>
                     <span className="cb-label-mono text-[10px] text-cb-muted">
                       {TIER_PURPOSE[tier]}
-                      {!atLevel && " · above your level"}
+                      {!reached && " · above your level"}
                     </span>
                   </span>
                 </Link>
@@ -156,10 +144,10 @@ export function CompetencyHub({
           </div>
         </section>
 
-        {/* Practise — the Learn resources. */}
+        {/* Practice — the Learn resources. */}
         <section className="space-y-2">
           <h2 className="font-cb-sans text-[17px] font-bold text-cb-text">
-            Practise
+            Practice
             <span className="cb-label-mono ml-2 text-[10px] text-cb-muted">
               {resDone}/{resources.length}
             </span>

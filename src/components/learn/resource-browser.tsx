@@ -462,7 +462,7 @@ export function ResourceBrowser({
                         >
                           <div className="flex items-start gap-2">
                             <StatusDot status={r.status} />
-                            <span className="flex-1 text-[14px] font-medium leading-snug">
+                            <span className="min-w-0 flex-1 break-words text-[14px] font-medium leading-snug">
                               {r.title}
                             </span>
                             <PlatformBadge platform={r.platform} />

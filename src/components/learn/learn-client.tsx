@@ -43,7 +43,12 @@ export function LearnClient({
   resources: LearnResource[];
   browseCompetencies: CompetencyInfo[];
 }) {
-  const [lens, setLens] = useState<Lens>("competency");
+  const [lens, setLens] = useState<Lens>(() => {
+    if (typeof window === "undefined") return "competency";
+    return new URLSearchParams(window.location.search).has("resource")
+      ? "browse"
+      : "competency";
+  });
 
   const byArea = areas
     .map((area) => ({ area, items: progress.filter((p) => p.area === area) }))

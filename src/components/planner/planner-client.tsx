@@ -30,6 +30,11 @@ interface PlannerClientProps {
   sideProjectState?: SideProjectState;
   hasKey: boolean;
   stale: boolean;
+  // Rendered as the Board view of Home, under the Today | Board switcher. Home
+  // already owns the page title, the mentor briefing and the competency pulse,
+  // so in this mode we drop the h1, the briefing blocks and the competency
+  // spotlight to avoid rendering them twice.
+  embedded?: boolean;
 }
 
 export function PlannerClient({
@@ -43,6 +48,7 @@ export function PlannerClient({
   sideProjectState: initialSideProjectState,
   hasKey,
   stale,
+  embedded = false,
 }: PlannerClientProps) {
   const router = useRouter();
   const [items, setItems] = useState<PlanItemData[]>(initialItems);
@@ -232,7 +238,7 @@ export function PlannerClient({
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <div className="min-w-0">
-          <h1 className="page-title text-cb-text">Board</h1>
+          {!embedded && <h1 className="page-title text-cb-text">Board</h1>}
           <p className="mt-1 truncate font-cb-sans text-[14px] text-cb-muted">
             {objective}
           </p>
@@ -269,9 +275,19 @@ export function PlannerClient({
         </div>
       </div>
 
-      {/* Mentor briefing + Side project (desktop) */}
-      <p className="cb-label-mono mb-2 hidden text-[10px] text-cb-muted md:block">Briefing</p>
-      <div className="hidden md:grid md:grid-cols-2 gap-3">
+      {/* Mentor briefing + Side project (desktop). When embedded in Home, the
+          briefing lives in the Today view, so we render only the side project. */}
+      {!embedded && (
+        <p className="cb-label-mono mb-2 hidden text-[10px] text-cb-muted md:block">Briefing</p>
+      )}
+      <div
+        className={
+          embedded
+            ? "hidden md:block"
+            : "hidden md:grid md:grid-cols-2 gap-3"
+        }
+      >
+        {!embedded && (
         <div
           className="rounded-cb-card border border-cb-line bg-cb-card px-4 py-3"
         >
@@ -329,6 +345,7 @@ export function PlannerClient({
             </p>
           )}
         </div>
+        )}
 
         {sideProject ? (
           <SideProjectBrief
@@ -359,7 +376,7 @@ export function PlannerClient({
 
       {/* Mobile: briefing */}
       <div className="md:hidden">
-        {briefing && (
+        {!embedded && briefing && (
           <div
             className="rounded-cb-card border border-cb-line bg-cb-card px-4 py-3"
           >
@@ -464,12 +481,17 @@ export function PlannerClient({
         />
       </div>
 
-      {/* Desktop: Secondary section */}
+      {/* Desktop: Secondary section. Embedded in Home, the competency spotlight
+          is replaced by the Today competency pulse, so only pacing remains. */}
       <div className="hidden md:block space-y-3">
-        <div className="grid grid-cols-2 gap-3">
-          <CompetencySpotlight competencies={competencies} />
+        {embedded ? (
           <PacingAlerts goals={goals} />
-        </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            <CompetencySpotlight competencies={competencies} />
+            <PacingAlerts goals={goals} />
+          </div>
+        )}
       </div>
 
       {detailId !== null && (

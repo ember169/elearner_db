@@ -41,7 +41,11 @@ export default function RootLayout({
             <AppHeader />
             {/* Family rule: the phone bar is a 52px row plus the home
                 indicator, so content clears 74px + the safe-area inset. */}
-            <div className="px-5 pt-4 pb-[calc(74px+env(safe-area-inset-bottom))] md:px-8 md:py-8">
+            {/* overflow-x-clip is a guardrail: a card that mis-measures on a
+                narrow screen can't push a horizontal scrollbar on the whole
+                page. It clips only this element's own overflow, so nested
+                scrollers (the kanban) and sticky panels keep working. */}
+            <div className="overflow-x-clip px-5 pt-4 pb-[calc(74px+env(safe-area-inset-bottom))] md:px-8 md:py-8">
               {children}
             </div>
           </main>

@@ -30,7 +30,7 @@ export default async function CompetencyHubPage({
   const level = validation?.validatedLevel ?? signals[competencyId]?.autoLevel ?? 0;
 
   const articles = listArticles(competencyId)
-    .map((a) => ({ id: a.id, title: a.title, depthTier: a.depthTier }))
+    .map((a) => ({ id: a.id, title: a.title, depthTier: a.depthTier, isRead: a.readAt != null }))
     .sort((a, b) => a.depthTier - b.depthTier);
 
   const resources = listResources({ competencyId }).map((r) => ({

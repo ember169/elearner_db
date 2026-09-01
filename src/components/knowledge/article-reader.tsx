@@ -188,7 +188,10 @@ export function ArticleReader({
         setPending(null);
         return;
       }
-      const start = section.content.indexOf(text);
+      let start = section.content.indexOf(text);
+      if (start === -1) {
+        start = section.content.indexOf(text.replace(/\n/g, "\n\n"));
+      }
       setPending({
         sectionId: section.id,
         text,

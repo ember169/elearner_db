@@ -498,6 +498,7 @@ export const knowledgeArticles = sqliteTable("knowledge_articles", {
   title: text("title").notNull(),
   recommendedLevel: integer("recommended_level").notNull().default(0),
   status: text("status").notNull().default("ready"),
+  readAt: text("read_at"),
   generatedAt: text("generated_at"),
   createdAt: text("created_at")
     .notNull()

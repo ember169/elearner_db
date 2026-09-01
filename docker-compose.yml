@@ -3,11 +3,15 @@ services:
     build: .
     # host:container — the app always listens on 3000 inside the container
     # (Dockerfile sets PORT=3000); change only the host side (left) if 3001 is taken.
-    # Bound to 127.0.0.1: the app has no auth and Settings holds platform
-    # credentials, so it must not be reachable from the LAN. Same as the rest of
-    # the family. Reach it through an SSH tunnel or a reverse proxy, not directly.
+    # Bound to the Tailscale interface IP only: reachable from any of your
+    # Tailscale devices anywhere, but not from the LAN and not from the public
+    # internet. The app has no auth and Settings holds platform credentials, so
+    # the tailnet is the trust boundary.
+    # NOTE: this IP is this machine's stable Tailscale address (tailscale0). If
+    # Tailscale is down when the container starts (e.g. right after a reboot),
+    # the bind fails and the restart policy retries until Tailscale is up.
     ports:
-      - "127.0.0.1:3001:3000"
+      - "100.66.34.21:3001:3000"
     volumes:
       - db-data:/app/data
       # Mount the directory, not the bare .db file: SQLite WAL mode keeps

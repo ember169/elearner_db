@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import { knowledgeArticles } from "@/lib/db/schema";
+import { eq, sql } from "drizzle-orm";
 import { getArticle } from "@/lib/knowledge/store";
 
 export async function GET(
@@ -15,6 +18,11 @@ export async function GET(
   if (!article) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
+
+  db.update(knowledgeArticles)
+    .set({ readAt: sql`datetime('now')` })
+    .where(eq(knowledgeArticles.id, id))
+    .run();
 
   return NextResponse.json({ article });
 }

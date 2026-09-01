@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback, useEffect } from "react";
 import Link from "next/link";
-import { Search, X, ArrowLeft, Loader2, BadgeCheck, Maximize2, Minimize2 } from "lucide-react";
+import { Search, X, ArrowLeft, Loader2, BadgeCheck, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn, assertOk } from "@/lib/utils";
 import { ArticleReader, type ReaderSection } from "./article-reader";
 import { RelatedResources } from "@/components/learn/related-resources";
@@ -59,7 +59,6 @@ export function KnowledgeClient({
   const [article, setArticle] = useState<LoadedArticle | null>(null);
   const [loadingId, setLoadingId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
-  const [fullscreen, setFullscreen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const openArticle = useCallback(async (id: number) => {
@@ -119,21 +118,6 @@ export function KnowledgeClient({
     if (res.ok) setArticle((await res.json()).article as LoadedArticle);
   }, []);
 
-  useEffect(() => {
-    if (!fullscreen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setFullscreen(false);
-    };
-    window.addEventListener("keydown", onKey);
-    // The rail and tab bar are fixed, so the overlay alone would leave the page
-    // scrollable behind it.
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
-  }, [fullscreen]);
-
   const groups = useMemo(() => {
     const q = search.trim().toLowerCase();
     const match = (c: CompetencyEntry) =>
@@ -156,40 +140,38 @@ export function KnowledgeClient({
     const competency = competencies.find((c) => c.id === article.competencyId);
     const aboveLevel = competency ? article.depthTier > competency.level : false;
 
+    // Tiers of THIS competency that actually have an article, in depth order —
+    // the ladder the reader steps through with prev/next and the chip row.
+    const tiers = competency
+      ? [...competency.articles].sort((a, b) => a.depthTier - b.depthTier)
+      : [];
+    const idx = tiers.findIndex((a) => a.id === article.id);
+    const prevTier = idx > 0 ? tiers[idx - 1] : null;
+    const nextTier = idx >= 0 && idx < tiers.length - 1 ? tiers[idx + 1] : null;
+
     return (
-      <div
-        className={
-          fullscreen
-            ? "fixed inset-0 z-50 overflow-y-auto bg-cb-bg px-5 py-6 md:px-8"
-            : ""
-        }
-      >
       <div className="mx-auto max-w-3xl space-y-5">
         <div className="flex items-center justify-between gap-3">
-          <button
-            type="button"
-            onClick={() => setArticle(null)}
-            className="flex items-center gap-1.5 font-cb-sans text-[14px] text-cb-muted transition-colors hover:text-cb-text"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            All competencies
-          </button>
-          <div className="flex items-center gap-1.5">
-            <ExportMenu articleId={article.id} />
+          {/* Back to the competency it belongs to, not the whole catalogue. */}
+          {competency ? (
+            <Link
+              href={`/knowledge/${competency.id}`}
+              className="flex items-center gap-1.5 font-cb-sans text-[14px] text-cb-muted transition-colors hover:text-cb-text"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              {competency.label}
+            </Link>
+          ) : (
             <button
               type="button"
-              onClick={() => setFullscreen((v) => !v)}
-              title={fullscreen ? "Exit full screen (Esc)" : "Full screen"}
-              aria-label={fullscreen ? "Exit full screen" : "Full screen"}
-              className="cb-label-mono flex items-center gap-1 rounded-cb-chip-sm bg-cb-raised px-2 py-1.5 text-[10px] text-cb-second transition-colors hover:bg-cb-raised-hover hover:text-cb-text"
+              onClick={() => setArticle(null)}
+              className="flex items-center gap-1.5 font-cb-sans text-[14px] text-cb-muted transition-colors hover:text-cb-text"
             >
-              {fullscreen ? (
-                <Minimize2 className="h-3 w-3" />
-              ) : (
-                <Maximize2 className="h-3 w-3" />
-              )}
+              <ArrowLeft className="h-4 w-4" />
+              All competencies
             </button>
-          </div>
+          )}
+          <ExportMenu articleId={article.id} />
         </div>
 
         <header className="space-y-2">
@@ -213,6 +195,55 @@ export function KnowledgeClient({
               practise this competency. */}
           <RelatedResources competencyId={article.competencyId} />
         </header>
+
+        {/* Step through the competency's depth tiers without leaving the reader. */}
+        {tiers.length > 1 && (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => prevTier && void openArticle(prevTier.id)}
+              disabled={!prevTier || loadingId != null}
+              aria-label="Previous tier"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-cb-chip-sm bg-cb-raised text-cb-second transition-colors hover:bg-cb-raised-hover hover:text-cb-text disabled:opacity-40"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <div className="flex flex-wrap gap-1.5">
+              {tiers.map((t) => {
+                const current = t.id === article.id;
+                const isLoading = loadingId === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => !current && void openArticle(t.id)}
+                    disabled={isLoading}
+                    aria-current={current}
+                    title={t.title}
+                    className={cn(
+                      "cb-label-mono flex items-center gap-1 rounded-cb-chip-sm px-2 py-1 text-[10px] transition-colors",
+                      current
+                        ? "bg-cb-or text-cb-on-or"
+                        : "bg-cb-raised text-cb-second hover:bg-cb-raised-hover hover:text-cb-text",
+                    )}
+                  >
+                    {isLoading && <Loader2 className="h-3 w-3 animate-spin" />}
+                    L{t.depthTier}
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              type="button"
+              onClick={() => nextTier && void openArticle(nextTier.id)}
+              disabled={!nextTier || loadingId != null}
+              aria-label="Next tier"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-cb-chip-sm bg-cb-raised text-cb-second transition-colors hover:bg-cb-raised-hover hover:text-cb-text disabled:opacity-40"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        )}
 
         <hr className="border-cb-line" />
 
@@ -259,7 +290,6 @@ export function KnowledgeClient({
             });
           }}
         />
-      </div>
       </div>
     );
   }

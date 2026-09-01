@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BookOpen,
-  CalendarDays,
   LayoutDashboard,
   Map,
   Settings,
@@ -14,15 +13,16 @@ import { CartableoMark } from "@/components/brand/mark";
 
 type NavItem = { href: string; label: string; icon: typeof Map };
 
-// Five destinations, ordered on the learning loop rather than on an inventory
-// of features: see what to do, do it, understand it, prove it. The family caps
-// its bars at five and orders them the same way.
+// Three destinations, ordered on the learning loop rather than on an inventory
+// of features: see/plan what to do, understand it, prove it. Home carries both
+// the Today digest and the Board under one view-switcher, so the board is no
+// longer its own tab. The family caps its bars at five and orders them the same
+// way; we sit well under that.
 //
 // Goals and Assess are still full pages at /goals and /assess — they are simply
 // not destinations. Progress is where you enter them.
 const NAV: NavItem[] = [
-  { href: "/", label: "today", icon: LayoutDashboard },
-  { href: "/board", label: "board", icon: CalendarDays },
+  { href: "/", label: "home", icon: LayoutDashboard },
   { href: "/learn", label: "learn", icon: BookOpen },
   { href: "/progress", label: "progress", icon: Map },
 ];
@@ -79,9 +79,9 @@ export function Sidebar() {
         </nav>
       </aside>
 
-      {/* Phone tab bar — 52px row + safe-area spacer, top hairline. Exactly the
-          five loop destinations: at five, nothing overflows into a "more"
-          sheet, which is the whole point of cutting the nav down. */}
+      {/* Phone tab bar — 52px row + safe-area spacer, top hairline. Three loop
+          destinations: nothing overflows into a "more" sheet, which is the whole
+          point of cutting the nav down. */}
       <nav className="fixed inset-x-0 bottom-0 z-50 flex items-stretch justify-around border-t border-cb-line bg-cb-bg/85 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl backdrop-saturate-[1.8] md:hidden">
         {NAV.map((item) => {
           const active = isActive(pathname, item.href);
