@@ -8,10 +8,12 @@ import { eq, and, inArray } from "drizzle-orm";
 import type { SeedExercise } from "./seed-data/exercises/types";
 import { CPP_OOP_EXERCISES } from "./seed-data/exercises/cpp-oop";
 import { C_CORE_EXERCISES } from "./seed-data/exercises/c-core";
+import { C_SYSTEMS_EXERCISES } from "./seed-data/exercises/c-systems";
 
 const ALL_EXERCISES: SeedExercise[] = [
   ...CPP_OOP_EXERCISES,
   ...C_CORE_EXERCISES,
+  ...C_SYSTEMS_EXERCISES,
 ];
 
 /**
