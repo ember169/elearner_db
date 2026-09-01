@@ -126,4 +126,490 @@ export const CPP_OOP_EXERCISES: SeedExercise[] = [
     explanation:
       "The container holds `Animal` values, and copying a `Dog` into an `Animal` slot retains only the `Animal` sub-object and its vtable — `_name` and the override are discarded. That's slicing. Store `std::unique_ptr<Animal>` (or use references) to preserve polymorphism. Note `speak()` *is* virtual here; the culprit is the value copy, not a missing `virtual`.",
   },
+
+  // ── L0 ──
+  {
+    slug: "cpp-oop-l0-cpp-vs-c",
+    competencyId: "cpp-oop",
+    depthTier: 0,
+    sectionHeading: "C++ as an Extension of C",
+    prompt: "What did C++ add to C?",
+    options: [
+      "Object-oriented programming, templates (generic programming), and stronger type safety, while staying largely backward-compatible with C.",
+      "Automatic garbage collection and a virtual machine.",
+      "Removal of pointers and manual memory management.",
+      "A built-in interpreter that replaces compilation.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "“C with Classes” kept C's model and added OOP, templates, and stronger typing. It also inherits C's memory-safety issues and adds new attack surface — notably vtable hijacking.",
+  },
+  {
+    slug: "cpp-oop-l0-oop-concepts",
+    competencyId: "cpp-oop",
+    depthTier: 0,
+    sectionHeading: "Core OOP Concepts",
+    prompt: "Which OOP principle lets different classes respond to the same interface in different ways?",
+    options: [
+      "Polymorphism (in C++, via virtual functions).",
+      "Encapsulation.",
+      "Inheritance.",
+      "Abstraction.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "The four principles are encapsulation, inheritance, polymorphism, and abstraction. Polymorphism specifically means one interface with type-dependent behaviour, implemented in C++ through virtual dispatch.",
+  },
+  {
+    slug: "cpp-oop-l0-vocab",
+    competencyId: "cpp-oop",
+    depthTier: 0,
+    sectionHeading: "Key Vocabulary",
+    prompt: "What is a vtable, and why does it matter for security?",
+    options: [
+      "A per-class table of function pointers used for dynamic dispatch; corrupting an object's vtable pointer redirects virtual calls to attacker-chosen code.",
+      "A table of a class's data-member offsets, used only by the debugger.",
+      "The stack frame layout of a member function.",
+      "A cache of recently constructed objects.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "Each polymorphic object holds a vptr to its class vtable (an array of virtual function pointers). Overwriting the vptr is a classic C++ exploitation primitive.",
+  },
+  // ── L1 ──
+  {
+    slug: "cpp-oop-l1-class",
+    competencyId: "cpp-oop",
+    depthTier: 1,
+    sectionHeading: "Defining a Class",
+    prompt: "Which four special members does 42's Orthodox Canonical Form require every class to define?",
+    options: [
+      "Default constructor, copy constructor, copy assignment operator, and destructor.",
+      "Constructor, destructor, move constructor, and swap.",
+      "Getter, setter, constructor, and destructor.",
+      "operator new, operator delete, constructor, and destructor.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "OCF (the Rule of Three plus a default constructor) makes copying and destruction explicit. The copy assignment operator also needs a self-assignment guard (`if (this != &rhs)`).",
+  },
+  {
+    slug: "cpp-oop-l1-initlist",
+    competencyId: "cpp-oop",
+    depthTier: 1,
+    sectionHeading: "Constructors and Initialiser Lists",
+    prompt: "Why prefer a member initializer list over assignment in the constructor body?",
+    options: [
+      "It initializes members directly in one step, and const or reference members can only be initialized that way.",
+      "It runs the constructor body twice for safety.",
+      "It disables the copy constructor.",
+      "It is required by the compiler for all members.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "Assignment in the body first default-constructs then overwrites (two steps, and impossible for const/reference members). Members are initialized in declaration order, not initializer-list order.",
+  },
+  {
+    slug: "cpp-oop-l1-encapsulation",
+    competencyId: "cpp-oop",
+    depthTier: 1,
+    sectionHeading: "Access Specifiers and Encapsulation",
+    prompt: "Why make data members private and expose public getters/setters?",
+    options: [
+      "It lets the class validate inputs and enforce its invariants (e.g. balance never goes negative).",
+      "It makes the object smaller in memory.",
+      "It is required for inheritance to work.",
+      "It speeds up member access.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "Private data with a controlled interface lets a class reject invalid state. A `const` method further promises not to modify the object, enforced by the compiler.",
+  },
+  {
+    slug: "cpp-oop-l1-operator",
+    competencyId: "cpp-oop",
+    depthTier: 1,
+    sectionHeading: "Operator Overloading",
+    prompt: "How do prefix and postfix `operator++` differ?",
+    options: [
+      "Prefix returns a reference to the modified object; postfix takes a dummy `int` parameter and returns a copy of the value before modification.",
+      "Prefix returns a copy; postfix returns a reference.",
+      "They are identical; the compiler picks one at random.",
+      "Postfix cannot be overloaded.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "`++x` (prefix) modifies and returns *this by reference; `x++` (postfix) has a dummy int parameter to distinguish it and returns the prior value by copy — which is why prefix is usually cheaper.",
+  },
+  // ── L3 ──
+  {
+    slug: "cpp-oop-l3-raii",
+    competencyId: "cpp-oop",
+    depthTier: 3,
+    sectionHeading: "The RAII Idiom",
+    prompt: "What does RAII guarantee?",
+    options: [
+      "A resource acquired in a constructor is released in the destructor, which runs automatically — even during stack unwinding from an exception.",
+      "Resources are freed only when the program exits.",
+      "Memory is garbage-collected in the background.",
+      "Resources must be released manually in a finally block.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "Tying resource lifetime to object lifetime means destructors free files, locks, and memory on every exit path, eliminating the leak class that plagues C. In security terms it prevents fd exhaustion and inconsistent state after exceptions.",
+  },
+  {
+    slug: "cpp-oop-l3-smartptr",
+    competencyId: "cpp-oop",
+    depthTier: 3,
+    sectionHeading: "Smart Pointers",
+    prompt: "When should you reach for unique_ptr versus shared_ptr?",
+    options: [
+      "unique_ptr by default for single ownership (zero overhead); shared_ptr only when ownership is genuinely shared, since it carries a reference count.",
+      "shared_ptr always, because it is safer.",
+      "unique_ptr only for arrays, shared_ptr for everything else.",
+      "Whichever compiles; they are interchangeable.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "unique_ptr expresses exclusive ownership with no runtime cost; shared_ptr adds atomic reference counting. Corrupting a shared_ptr's refcount (e.g. via a heap overflow) can force a premature free — a use-after-free.",
+  },
+  {
+    slug: "cpp-oop-l3-exceptsafety",
+    competencyId: "cpp-oop",
+    depthTier: 3,
+    sectionHeading: "Exception Safety",
+    prompt: "What does the “strong exception guarantee” mean?",
+    options: [
+      "If the operation throws, program state is unchanged — as if it was never called (often achieved via copy-and-swap).",
+      "The operation can never throw.",
+      "Any thrown exception is silently swallowed.",
+      "The program terminates on any exception.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "The three levels are no-throw (noexcept), strong (all-or-nothing, via copy-and-swap), and basic (valid but possibly changed state, no leaks). Move operations, swap, and destructors should be noexcept.",
+  },
+  {
+    slug: "cpp-oop-l3-ruleofzero",
+    competencyId: "cpp-oop",
+    depthTier: 3,
+    sectionHeading: "The Rule of Zero, Three, and Five",
+    prompt: "What does the modern “Rule of Zero” recommend?",
+    options: [
+      "Define no special member functions; use RAII members (smart pointers, containers) so the compiler-generated defaults are correct.",
+      "Define all five special members on every class.",
+      "Never use destructors.",
+      "Always delete the copy constructor.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "If your members manage their own resources, the compiler's defaults for destructor/copy/move are correct, so you write none. (42's OCF exercises still have you implement the Rule of Three for learning.)",
+  },
+  {
+    slug: "cpp-oop-l3-casting",
+    competencyId: "cpp-oop",
+    depthTier: 3,
+    sectionHeading: "Casting in C++",
+    prompt: "Which C++ cast is runtime-checked for polymorphic types and returns nullptr on failure (for pointers)?",
+    options: [
+      "dynamic_cast.",
+      "static_cast.",
+      "reinterpret_cast.",
+      "const_cast.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "dynamic_cast verifies the conversion at runtime (nullptr for a failed pointer cast, throws std::bad_cast for references). reinterpret_cast bypasses the type system (a code-review red flag), and writing through a const_cast'd-away const is undefined behaviour.",
+  },
+  {
+    slug: "cpp-oop-l3-exhandling",
+    competencyId: "cpp-oop",
+    depthTier: 3,
+    sectionHeading: "Exception Handling Patterns",
+    prompt: "Which is a correct exception-handling best practice?",
+    options: [
+      "Throw exceptions by value and catch them by const reference; never throw from a destructor.",
+      "Throw pointers to heap-allocated exceptions and catch by pointer.",
+      "Throw from destructors to signal cleanup errors.",
+      "Rely on catch blocks (not RAII) to release resources.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "Throw-by-value/catch-by-const-reference avoids slicing and leaks. Throwing from a destructor during unwinding calls std::terminate. Cleanup should ride on RAII, not catch blocks.",
+  },
+  // ── L4 ──
+  {
+    slug: "cpp-oop-l4-functempl",
+    competencyId: "cpp-oop",
+    depthTier: 4,
+    sectionHeading: "Function Templates",
+    prompt: "What does a function template give you?",
+    options: [
+      "One definition that the compiler instantiates separately for each type it is used with — compile-time generic code with no runtime dispatch.",
+      "A single runtime function that accepts any type via reflection.",
+      "A macro that textually substitutes types.",
+      "A virtual function resolved at run time.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "The compiler stamps out a concrete function per type argument at compile time (monomorphization), so there is no runtime type dispatch — unlike virtual functions.",
+  },
+  {
+    slug: "cpp-oop-l4-classtempl",
+    competencyId: "cpp-oop",
+    depthTier: 4,
+    sectionHeading: "Class Templates",
+    prompt: "What is `std::vector<T>` an example of?",
+    options: [
+      "A class template — the compiler generates a distinct class for each type argument at compile time.",
+      "A runtime polymorphic base class.",
+      "A macro expansion.",
+      "A single class that stores values of any type via type erasure.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A class template parameterizes a class over types; `vector<int>` and `vector<std::string>` are separate compiled classes. This is compile-time generic programming, distinct from runtime polymorphism.",
+  },
+  {
+    slug: "cpp-oop-l4-stlcontainers",
+    competencyId: "cpp-oop",
+    depthTier: 4,
+    sectionHeading: "STL Containers",
+    prompt: "Which STL container offers O(1) average lookup but keeps no ordering?",
+    options: [
+      "unordered_map (a hash table); std::map/std::set are O(log n) and ordered (a red-black tree).",
+      "std::map — it is both O(1) and ordered.",
+      "std::vector — it has O(1) search.",
+      "std::list — it has O(1) search.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "unordered_map/unordered_set use hashing (O(1) average, unordered); map/set use a balanced BST (O(log n), ordered). vector gives O(1) indexing but O(n) search; list gives O(n) search.",
+  },
+  {
+    slug: "cpp-oop-l4-stlalgorithms",
+    competencyId: "cpp-oop",
+    depthTier: 4,
+    sectionHeading: "STL Algorithms",
+    prompt: "Why do STL algorithms operate on iterator ranges rather than on containers directly?",
+    options: [
+      "It decouples algorithms from data structures, so any container that exposes suitable iterators works with any algorithm.",
+      "Iterators are faster than references in every case.",
+      "Containers cannot be passed by value.",
+      "It lets algorithms modify the container's type at runtime.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "By taking [first, last) iterator pairs, std::sort/find/transform work on vectors, deques, arrays, or any range — the core design of the STL (Stepanov). The algorithm never needs to know the container type.",
+  },
+  {
+    slug: "cpp-oop-l4-iterators",
+    competencyId: "cpp-oop",
+    depthTier: 4,
+    sectionHeading: "Iterators and Iterator Categories",
+    prompt: "std::sort requires random-access iterators. Which container therefore cannot use it?",
+    options: [
+      "std::list — it provides only bidirectional iterators, so it offers its own list::sort instead.",
+      "std::vector — its iterators are too weak for sort.",
+      "std::deque — it has no iterators.",
+      "std::array — it is not sortable.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "Iterator categories run input/output → forward → bidirectional → random-access. std::sort needs random access (vector, deque, array); std::list only offers bidirectional iterators, hence its member sort.",
+  },
+  {
+    slug: "cpp-oop-l4-specialization",
+    competencyId: "cpp-oop",
+    depthTier: 4,
+    sectionHeading: "Template Specialisation",
+    prompt: "What is template specialization?",
+    options: [
+      "Providing a distinct implementation of a template for a specific type (or set of type) arguments.",
+      "Marking a template as final so it cannot be instantiated.",
+      "Compiling a template only in debug builds.",
+      "Converting a template into a virtual function.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "Specialization lets you override the generic definition for particular types (e.g. a `std::hash` specialization for your type), while the primary template handles the rest.",
+  },
+  {
+    slug: "cpp-oop-l4-lambda",
+    competencyId: "cpp-oop",
+    depthTier: 4,
+    sectionHeading: "Lambda Expressions",
+    prompt: "What does a lambda's capture list control?",
+    options: [
+      "Which enclosing variables the lambda can use, and whether each is captured by value ([=], [x]) or by reference ([&], [&x]).",
+      "The lambda's return type only.",
+      "The number of parameters the lambda accepts.",
+      "Whether the lambda runs at compile time.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "The capture list binds outer variables into the closure. Prefer explicit captures over [=]/[&] to avoid copying large objects or, worse, capturing a reference that later dangles.",
+  },
+  {
+    slug: "cpp-oop-l4-iterinvalid",
+    competencyId: "cpp-oop",
+    depthTier: 4,
+    sectionHeading: "Iterator invalidation rules",
+    prompt: "Why is `v.erase(it)` inside a `for (…; ++it)` loop over a vector a bug?",
+    options: [
+      "erase invalidates the iterator at (and after) the erased element, so the subsequent ++it is undefined behaviour; use `it = v.erase(it)` or std::erase_if.",
+      "vector has no erase method.",
+      "erase always clears the whole vector.",
+      "The loop never terminates but is otherwise safe.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "For a vector, erasing invalidates iterators from the erased position onward. erase returns the next valid iterator, so advance via `it = v.erase(it)`; C++20's std::erase_if does it in one call. Invalidation rules differ per container (list/map keep other iterators valid).",
+  },
+  {
+    slug: "cpp-oop-l4-constref-lifetime",
+    competencyId: "cpp-oop",
+    depthTier: 4,
+    sectionHeading: "Const-reference lifetime extension",
+    prompt: "Binding a temporary to a `const&` extends its lifetime — where does this NOT hold?",
+    options: [
+      "It does not extend through a function that returns a reference (e.g. std::min of two temporaries) — the result dangles.",
+      "It does not work for std::string temporaries.",
+      "It only works inside a class constructor.",
+      "It never extends lifetime at all.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A const& (or rvalue ref, or auto&&) bound directly to a temporary keeps it alive. But if the temporary is returned by reference from a function, extension does not propagate, so `const auto& x = std::min(A(), B())` dangles.",
+  },
+  // ── L5 ──
+  {
+    slug: "cpp-oop-l5-move",
+    competencyId: "cpp-oop",
+    depthTier: 5,
+    sectionHeading: "Move Semantics and Rvalue References",
+    prompt: "What does std::move actually do at runtime?",
+    options: [
+      "Nothing — it is a compile-time cast of an lvalue to an rvalue reference, which lets a move constructor steal resources instead of copying.",
+      "It physically relocates the object's bytes to a new address.",
+      "It frees the source object immediately.",
+      "It performs a deep copy and then deletes the original.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "std::move just casts to T&&, enabling overload resolution to pick the move constructor/assignment (an O(1) resource steal). The moved-from object is left valid but unspecified — ensure it doesn't retain sensitive data.",
+  },
+  {
+    slug: "cpp-oop-l5-forwarding",
+    competencyId: "cpp-oop",
+    depthTier: 5,
+    sectionHeading: "Perfect Forwarding and Universal References",
+    prompt: "What is a forwarding (universal) reference, and what preserves an argument's value category?",
+    options: [
+      "`T&&` on a deduced template parameter binds to both lvalues and rvalues; std::forward<T> passes it on as the same category it arrived as.",
+      "`T&&` always means rvalue reference; std::move preserves the category.",
+      "`const T&` binds to everything; std::copy preserves the category.",
+      "There is no way to preserve value category in a template.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "In a deduced context, `T&&` is a forwarding reference. std::forward<T> conditionally casts back to rvalue only if the caller passed an rvalue — the basis of emplace_back, make_unique, and make_shared.",
+  },
+  {
+    slug: "cpp-oop-l5-variadic",
+    competencyId: "cpp-oop",
+    depthTier: 5,
+    sectionHeading: "Variadic Templates and Fold Expressions",
+    prompt: "What do C++17 fold expressions simplify?",
+    options: [
+      "Applying an operator across a variadic parameter pack (e.g. `(... + args)`) without writing manual recursion.",
+      "Folding a 2D array into one dimension.",
+      "Compressing template code to reduce binary size.",
+      "Converting recursion into iteration at runtime.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A fold expression expands a parameter pack over an operator, e.g. `(... + args)` sums all arguments. Variadic templates underlie std::tuple, std::variant, and type-safe std::format.",
+  },
+  {
+    slug: "cpp-oop-l5-constexpr",
+    competencyId: "cpp-oop",
+    depthTier: 5,
+    sectionHeading: "Compile-Time Programming with constexpr and consteval",
+    prompt: "What is the security value of constexpr/consteval computation?",
+    options: [
+      "Work performed at compile time has no runtime attack surface, so moving checks to compile time can eliminate whole vulnerability classes.",
+      "It encrypts the computed values in the binary.",
+      "It makes all runtime code constant-time against timing attacks.",
+      "It disables the optimizer for safety.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "constexpr functions fold to constants when inputs are known (consteval requires it). Computation done at build time can't be attacked at run time — e.g. compile-time hashing for switch-on-string, or bounds checks resolved before shipping.",
+  },
+  {
+    slug: "cpp-oop-l5-sfinae",
+    competencyId: "cpp-oop",
+    depthTier: 5,
+    sectionHeading: "SFINAE, Concepts, and Type Constraints",
+    prompt: "What do C++20 concepts improve over classic SFINAE (enable_if)?",
+    options: [
+      "They constrain templates with clean, readable syntax and report exactly which requirement failed, instead of pages of instantiation errors.",
+      "They make templates run at runtime instead of compile time.",
+      "They remove the need for templates entirely.",
+      "They allow templates to bind to incompatible types silently.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "SFINAE removes non-matching overloads silently but yields brutal error messages. Concepts (e.g. `template <std::integral T>`) express the same constraints clearly and produce targeted diagnostics.",
+  },
+  {
+    slug: "cpp-oop-l5-binlayout",
+    competencyId: "cpp-oop",
+    depthTier: 5,
+    sectionHeading: "C++ Binary Layout and Exploitation",
+    prompt: "When reversing a C++ binary, what does the vptr at the start of a polymorphic object let you recover?",
+    options: [
+      "The object's class and its virtual methods — constructors write the vptr, and unstripped RTTI/typeinfo gives class names.",
+      "The values of all the object's private members.",
+      "The program's stack canary.",
+      "The heap allocation size of the object.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "A polymorphic object begins with a vptr into a vtable in .rodata; cross-referencing it finds constructors and virtual methods, and RTTI typeinfo (if present) names the class. c++filt demangles the Itanium-ABI symbols.",
+  },
+  {
+    slug: "cpp-oop-l5-security-patterns",
+    competencyId: "cpp-oop",
+    depthTier: 5,
+    sectionHeading: "Modern C++ Security Patterns",
+    prompt: "What buffer-safety problem does std::span (C++20) address?",
+    options: [
+      "It is a non-owning view that always carries the correct length, so passing data as a span prevents overflows from mismatched size arguments.",
+      "It encrypts the buffer's contents.",
+      "It makes the buffer immutable.",
+      "It garbage-collects the buffer when unused.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "std::span bundles a pointer and a size, eliminating the classic “pointer + separate length that gets out of sync” bug. std::optional similarly replaces error-prone null pointers with explicit nullable values.",
+  },
+  {
+    slug: "cpp-oop-l5-typeerasure",
+    competencyId: "cpp-oop",
+    depthTier: 5,
+    sectionHeading: "Type erasure pattern",
+    prompt: "What does type erasure (as in std::function) achieve?",
+    options: [
+      "It stores any type satisfying a required interface behind one uniform wrapper, using an internal Concept/Model with virtual dispatch.",
+      "It deletes type information so the program uses less memory.",
+      "It converts every type to void* and casts back manually.",
+      "It forces all types to share a common base class by inheritance.",
+    ],
+    correctIndex: 0,
+    explanation:
+      "Type erasure hides concrete types behind a value-semantic wrapper: an abstract Concept plus a templated Model<T> holds the object and forwards calls via virtual dispatch — how std::function stores any callable without a shared base class.",
+  },
 ];
