@@ -30,7 +30,46 @@ function initDb(): DB {
     const msg = e instanceof Error ? e.message : String(e);
     if (!msg.includes("duplicate column name") && !msg.includes("ADD COLUMN")) throw e;
   }
+  ensureExerciseSchema(sqlite);
   return database;
+}
+
+/**
+ * Comprehension-quiz tables, created idempotently in code rather than via a
+ * drizzle migration. The repo's migration timestamps are non-monotonic, which
+ * makes drizzle's migrator re-run and skip migrations unpredictably (hence the
+ * error-swallowing try/catch above); CREATE TABLE IF NOT EXISTS plus a guarded
+ * ALTER is deterministic on both fresh and already-seeded databases.
+ */
+function ensureExerciseSchema(sqlite: Database.Database) {
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS section_exercises (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      section_id INTEGER NOT NULL REFERENCES article_sections(id) ON DELETE CASCADE,
+      slug TEXT,
+      sort_order INTEGER DEFAULT 0,
+      prompt TEXT NOT NULL,
+      options_json TEXT NOT NULL,
+      correct_index INTEGER NOT NULL,
+      explanation TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS exercise_attempts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      exercise_id INTEGER NOT NULL REFERENCES section_exercises(id) ON DELETE CASCADE,
+      selected_index INTEGER NOT NULL,
+      is_correct INTEGER NOT NULL,
+      answered_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+  `);
+  // Pre-slug pilot databases have the table without the column.
+  try {
+    sqlite.exec("ALTER TABLE section_exercises ADD COLUMN slug TEXT");
+  } catch {
+    /* column already exists */
+  }
+  // Drop any slug-less rows left by the pilot; they are re-seeded with slugs.
+  sqlite.exec("DELETE FROM section_exercises WHERE slug IS NULL");
 }
 
 function getDb(): DB {
