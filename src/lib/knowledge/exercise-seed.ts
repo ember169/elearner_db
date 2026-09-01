@@ -10,12 +10,14 @@ import { CPP_OOP_EXERCISES } from "./seed-data/exercises/cpp-oop";
 import { C_CORE_EXERCISES } from "./seed-data/exercises/c-core";
 import { C_SYSTEMS_EXERCISES } from "./seed-data/exercises/c-systems";
 import { ALGORITHMS_EXERCISES } from "./seed-data/exercises/algorithms";
+import { CRYPTO_FORENSICS_EXERCISES } from "./seed-data/exercises/crypto-forensics";
 
 const ALL_EXERCISES: SeedExercise[] = [
   ...CPP_OOP_EXERCISES,
   ...C_CORE_EXERCISES,
   ...C_SYSTEMS_EXERCISES,
   ...ALGORITHMS_EXERCISES,
+  ...CRYPTO_FORENSICS_EXERCISES,
 ];
 
 /**
