@@ -3460,7 +3460,11 @@ The \`const\` after \`getBalance()\` means the method does not modify the object
       },
       {
         heading: "Operator Overloading",
-        content: `C++ allows you to define how operators work on your types:
+        content: `C++ lets you define how built-in operators behave on your own types, so an object can be used with the same natural syntax as an \`int\`.
+
+**Why and when.** Overload an operator only when it has an *obvious, conventional* meaning for your type — arithmetic on a \`Fixed\`-point number, comparison on a \`Date\`, \`<<\` to print. It is syntactic sugar for a named method: \`a + b\` is exactly \`a.operator+(b)\`. The danger is surprise: overloading an operator to do something unexpected (e.g. \`+\` that mutates its operand) makes code harder to read than a plainly named function. Rule of thumb — if a reader could guess wrong about what the symbol does, use a named method instead.
+
+\`\`\`cpp
 
 \`\`\`cpp
 class Fixed {
@@ -3492,7 +3496,11 @@ std::ostream &operator<<(std::ostream &os, const Fixed &f) {
 }
 \`\`\`
 
-The prefix increment returns a reference (the modified object), while the postfix returns a copy (the value before modification). The \`int\` parameter in the postfix version is a dummy to distinguish it from the prefix.`,
+The prefix increment returns a reference (the modified object), while the postfix returns a copy (the value before modification). The \`int\` parameter in the postfix version is a dummy to distinguish it from the prefix.
+
+**Why \`operator<<\` is a non-member.** \`std::cout << f\` means \`operator<<(std::cout, f)\` — the *left* operand is the stream, not your object. A member \`operator<<\` would make the left operand \`*this\` (your type), forcing the unnatural \`f << std::cout\`; and you cannot add a member to \`std::ostream\` because you do not own that class. So stream operators are written as free functions taking \`std::ostream &\` first, returning it to allow chaining (\`os << a << b\`). Declare them \`friend\` only if they must read private members.
+
+**Member vs non-member, in short:** operators that modify the left operand (\`=\`, \`+=\`, \`++\`) are members; symmetric operators where either side could convert (\`+\`, \`==\`, and \`<<\`) are typically non-members so both operands are treated equally.`,
         sortOrder: 3,
       },
       {
@@ -3585,33 +3593,69 @@ This indirection is the mechanism that vtable-hijacking exploits target.`,
       },
       {
         heading: "Abstract Classes and Pure Virtual Functions",
-        content: `A **pure virtual function** has no implementation in the base class. A class with at least one pure virtual function is **abstract** and cannot be instantiated:
+        content: `A **pure virtual function** is a virtual function declared with \`= 0\` and no implementation in the base class. A class with at least one of them is **abstract**: it cannot be instantiated. It exists only to be inherited.
+
+**Why they exist.** A pure virtual function defines a *contract*: "every concrete subclass must provide this behaviour." You reach for one when the base class has no sensible default — a generic \`Shape\` cannot compute \`area()\` without knowing which shape it is. Declaring it pure pushes the decision down to the derived class and turns a missing implementation into a *compile error* rather than a silent runtime bug.
 
 \`\`\`cpp
 class AShape {
 public:
     virtual ~AShape() {}
-    virtual double area() const = 0;        // pure virtual
+    virtual double area() const = 0;        // pure virtual — no body, MUST be overridden
     virtual double perimeter() const = 0;   // pure virtual
-    virtual void display() const {
+    virtual void display() const {          // regular virtual — has a default
         std::cout << "Area: " << area()
                   << ", Perimeter: " << perimeter() << std::endl;
     }
 };
 
 class Circle : public AShape {
-private:
     double _radius;
 public:
     Circle(double r) : _radius(r) {}
     double area() const override { return M_PI * _radius * _radius; }
     double perimeter() const override { return 2 * M_PI * _radius; }
 };
+// AShape s;      // ERROR: cannot instantiate an abstract class
+// Circle c(2.0); // OK: every pure virtual is implemented
 \`\`\`
 
-In 42's CPP modules, abstract classes are prefixed with \`A\` (e.g., \`AAnimal\`, \`ACharacter\`). This naming convention makes the design intent clear.
+**How it works.** Each polymorphic class has a **vtable** (an array of function pointers — see the previous section). For a *regular* virtual, the slot holds the base's implementation. For a *pure* virtual, the compiler puts a placeholder (\`__cxa_pure_virtual\` in the Itanium ABI) in that slot — there is nothing valid to call. The class is non-instantiable *precisely because* its vtable is incomplete; a derived class becomes concrete only once every such slot is filled by an \`override\`.
 
-Always make base-class destructors virtual. If a derived object is deleted through a base pointer without a virtual destructor, the derived destructor is not called, leaking resources (undefined behaviour per C++ standard [expr.delete]).`,
+\`\`\`mermaid
+flowchart TB
+    subgraph A["AShape vtable (abstract)"]
+        a1["area() → __cxa_pure_virtual"]
+        a2["perimeter() → __cxa_pure_virtual"]
+        a3["display() → AShape::display"]
+    end
+    subgraph C["Circle vtable (concrete)"]
+        c1["area() → Circle::area"]
+        c2["perimeter() → Circle::perimeter"]
+        c3["display() → AShape::display (inherited)"]
+    end
+    A -. override fills empty slots .-> C
+\`\`\`
+
+**Pure virtual vs regular virtual:**
+
+| | Regular \`virtual\` | Pure \`virtual ... = 0\` |
+|---|---|---|
+| Body in base | Yes (a default) | Usually none |
+| Overriding | Optional | Mandatory to become concrete |
+| Base instantiable | Yes | No (abstract) |
+| Use when | A sensible default exists | No default; base is only a contract |
+
+**Limits and gotchas:**
+- A pure virtual *can* still have an out-of-line body (\`double AShape::area() const { return 0; }\`), callable explicitly via \`AShape::area()\`. The \`= 0\` controls *instantiability*, not whether a body exists.
+- A derived class that leaves even one pure virtual unimplemented is *itself* abstract.
+- Never call a virtual (pure or not) from a constructor or destructor: mid-construction the object is only "the base type so far", so dispatch resolves to the base version — and calling a *pure* one there is undefined behaviour.
+
+**When to use — and not.** Use a pure virtual for an interface, or an abstract base with no default behaviour. Prefer a *regular* virtual when a reasonable default exists (subclasses override only if they need to). If no runtime polymorphism is involved at all, you may not need virtuals — templates (compile-time polymorphism) are a zero-overhead alternative.
+
+In 42's CPP modules, abstract classes are prefixed with \`A\` (e.g., \`AAnimal\`, \`ACharacter\`) to signal intent. And always keep the base destructor virtual: deleting a derived object through a base pointer without it skips the derived destructor and leaks resources (undefined behaviour per C++ standard [expr.delete]).
+
+Source: ISO C++ [class.abstract]; Itanium C++ ABI §2.5.2 (\`__cxa_pure_virtual\`); cppreference "abstract class".`,
         sortOrder: 2,
       },
       {
@@ -3680,7 +3724,7 @@ When analysing C++ binaries with tools like IDA or Ghidra, identifying vtables h
       },
       {
         heading: "Object slicing",
-        content: `When a derived object is assigned or passed **by value** to a base-type variable, the derived part is silently discarded — this is object slicing:\n\n\`\`\`mermaid\nflowchart LR\n    subgraph Derived Object\n        B1[Base members]\n        D1[Derived members]\n        V1[vtable → Derived]\n    end\n    subgraph After Slicing\n        B2[Base members copied]\n        V2[vtable → Base]\n        X[Derived members lost]\n    end\n    Derived Object -->|copy by value| After Slicing\n    style X fill:#c0392b,color:#fff\n    style D1 fill:#e8605a,color:#fff\n\`\`\`\n\n\`\`\`cpp\nclass Animal {\npublic:\n    virtual std::string speak() const { return "..."; }\n};\n\nclass Dog : public Animal {\n    std::string _name;\npublic:\n    Dog(std::string name) : _name(name) {}\n    std::string speak() const override { return _name + " says Woof!"; }\n};\n\n// SLICING: Dog is copied into an Animal value — _name is lost, vtable is Animal's\nAnimal a = Dog("Rex");\nstd::cout << a.speak(); // prints "..." not "Rex says Woof!"\n\n// SLICING in a container:\nstd::vector<Animal> animals;\nanimals.push_back(Dog("Rex")); // sliced!\n\n// FIX: use pointers or references for polymorphic collections\nstd::vector<std::unique_ptr<Animal>> animals;\nanimals.push_back(std::make_unique<Dog>("Rex"));\nstd::cout << animals[0]->speak(); // "Rex says Woof!" — correct\n\`\`\`\n\nRule: if a class has virtual functions, always pass and store it by pointer or reference, never by value.\n\nSource: Meyers, S. *Effective C++*, Item 20: "Prefer pass-by-reference-to-const to pass-by-value"`,
+        content: `When a derived object is assigned or passed **by value** to a base-type variable, the derived part is silently discarded — this is object slicing:\n\n\`\`\`mermaid\nflowchart LR\n    subgraph SRC["Derived Object"]\n        B1[Base members]\n        D1[Derived members]\n        V1["vtable → Derived"]\n    end\n    subgraph DST["After Slicing"]\n        B2[Base members copied]\n        V2["vtable → Base"]\n        X[Derived members lost]\n    end\n    SRC -->|copy by value| DST\n    style X fill:#c0392b,color:#fff\n    style D1 fill:#e8605a,color:#fff\n\`\`\`\n\n\`\`\`cpp\nclass Animal {\npublic:\n    virtual std::string speak() const { return "..."; }\n};\n\nclass Dog : public Animal {\n    std::string _name;\npublic:\n    Dog(std::string name) : _name(name) {}\n    std::string speak() const override { return _name + " says Woof!"; }\n};\n\n// SLICING: Dog is copied into an Animal value — _name is lost, vtable is Animal's\nAnimal a = Dog("Rex");\nstd::cout << a.speak(); // prints "..." not "Rex says Woof!"\n\n// SLICING in a container:\nstd::vector<Animal> animals;\nanimals.push_back(Dog("Rex")); // sliced!\n\n// FIX: use pointers or references for polymorphic collections\nstd::vector<std::unique_ptr<Animal>> animals;\nanimals.push_back(std::make_unique<Dog>("Rex"));\nstd::cout << animals[0]->speak(); // "Rex says Woof!" — correct\n\`\`\`\n\nRule: if a class has virtual functions, always pass and store it by pointer or reference, never by value.\n\nSource: Meyers, S. *Effective C++*, Item 20: "Prefer pass-by-reference-to-const to pass-by-value"`,
         sortOrder: 6,
       },
       {

