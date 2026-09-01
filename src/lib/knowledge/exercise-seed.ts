@@ -14,6 +14,7 @@ import { CRYPTO_FORENSICS_EXERCISES } from "./seed-data/exercises/crypto-forensi
 import { WEB_EXERCISES } from "./seed-data/exercises/web";
 import { AD_EXERCISES } from "./seed-data/exercises/ad";
 import { RECON_OSINT_EXERCISES } from "./seed-data/exercises/recon-osint";
+import { NETWORKING_EXERCISES } from "./seed-data/exercises/networking";
 
 const ALL_EXERCISES: SeedExercise[] = [
   ...CPP_OOP_EXERCISES,
@@ -24,6 +25,7 @@ const ALL_EXERCISES: SeedExercise[] = [
   ...WEB_EXERCISES,
   ...AD_EXERCISES,
   ...RECON_OSINT_EXERCISES,
+  ...NETWORKING_EXERCISES,
 ];
 
 /**
