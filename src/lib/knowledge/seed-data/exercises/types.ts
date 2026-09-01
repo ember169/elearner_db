@@ -5,6 +5,8 @@
  * database ids are regenerated on every article re-seed.
  */
 export type SeedExercise = {
+  /** Stable, globally-unique id (upsert key). Never reuse or renumber. */
+  slug: string;
   competencyId: string;
   depthTier: number;
   /** Must match the section's `heading` verbatim. */

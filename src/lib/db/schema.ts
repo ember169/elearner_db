@@ -532,6 +532,9 @@ export const sectionExercises = sqliteTable("section_exercises", {
   sectionId: integer("section_id")
     .notNull()
     .references(() => articleSections.id, { onDelete: "cascade" }),
+  // Stable identity across content refreshes (upsert key). Nullable only for
+  // the migration window; every seeded row carries one.
+  slug: text("slug"),
   sortOrder: integer("sort_order").default(0),
   prompt: text("prompt").notNull(),
   optionsJson: text("options_json").notNull(),

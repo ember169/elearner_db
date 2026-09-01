@@ -8,6 +8,7 @@ import type { SeedExercise } from "./types";
  */
 export const CPP_OOP_EXERCISES: SeedExercise[] = [
   {
+    slug: "cpp-oop-l2-inheritance-basics",
     competencyId: "cpp-oop",
     depthTier: 2,
     sectionHeading: "Inheritance Basics",
@@ -24,6 +25,7 @@ export const CPP_OOP_EXERCISES: SeedExercise[] = [
       "Defining `Animal(const std::string&)` suppresses the compiler-generated default constructor. Every derived object still has to initialize its base sub-object first, and with no default available it must pass the argument explicitly via the initializer list. (`_name` is `protected`, not `private`, and the rule isn't about virtual dispatch — so the other options are wrong reasons.)",
   },
   {
+    slug: "cpp-oop-l2-virtual-dispatch",
     competencyId: "cpp-oop",
     depthTier: 2,
     sectionHeading: "Virtual Functions and Dynamic Dispatch",
@@ -40,6 +42,7 @@ export const CPP_OOP_EXERCISES: SeedExercise[] = [
       "`virtual` enables dynamic dispatch: at the call site the program reads the object's hidden vptr, indexes the vtable, and jumps to the actual type's override — so a `Dog` runs `Dog::makeSound` even through an `Animal&`. Without `virtual`, the static type (`Animal`) would decide instead.",
   },
   {
+    slug: "cpp-oop-l2-pure-virtual",
     competencyId: "cpp-oop",
     depthTier: 2,
     sectionHeading: "Abstract Classes and Pure Virtual Functions",
@@ -56,6 +59,7 @@ export const CPP_OOP_EXERCISES: SeedExercise[] = [
       "A class stays abstract until *every* inherited pure virtual is overridden. `Square` compiles fine as an abstract class — you just can't create an object of it. The compile error appears only where you actually try to instantiate a `Square`.",
   },
   {
+    slug: "cpp-oop-l2-interfaces",
     competencyId: "cpp-oop",
     depthTier: 2,
     sectionHeading: "Interfaces in C++",
@@ -72,6 +76,7 @@ export const CPP_OOP_EXERCISES: SeedExercise[] = [
       "An interface is modeled as an abstract class with only pure virtual functions: it defines a contract that any implementing class must fulfill, and depending on that abstraction (rather than a concrete class) keeps code swappable and testable. The virtual destructor makes deletion through the interface pointer safe.",
   },
   {
+    slug: "cpp-oop-l2-diamond",
     competencyId: "cpp-oop",
     depthTier: 2,
     sectionHeading: "The Diamond Problem and Virtual Inheritance",
@@ -88,6 +93,7 @@ export const CPP_OOP_EXERCISES: SeedExercise[] = [
       "Without virtual inheritance, `D` holds `B::A::x` and `C::A::x` — two distinct members, so `d.x` is ambiguous. Declaring the inheritance `virtual` collapses them into one shared `A` sub-object (initialized by the most-derived class, `D`), leaving exactly one `x`.",
   },
   {
+    slug: "cpp-oop-l2-vtable-hijack",
     competencyId: "cpp-oop",
     depthTier: 2,
     sectionHeading: "Vtable Hijacking: A Security Perspective",
@@ -104,6 +110,7 @@ export const CPP_OOP_EXERCISES: SeedExercise[] = [
       "Each polymorphic object begins with a vptr → vtable → function pointers. A virtual call walks that chain, so if a heap overflow, use-after-free, or type confusion lets the attacker repoint the vptr at a fake vtable, the next virtual call jumps into their code. CFI and vtable verification exist specifically to detect this.",
   },
   {
+    slug: "cpp-oop-l2-object-slicing",
     competencyId: "cpp-oop",
     depthTier: 2,
     sectionHeading: "Object slicing",

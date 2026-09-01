@@ -92,12 +92,44 @@ export function upsertArticle(data: {
       .set({ title: data.title, recommendedLevel: data.recommendedLevel, updatedAt: now })
       .where(eq(knowledgeArticles.id, existing.id))
       .run();
-    db.delete(articleSections).where(eq(articleSections.articleId, existing.id)).run();
+
+    // Reconcile sections by heading instead of dropping and re-inserting them.
+    // Retained headings keep their row id, so annotations and exercises that
+    // reference the section survive a content refresh. A section the user has
+    // expanded (appended AI content) keeps its body; only its order is synced.
+    const dbSections = db
+      .select()
+      .from(articleSections)
+      .where(eq(articleSections.articleId, existing.id))
+      .all();
+    const byHeading = new Map(dbSections.map((s) => [s.heading, s]));
+    const seedHeadings = new Set(data.sections.map((s) => s.heading));
+
     for (const section of data.sections) {
-      db.insert(articleSections)
-        .values({ articleId: existing.id, ...section })
-        .run();
+      const cur = byHeading.get(section.heading);
+      if (cur) {
+        db.update(articleSections)
+          .set(
+            cur.isExpanded
+              ? { sortOrder: section.sortOrder, updatedAt: now }
+              : { content: section.content, sortOrder: section.sortOrder, updatedAt: now }
+          )
+          .where(eq(articleSections.id, cur.id))
+          .run();
+      } else {
+        db.insert(articleSections)
+          .values({ articleId: existing.id, ...section })
+          .run();
+      }
     }
+
+    // Drop sections no longer present in the seed content.
+    for (const s of dbSections) {
+      if (!seedHeadings.has(s.heading)) {
+        db.delete(articleSections).where(eq(articleSections.id, s.id)).run();
+      }
+    }
+
     return { ...existing, title: data.title, recommendedLevel: data.recommendedLevel, updatedAt: now };
   }
 

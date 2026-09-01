@@ -1,4 +1,4 @@
-import { upsertArticle, articleCount } from "./store";
+import { upsertArticle } from "./store";
 import type { SeedArticle } from "./seed-data/types";
 
 import { LOW_LEVEL_C_ARTICLES } from "./seed-data/low-level-c";
@@ -23,10 +23,14 @@ const ALL_ARTICLES: SeedArticle[] = [
   ...SCRIPTING_BINEXP_ARTICLES,
 ];
 
+/**
+ * Sync the article corpus from seed-data on every init. `upsertArticle`
+ * reconciles sections by heading, so this is safe to re-run: it adds new
+ * sections, updates changed prose, and removes deleted ones while preserving
+ * section ids (and thus annotations, exercises, and user expansions). This is
+ * how content edits reach an already-seeded database.
+ */
 export function seedKnowledgeArticles() {
-  const existing = articleCount();
-  if (existing > 0) return;
-
   for (const article of ALL_ARTICLES) {
     upsertArticle(article);
   }

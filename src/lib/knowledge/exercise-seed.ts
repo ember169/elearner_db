@@ -4,7 +4,7 @@ import {
   articleSections,
   sectionExercises,
 } from "@/lib/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import type { SeedExercise } from "./seed-data/exercises/types";
 import { CPP_OOP_EXERCISES } from "./seed-data/exercises/cpp-oop";
 
@@ -12,22 +12,24 @@ const ALL_EXERCISES: SeedExercise[] = [
   ...CPP_OOP_EXERCISES,
 ];
 
-function exerciseCount(): number {
-  const row = db
-    .select({ count: sql<number>`count(*)` })
-    .from(sectionExercises)
-    .get();
-  return row?.count ?? 0;
-}
-
 /**
- * Resolve each seed exercise to its section via (competencyId, depthTier,
- * heading) and insert it. Runs once (skips if any exercise already exists),
- * after articles are seeded. A missing article or heading is skipped silently
- * so a partially-seeded corpus never throws.
+ * Sync comprehension MCQs from seed-data on every init, keyed by `slug`:
+ * insert new ones, update changed ones in place (so attempts, which reference
+ * the row id, survive), and remove seed-managed exercises that were deleted.
+ * Runs after article sync so newly-added sections can be resolved by heading.
+ * A missing article or heading is skipped silently.
  */
 export function seedSectionExercises() {
-  if (exerciseCount() > 0) return;
+  const existingBySlug = new Map(
+    db
+      .select()
+      .from(sectionExercises)
+      .all()
+      .filter((e) => e.slug != null)
+      .map((e) => [e.slug as string, e])
+  );
+
+  const seenSlugs = new Set<string>();
 
   for (const ex of ALL_EXERCISES) {
     const article = db
@@ -54,15 +56,34 @@ export function seedSectionExercises() {
       .get();
     if (!section) continue;
 
-    db.insert(sectionExercises)
-      .values({
-        sectionId: section.id,
-        sortOrder: section.sortOrder ?? 0,
-        prompt: ex.prompt,
-        optionsJson: JSON.stringify(ex.options),
-        correctIndex: ex.correctIndex,
-        explanation: ex.explanation,
-      })
-      .run();
+    seenSlugs.add(ex.slug);
+    const values = {
+      slug: ex.slug,
+      sectionId: section.id,
+      sortOrder: section.sortOrder ?? 0,
+      prompt: ex.prompt,
+      optionsJson: JSON.stringify(ex.options),
+      correctIndex: ex.correctIndex,
+      explanation: ex.explanation,
+    };
+
+    const current = existingBySlug.get(ex.slug);
+    if (current) {
+      db.update(sectionExercises)
+        .set(values)
+        .where(eq(sectionExercises.id, current.id))
+        .run();
+    } else {
+      db.insert(sectionExercises).values(values).run();
+    }
+  }
+
+  // Remove seed-managed exercises (those carrying a slug) that are no longer
+  // in the seed set. Rows without a slug are left untouched.
+  const staleIds = [...existingBySlug.values()]
+    .filter((e) => !seenSlugs.has(e.slug as string))
+    .map((e) => e.id);
+  if (staleIds.length) {
+    db.delete(sectionExercises).where(inArray(sectionExercises.id, staleIds)).run();
   }
 }

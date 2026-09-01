@@ -145,8 +145,15 @@
     {
       "idx": 20,
       "version": "6",
-      "when": 1788257897001,
+      "when": 1788393600000,
       "tag": "0020_section_exercises",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "6",
+      "when": 1788480000000,
+      "tag": "0021_exercise_slug",
       "breakpoints": true
     }
   ]
