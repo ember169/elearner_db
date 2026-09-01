@@ -23,32 +23,22 @@ type CompetencyProgress = {
 
 type Lens = "competency" | "browse";
 
-/**
- * Learn and Knowledge, merged. The default lens is competency-first — one row
- * per competency showing what to read (article tiers reached) and what to do
- * (resources completed), each with a done/total count. The browse lens is the
- * flat, filterable catalogue for cross-cutting questions ("all beginner HTB
- * modules"). A competency opens its hub, where reading and doing sit together.
- */
 export function LearnClient({
   competencies,
   progress,
   areas,
   resources,
   browseCompetencies,
+  openResourceId,
 }: {
   competencies: CompetencyInfo[];
   progress: CompetencyProgress[];
   areas: string[];
   resources: LearnResource[];
   browseCompetencies: CompetencyInfo[];
+  openResourceId?: number;
 }) {
-  const [lens, setLens] = useState<Lens>(() => {
-    if (typeof window === "undefined") return "competency";
-    return new URLSearchParams(window.location.search).has("resource")
-      ? "browse"
-      : "competency";
-  });
+  const [lens, setLens] = useState<Lens>(openResourceId ? "browse" : "competency");
 
   const byArea = areas
     .map((area) => ({ area, items: progress.filter((p) => p.area === area) }))
@@ -90,13 +80,14 @@ export function LearnClient({
           resources={resources}
           competencies={browseCompetencies}
           areas={areas}
+          openResourceId={openResourceId}
         />
       ) : (
         <div className="space-y-5">
           {byArea.map((group) => (
             <section key={group.area} className="space-y-2">
               <h2 className="cb-label-mono text-[10px] text-cb-muted">{group.area}</h2>
-              <div className="space-y-2">
+              <div className="grid gap-2 md:grid-cols-2">
                 {group.items.map((c) => (
                   <CompetencyRow key={c.id} c={c} />
                 ))}

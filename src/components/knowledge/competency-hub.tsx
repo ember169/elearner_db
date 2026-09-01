@@ -123,7 +123,7 @@ export function CompetencyHub({
                   <span
                     className={
                       reached
-                        ? "cb-label-mono shrink-0 rounded-cb-chip-sm bg-cb-or-tint px-2 py-1 text-[10px] text-cb-or"
+                        ? "cb-label-mono shrink-0 rounded-cb-chip-sm bg-cb-or px-2 py-1 text-[10px] text-cb-on-or"
                         : "cb-label-mono shrink-0 rounded-cb-chip-sm bg-cb-raised px-2 py-1 text-[10px] text-cb-second"
                     }
                   >

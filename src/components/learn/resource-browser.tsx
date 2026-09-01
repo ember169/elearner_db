@@ -148,24 +148,19 @@ export function ResourceBrowser({
   resources: initialResources,
   competencies,
   areas,
+  openResourceId,
 }: {
   resources: LearnResource[];
   competencies: CompetencyInfo[];
   areas: string[];
+  openResourceId?: number;
 }) {
   const [resources, setResources] = useState(initialResources);
   const [search, setSearch] = useState("");
   const [platforms, setPlatforms] = useState<string[]>([]);
   const [difficulties, setDifficulties] = useState<string[]>([]);
   const [statuses, setStatuses] = useState<string[]>([]);
-  // Deep link from Knowledge: /learn?resource=N opens that resource's panel on
-  // first render. A lazy initialiser rather than an effect, so nothing sets
-  // state after mount and no Suspense boundary is needed.
-  const [selectedId, setSelectedId] = useState<number | null>(() => {
-    if (typeof window === "undefined") return null;
-    const id = Number(new URLSearchParams(window.location.search).get("resource"));
-    return Number.isInteger(id) && id > 0 ? id : null;
-  });
+  const [selectedId, setSelectedId] = useState<number | null>(openResourceId ?? null);
   const [collapsed, setCollapsed] = useState<string[]>([]);
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);

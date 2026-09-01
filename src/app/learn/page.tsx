@@ -9,7 +9,14 @@ import { LearnClient } from "@/components/learn/learn-client";
 
 export const dynamic = "force-dynamic";
 
-export default function LearnPage() {
+export default async function LearnPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ resource?: string }>;
+}) {
+  const { resource } = await searchParams;
+  const resourceId = resource ? parseInt(resource, 10) : undefined;
+
   const resources = listResources();
 
   const guidance = runGuidanceEngine();
@@ -50,7 +57,6 @@ export default function LearnPage() {
       level,
       isValidated: validatedLevel[c.id] != null,
       articleCount: articleCount || 6,
-      // Reading progress is how far up the tier ladder the level reaches.
       readDone: Math.min(level + 1, articleCount || 6),
       resTotal: res.length,
       resDone: res.filter((r) => r.status === "completed").length,
@@ -64,6 +70,7 @@ export default function LearnPage() {
       areas={[...COMPETENCY_AREAS]}
       resources={resources}
       browseCompetencies={competencies}
+      openResourceId={resourceId}
     />
   );
 }
