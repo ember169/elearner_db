@@ -3734,7 +3734,7 @@ When analysing C++ binaries with tools like IDA or Ghidra, identifying vtables h
 - Stroustrup, B. *The C++ Programming Language*, Chapter 20 (Derived Classes)
 - "Smashing C++ Vptrs" — Phrack 56 (vtable hijacking)
 - cppreference.com, "virtual function specifier" — https://en.cppreference.com/w/cpp/language/virtual`,
-        sortOrder: 6,
+        sortOrder: 7,
       },
     ],
   },

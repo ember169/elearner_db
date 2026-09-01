@@ -526,6 +526,35 @@ export const articleSections = sqliteTable("article_sections", {
     .default(sql`(datetime('now'))`),
 });
 
+// Auto-graded multiple-choice comprehension exercises anchored to a section.
+export const sectionExercises = sqliteTable("section_exercises", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  sectionId: integer("section_id")
+    .notNull()
+    .references(() => articleSections.id, { onDelete: "cascade" }),
+  sortOrder: integer("sort_order").default(0),
+  prompt: text("prompt").notNull(),
+  optionsJson: text("options_json").notNull(),
+  correctIndex: integer("correct_index").notNull(),
+  explanation: text("explanation").notNull(),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+// One row per answered attempt — local, single-user progress tracking.
+export const exerciseAttempts = sqliteTable("exercise_attempts", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  exerciseId: integer("exercise_id")
+    .notNull()
+    .references(() => sectionExercises.id, { onDelete: "cascade" }),
+  selectedIndex: integer("selected_index").notNull(),
+  isCorrect: integer("is_correct", { mode: "boolean" }).notNull(),
+  answeredAt: text("answered_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
 export const articleAnnotations = sqliteTable("article_annotations", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   sectionId: integer("section_id")

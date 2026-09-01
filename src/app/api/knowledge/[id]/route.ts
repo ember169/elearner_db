@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { knowledgeArticles } from "@/lib/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { getArticle } from "@/lib/knowledge/store";
+import { listExercisesForArticle } from "@/lib/knowledge/exercise-store";
 
 export async function GET(
   _req: NextRequest,
@@ -24,5 +25,7 @@ export async function GET(
     .where(eq(knowledgeArticles.id, id))
     .run();
 
-  return NextResponse.json({ article });
+  const exercises = listExercisesForArticle(id);
+
+  return NextResponse.json({ article: { ...article, exercises } });
 }

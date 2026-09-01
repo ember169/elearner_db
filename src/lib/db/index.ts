@@ -6,6 +6,7 @@ import fs from "fs";
 import path from "path";
 import { seedLearningResources, backfillCompetencyIds } from "@/lib/learn/seed";
 import { seedKnowledgeArticles } from "@/lib/knowledge/seed";
+import { seedSectionExercises } from "@/lib/knowledge/exercise-seed";
 
 type DB = BetterSQLite3Database<typeof schema>;
 
@@ -40,6 +41,9 @@ function getDb(): DB {
     // Idempotent, and a single indexed read once there is nothing left to fix.
     backfillCompetencyIds();
     seedKnowledgeArticles();
+    // Comprehension MCQs — resolves to sections by heading, so must run after
+    // articles are seeded. Idempotent (skips once any exercise exists).
+    seedSectionExercises();
   }
   return instance;
 }

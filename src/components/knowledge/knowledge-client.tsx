@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Search, X, ArrowLeft, Loader2, BadgeCheck, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn, assertOk } from "@/lib/utils";
 import { ArticleReader, type ReaderSection } from "./article-reader";
+import { ArticleQuiz, type QuizExercise } from "./article-quiz";
 import { RelatedResources } from "@/components/learn/related-resources";
 import type { UserBlock } from "./user-block";
 import { ExportMenu } from "./export-menu";
@@ -34,6 +35,7 @@ type LoadedArticle = {
   depthTier: number;
   sections: ReaderSection[];
   userBlocks: UserBlock[];
+  exercises: QuizExercise[];
 };
 
 const TIERS = [0, 1, 2, 3, 4, 5];
@@ -101,7 +103,15 @@ export function KnowledgeClient({
         });
         await assertOk(res);
         const data = await res.json();
-        if (data.article) setArticle(data.article as LoadedArticle);
+        if (data.article) {
+          const next = data.article as LoadedArticle;
+          // Annotation/block routes return the article without exercises;
+          // keep the ones already loaded so the quiz survives a mutation.
+          setArticle((prev) => ({
+            ...next,
+            exercises: next.exercises ?? prev?.exercises ?? [],
+          }));
+        }
         return true;
       } catch (e) {
         setError(e instanceof Error ? e.message : "Something went wrong");
@@ -290,6 +300,8 @@ export function KnowledgeClient({
             });
           }}
         />
+
+        <ArticleQuiz articleId={article.id} exercises={article.exercises ?? []} />
       </div>
     );
   }
