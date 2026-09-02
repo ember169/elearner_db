@@ -4,7 +4,7 @@ import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import * as schema from "./schema";
 import fs from "fs";
 import path from "path";
-import { seedLearningResources, backfillCompetencyIds } from "@/lib/learn/seed";
+import { seedLearningResources, backfillCompetencyIds, ensureCppModuleResources } from "@/lib/learn/seed";
 import { seedKnowledgeArticles } from "@/lib/knowledge/seed";
 import { seedSectionExercises } from "@/lib/knowledge/exercise-seed";
 
@@ -31,6 +31,7 @@ function initDb(): DB {
     if (!msg.includes("duplicate column name") && !msg.includes("ADD COLUMN")) throw e;
   }
   ensureExerciseSchema(sqlite);
+  ensureManualCompletions(sqlite);
   return database;
 }
 
@@ -72,12 +73,21 @@ function ensureExerciseSchema(sqlite: Database.Database) {
   sqlite.exec("DELETE FROM section_exercises WHERE slug IS NULL");
 }
 
+function ensureManualCompletions(sqlite: Database.Database) {
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS manual_project_completions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      slug TEXT NOT NULL UNIQUE,
+      completed_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+}
+
 function getDb(): DB {
   if (!instance) {
     instance = initDb();
     seedLearningResources();
-    // Catalogue rows seeded before the resolver existed carry no competency.
-    // Idempotent, and a single indexed read once there is nothing left to fix.
+    ensureCppModuleResources();
     backfillCompetencyIds();
     seedKnowledgeArticles();
     // Comprehension MCQs — resolves to sections by heading, so must run after

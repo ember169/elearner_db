@@ -13,7 +13,7 @@ import {
   competenciesForFtProject,
   competenciesForThmRoom,
 } from "@/lib/mentor/competency-resolver";
-import { getProjectBySlug } from "@/lib/guidance/ft-project-tree";
+import { getProjectBySlug, FT_COMMON_CORE } from "@/lib/guidance/ft-project-tree";
 
 const AREA_TO_COMPETENCIES: Record<string, string[]> = {
   "Low-level & C": ["c-core", "c-systems", "algorithms", "cpp-oop"],
@@ -167,18 +167,37 @@ export function seedLearningResources() {
 }
 
 
-/**
- * Attach competencies to catalogue rows that have none.
- *
- * `seedLearningResources` returns early once the table has any row, so fixing
- * the seeders alone would never reach the 181 rows already in a live database.
- * Re-running the seeders unconditionally is not an option either: `upsertResource`
- * writes the whole record, so it would reset every hand-set HTB and Root-Me
- * status back to not_started.
- *
- * This touches `competencyIds` and, for 42 rows, `tagsJson` — nothing else. It
- * is idempotent, and costs one indexed read when there is nothing to do.
- */
+export function ensureCppModuleResources() {
+  const cppModules = FT_COMMON_CORE.filter((p) => /^cpp\d{2}$/.test(p.slug));
+  const existing = new Set(
+    db
+      .select({ eid: learningResources.externalId })
+      .from(learningResources)
+      .where(eq(learningResources.platform, "42"))
+      .all()
+      .map((r) => r.eid),
+  );
+
+  for (const mod of cppModules) {
+    const eid = `cpp-module-${mod.slug.slice(3)}`;
+    if (existing.has(eid)) continue;
+    db.insert(learningResources)
+      .values({
+        platform: "42",
+        externalId: eid,
+        title: mod.name,
+        url: `https://projects.intra.42.fr/projects/${mod.slug}`,
+        contentType: "project",
+        difficulty: "intermediate",
+        tagsJson: JSON.stringify(mod.skills),
+        competencyIds: JSON.stringify(["cpp-oop"]),
+        description: mod.description,
+        status: "not_started",
+      })
+      .run();
+  }
+}
+
 export function backfillCompetencyIds(): number {
   const orphans = db
     .select()
