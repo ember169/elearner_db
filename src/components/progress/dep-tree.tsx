@@ -463,53 +463,64 @@ export function DepTree({
             );
           })}
 
-          {/* & gates for multi-prerequisite targets */}
-          {Array.from(edgesByTarget.entries()).map(([target, tEdges]) => {
-            if (tEdges.length < 2) return null;
-            const toNode = nodeMap.get(target);
-            if (!toNode) return null;
-            const fromNodes = tEdges
-              .map((e) => nodeMap.get(e.fromSlug))
-              .filter((n): n is LayoutNode => !!n);
-            if (fromNodes.length < 2) return null;
+          {/* & gates — one badge per unique prerequisite set */}
+          {(() => {
+            const seen = new Set<string>();
+            const gates: React.ReactNode[] = [];
 
-            // Only show gate if sources are from same sub-row (similar y)
-            const ySpread = Math.max(...fromNodes.map((n) => n.y)) - Math.min(...fromNodes.map((n) => n.y));
-            if (ySpread > NODE_H) return null;
+            for (const [target, tEdges] of edgesByTarget.entries()) {
+              if (tEdges.length < 2) continue;
+              const key = [...tEdges.map((e) => e.fromSlug)].sort().join(",");
+              if (seen.has(key)) continue;
+              seen.add(key);
 
-            const minX = Math.min(...fromNodes.map((n) => n.x + n.w / 2));
-            const maxX = Math.max(...fromNodes.map((n) => n.x + n.w / 2));
-            const midX = (minX + maxX) / 2;
-            const fromY = fromNodes[0].y + fromNodes[0].h;
-            const midY = fromY + (toNode.y - fromY) / 2;
+              const toNode = nodeMap.get(target);
+              if (!toNode) continue;
+              const fromNodes = tEdges
+                .map((e) => nodeMap.get(e.fromSlug))
+                .filter((n): n is LayoutNode => !!n);
+              if (fromNodes.length < 2) continue;
 
-            return (
-              <g key={`gate-${target}`}>
-                <rect
-                  x={midX - 18}
-                  y={midY - 8}
-                  width={36}
-                  height={16}
-                  rx={8}
-                  fill="var(--cb-or-tint)"
-                  stroke="var(--cb-or)"
-                  strokeWidth={0.5}
-                />
-                <text
-                  x={midX}
-                  y={midY}
-                  textAnchor="middle"
-                  dominantBaseline="central"
-                  fill="var(--cb-or)"
-                  fontSize={8}
-                  fontWeight={700}
-                  fontFamily="var(--font-mono)"
-                >
-                  &amp; ALL
-                </text>
-              </g>
-            );
-          })}
+              const ySpread =
+                Math.max(...fromNodes.map((n) => n.y)) -
+                Math.min(...fromNodes.map((n) => n.y));
+              if (ySpread > NODE_H) continue;
+
+              const minX = Math.min(...fromNodes.map((n) => n.x + n.w / 2));
+              const maxX = Math.max(...fromNodes.map((n) => n.x + n.w / 2));
+              const midX = (minX + maxX) / 2;
+              const fromY = fromNodes[0].y + fromNodes[0].h;
+              const midY = fromY + (toNode.y - fromY) / 2;
+
+              gates.push(
+                <g key={`gate-${key}`}>
+                  <rect
+                    x={midX - 18}
+                    y={midY - 8}
+                    width={36}
+                    height={16}
+                    rx={8}
+                    fill="var(--cb-or-tint)"
+                    stroke="var(--cb-or)"
+                    strokeWidth={0.5}
+                  />
+                  <text
+                    x={midX}
+                    y={midY}
+                    textAnchor="middle"
+                    dominantBaseline="central"
+                    fill="var(--cb-or)"
+                    fontSize={8}
+                    fontWeight={700}
+                    fontFamily="var(--font-mono)"
+                  >
+                    &amp; ALL
+                  </text>
+                </g>,
+              );
+            }
+            return gates;
+          })()}
         </svg>
 
         <div className="mt-3 flex flex-wrap gap-4">
