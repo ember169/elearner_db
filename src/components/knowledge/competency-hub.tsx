@@ -1,5 +1,9 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, BadgeCheck, Check } from "lucide-react";
+import { ArrowLeft, BadgeCheck, Check, Circle, CircleCheck } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { PLATFORM_LABELS } from "@/lib/platform-colors";
 
 type ArticleRef = { id: number; title: string; depthTier: number; isRead: boolean };
@@ -20,12 +24,6 @@ const TIER_PURPOSE: Record<number, string> = {
   5: "Expert reference",
 };
 
-const STATUS_TONE: Record<string, string> = {
-  completed: "text-cb-success",
-  in_progress: "text-cb-info",
-  not_started: "text-cb-muted",
-};
-
 export function CompetencyHub({
   label,
   area,
@@ -43,6 +41,12 @@ export function CompetencyHub({
   articles: ArticleRef[];
   resources: ResourceRef[];
 }) {
+  const [readState, setReadState] = useState<Record<number, boolean>>(() => {
+    const map: Record<number, boolean> = {};
+    for (const a of articles) map[a.id] = a.isRead;
+    return map;
+  });
+
   const byTier = new Map(articles.map((a) => [a.depthTier, a]));
 
   const DIFF_ORDER: Record<string, number> = {
@@ -53,7 +57,23 @@ export function CompetencyHub({
       (DIFF_ORDER[a.difficulty ?? ""] ?? 4) - (DIFF_ORDER[b.difficulty ?? ""] ?? 4),
   );
   const resDone = resources.filter((r) => r.status === "completed").length;
-  const readDone = articles.filter((a) => a.isRead || a.depthTier <= level).length;
+  const readDone = articles.filter(
+    (a) => readState[a.id] || a.depthTier <= level,
+  ).length;
+
+  async function toggleRead(articleId: number, currentlyRead: boolean) {
+    const next = !currentlyRead;
+    setReadState((prev) => ({ ...prev, [articleId]: next }));
+    try {
+      await fetch(`/api/knowledge/${articleId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ read: next }),
+      });
+    } catch {
+      setReadState((prev) => ({ ...prev, [articleId]: currentlyRead }));
+    }
+  }
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -100,7 +120,6 @@ export function CompetencyHub({
           <div className="space-y-1.5">
             {Array.from({ length: 6 }, (_, tier) => {
               const found = byTier.get(tier);
-              const reached = found ? (found.isRead || tier <= level) : false;
               if (!found) {
                 return (
                   <div
@@ -114,31 +133,48 @@ export function CompetencyHub({
                   </div>
                 );
               }
+              const isRead = readState[found.id] || false;
+              const reached = isRead || tier <= level;
               return (
-                <Link
+                <div
                   key={tier}
-                  href={`/knowledge?article=${found.id}`}
                   className="group flex items-center gap-3 rounded-cb-card border border-cb-line bg-cb-card px-3 py-2.5 transition-colors hover:bg-cb-raised"
                 >
+                  <button
+                    type="button"
+                    onClick={() => void toggleRead(found.id, isRead)}
+                    title={isRead ? "Mark as unread" : "Mark as read"}
+                    className="shrink-0 text-cb-muted transition-colors hover:text-cb-or"
+                  >
+                    {reached ? (
+                      <CircleCheck className="h-4 w-4 text-cb-or" />
+                    ) : (
+                      <Circle className="h-4 w-4" />
+                    )}
+                  </button>
                   <span
-                    className={
+                    className={cn(
+                      "cb-label-mono shrink-0 rounded-cb-chip-sm px-2 py-1 text-[10px]",
                       reached
-                        ? "cb-label-mono shrink-0 rounded-cb-chip-sm bg-cb-or px-2 py-1 text-[10px] text-cb-on-or"
-                        : "cb-label-mono shrink-0 rounded-cb-chip-sm bg-cb-raised px-2 py-1 text-[10px] text-cb-second"
-                    }
+                        ? "bg-cb-or text-cb-on-or"
+                        : "bg-cb-raised text-cb-second",
+                    )}
                   >
                     L{tier}
                   </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-cb-sans text-[14px] font-bold text-cb-text">
+                  <Link
+                    href={`/knowledge?article=${found.id}`}
+                    className="min-w-0 flex-1"
+                  >
+                    <span className="block truncate font-cb-sans text-[14px] font-bold text-cb-text group-hover:text-cb-or">
                       {found.title}
                     </span>
                     <span className="cb-label-mono text-[10px] text-cb-muted">
                       {TIER_PURPOSE[tier]}
                       {!reached && " · above your level"}
                     </span>
-                  </span>
-                </Link>
+                  </Link>
+                </div>
               );
             })}
           </div>

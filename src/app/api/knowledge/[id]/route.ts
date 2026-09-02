@@ -29,3 +29,30 @@ export async function GET(
 
   return NextResponse.json({ article: { ...article, exercises } });
 }
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id: raw } = await params;
+  const id = parseInt(raw, 10);
+  if (isNaN(id)) {
+    return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
+  }
+
+  const body = (await req.json()) as { read?: boolean };
+  const readAt = body.read ? sql`datetime('now')` : null;
+
+  db.update(knowledgeArticles)
+    .set({ readAt })
+    .where(eq(knowledgeArticles.id, id))
+    .run();
+
+  const row = db
+    .select({ readAt: knowledgeArticles.readAt })
+    .from(knowledgeArticles)
+    .where(eq(knowledgeArticles.id, id))
+    .get();
+
+  return NextResponse.json({ id, isRead: row?.readAt != null });
+}
