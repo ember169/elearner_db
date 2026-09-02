@@ -4,6 +4,7 @@ import {
   competencyValidations,
   assessments,
   syncLog,
+  manualProjectCompletions,
 } from "@/lib/db/schema";
 import { desc } from "drizzle-orm";
 import { runGuidanceEngine, flattenGoals } from "@/lib/guidance/engine";
@@ -25,7 +26,15 @@ export default function ProgressPage() {
       .limit(1)
       .all()[0] ?? null;
 
-  const guidance = runGuidanceEngine();
+  // Manual completions act like board-done slugs: they unlock successors
+  const manualSlugs = db
+    .select()
+    .from(manualProjectCompletions)
+    .all()
+    .map((r) => r.slug);
+  const manualSet = new Set(manualSlugs);
+
+  const guidance = runGuidanceEngine(manualSet);
   const { ftProgress } = guidance;
 
   // Build CircleSlice[] with state
@@ -79,6 +88,7 @@ export default function ProgressPage() {
       completedProjects={ftProgress.completedProjects}
       inProgressProjects={ftProgress.inProgressProjects}
       availableProjects={ftProgress.availableProjects}
+      manualCompletions={manualSlugs}
       lastSync={lastSync?.startedAt ?? null}
     />
   );

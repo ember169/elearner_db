@@ -10,6 +10,7 @@ interface CircleCardsProps {
   completedProjects: string[];
   inProgressProjects: string[];
   availableProjects: FtProject[];
+  manualCompletions: string[];
 }
 
 type ProjectStatus = "done" | "in-progress" | "available" | "locked";
@@ -29,13 +30,13 @@ function projectStatus(
 function statusDot(status: ProjectStatus) {
   switch (status) {
     case "done":
-      return "h-2.5 w-2.5 rounded-full bg-cb-success";
+      return "h-2.5 w-2.5 shrink-0 rounded-full bg-cb-success";
     case "in-progress":
-      return "h-2.5 w-2.5 rounded-full bg-cb-or shadow-[0_0_0_2px_var(--cb-or-tint)]";
+      return "h-2.5 w-2.5 shrink-0 rounded-full bg-cb-or shadow-[0_0_0_2px_var(--cb-or-tint)]";
     case "available":
-      return "h-2.5 w-2.5 rounded-full border-2 border-cb-or";
+      return "h-2.5 w-2.5 shrink-0 rounded-full border-2 border-cb-or";
     case "locked":
-      return "h-2.5 w-2.5 rounded-full border-2 border-cb-line";
+      return "h-2.5 w-2.5 shrink-0 rounded-full border-2 border-cb-line";
   }
 }
 
@@ -55,8 +56,11 @@ export function CircleCards({
   completedProjects,
   inProgressProjects,
   availableProjects,
+  manualCompletions: initialManual,
 }: CircleCardsProps) {
-  const completedSet = new Set(completedProjects);
+  const [manualSet, setManualSet] = useState(() => new Set(initialManual));
+
+  const allCompleted = new Set([...completedProjects, ...manualSet]);
   const inProgressSet = new Set(inProgressProjects);
   const availableSet = new Set(availableProjects.map((p) => p.slug));
 
@@ -72,8 +76,9 @@ export function CircleCards({
   const initialOpen = new Set<number>();
   for (const [c] of circles) {
     const projects = byCircle.get(c)!;
-    const done = projects.filter((p) => completedSet.has(p.slug)).length;
-    const state = circleState(c, currentCircle, done, projects.length);
+    const done = projects.filter((p) => allCompleted.has(p.slug)).length;
+    const total = countEffective(projects);
+    const state = circleState(c, currentCircle, done, total);
     if (state !== "locked" || c === currentCircle + 1) initialOpen.add(c);
   }
 
@@ -87,7 +92,32 @@ export function CircleCards({
       return next;
     });
 
-  const coreDone = completedProjects.length;
+  async function toggleManual(slug: string) {
+    const wasManual = manualSet.has(slug);
+    const next = !wasManual;
+    setManualSet((prev) => {
+      const s = new Set(prev);
+      if (next) s.add(slug);
+      else s.delete(slug);
+      return s;
+    });
+    try {
+      await fetch("/api/progress", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug, completed: next }),
+      });
+    } catch {
+      setManualSet((prev) => {
+        const s = new Set(prev);
+        if (wasManual) s.add(slug);
+        else s.delete(slug);
+        return s;
+      });
+    }
+  }
+
+  const coreDone = FT_COMMON_CORE.filter((p) => allCompleted.has(p.slug)).length;
   const coreTotal = FT_COMMON_CORE.length;
 
   return (
@@ -101,12 +131,12 @@ export function CircleCards({
 
       <div className="space-y-2">
         {circles.map(([c, projects]) => {
-          const done = projects.filter((p) => completedSet.has(p.slug)).length;
-          const total = countEffective(projects, completedSet);
+          const done = projects.filter((p) => allCompleted.has(p.slug)).length;
+          const total = countEffective(projects);
           const state = circleState(c, currentCircle, done, total);
           const isOpen = open.has(c);
 
-          const groups = groupProjects(projects);
+          const { groups, standalone } = splitProjects(projects);
 
           return (
             <div
@@ -150,76 +180,147 @@ export function CircleCards({
 
               {isOpen && (
                 <div className="space-y-3 px-4 pb-4 pt-1">
-                  {groups.map((group, gi) => (
-                    <div key={gi}>
-                      {group.label && (
-                        <div className="mb-2 flex items-center gap-2">
-                          <span className="cb-label-mono rounded bg-cb-or-tint px-1.5 py-0.5 text-[9px] text-cb-or">
-                            pick one
-                          </span>
-                          <span className="font-cb-sans text-[12px] text-cb-muted">
-                            {group.label}
-                          </span>
-                        </div>
-                      )}
+                  {/* Choice groups */}
+                  {groups.map((group) => (
+                    <div key={group.label}>
+                      <div className="mb-2 flex items-center gap-2">
+                        <span className="cb-label-mono rounded bg-cb-or-tint px-1.5 py-0.5 text-[9px] text-cb-or">
+                          pick one
+                        </span>
+                        <span className="font-cb-sans text-[12px] text-cb-muted">
+                          {group.label}
+                        </span>
+                      </div>
                       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                         {group.projects.map((p) => {
-                          const st = projectStatus(p.slug, completedSet, inProgressSet, availableSet);
+                          const st = projectStatus(p.slug, allCompleted, inProgressSet, availableSet);
                           const isAlt =
-                            group.label != null &&
                             st === "locked" &&
-                            group.projects.some((gp) => completedSet.has(gp.slug));
+                            group.projects.some((gp) => allCompleted.has(gp.slug));
                           return (
-                            <div
+                            <ProjectCard
                               key={p.slug}
-                              className={cn(
-                                "rounded-[10px] border border-transparent bg-cb-raised px-3 py-2.5 transition-colors hover:border-cb-line",
-                                isAlt && "opacity-50",
-                              )}
-                            >
-                              <div className="flex items-center gap-2">
-                                <span className={statusDot(st)} />
-                                <span
-                                  className={cn(
-                                    "flex-1 font-cb-sans text-[13px] font-bold",
-                                    st === "done" ? "text-cb-second" : st === "locked" ? "text-cb-muted" : "text-cb-text",
-                                  )}
-                                >
-                                  {p.name}
-                                </span>
-                                {isAlt && (
-                                  <span className="font-cb-mono text-[10px] text-cb-muted">alt</span>
-                                )}
-                                <span className="font-cb-mono text-[10px] text-cb-muted">
-                                  {p.estimatedHours}h
-                                </span>
-                              </div>
-                              {st !== "done" && p.description && (
-                                <p className="mt-1 line-clamp-2 font-cb-sans text-[12px] leading-[1.4] text-cb-muted">
-                                  {p.description}
-                                </p>
-                              )}
-                              <div className="mt-1.5 flex flex-wrap gap-1">
-                                {p.skills.slice(0, 4).map((s) => (
-                                  <span
-                                    key={s}
-                                    className="rounded bg-cb-card px-1.5 py-px font-cb-mono text-[9px] text-cb-muted"
-                                  >
-                                    {s}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
+                              project={p}
+                              status={st}
+                              isAlt={isAlt}
+                              isManual={manualSet.has(p.slug)}
+                              isSynced={completedProjects.includes(p.slug)}
+                              onToggle={() => void toggleManual(p.slug)}
+                            />
                           );
                         })}
                       </div>
                     </div>
                   ))}
+
+                  {/* All standalone projects in one grid */}
+                  {standalone.length > 0 && (
+                    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                      {standalone.map((p) => {
+                        const st = projectStatus(p.slug, allCompleted, inProgressSet, availableSet);
+                        return (
+                          <ProjectCard
+                            key={p.slug}
+                            project={p}
+                            status={st}
+                            isAlt={false}
+                            isManual={manualSet.has(p.slug)}
+                            isSynced={completedProjects.includes(p.slug)}
+                            onToggle={() => void toggleManual(p.slug)}
+                          />
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+function ProjectCard({
+  project,
+  status,
+  isAlt,
+  isManual,
+  isSynced,
+  onToggle,
+}: {
+  project: FtProject;
+  status: ProjectStatus;
+  isAlt: boolean;
+  isManual: boolean;
+  isSynced: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div
+      className={cn(
+        "rounded-[10px] border border-transparent bg-cb-raised px-3 py-2.5 transition-colors hover:border-cb-line",
+        isAlt && "opacity-50",
+      )}
+    >
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={onToggle}
+          disabled={isSynced}
+          title={
+            isSynced
+              ? "Validated by 42"
+              : isManual
+                ? "Mark as not done"
+                : "Mark as done manually"
+          }
+          className={cn(
+            "shrink-0 transition-colors",
+            isSynced ? "cursor-default" : "cursor-pointer hover:opacity-70",
+          )}
+        >
+          <span className={statusDot(status)} />
+        </button>
+        <span
+          className={cn(
+            "flex-1 font-cb-sans text-[13px] font-bold",
+            status === "done"
+              ? "text-cb-second"
+              : status === "locked"
+                ? "text-cb-muted"
+                : "text-cb-text",
+          )}
+        >
+          {project.name}
+        </span>
+        {isAlt && (
+          <span className="font-cb-mono text-[10px] text-cb-muted">alt</span>
+        )}
+        {isManual && !isSynced && (
+          <span className="cb-label-mono rounded bg-cb-or-tint px-1 py-px text-[8px] text-cb-or">
+            manual
+          </span>
+        )}
+        <span className="font-cb-mono text-[10px] text-cb-muted">
+          {project.estimatedHours}h
+        </span>
+      </div>
+      {status !== "done" && project.description && (
+        <p className="mt-1 line-clamp-2 font-cb-sans text-[12px] leading-[1.4] text-cb-muted">
+          {project.description}
+        </p>
+      )}
+      <div className="mt-1.5 flex flex-wrap gap-1">
+        {project.skills.slice(0, 4).map((s) => (
+          <span
+            key={s}
+            className="rounded bg-cb-card px-1.5 py-px font-cb-mono text-[9px] text-cb-muted"
+          >
+            {s}
+          </span>
+        ))}
       </div>
     </div>
   );
@@ -237,28 +338,31 @@ function StatusChip({ state }: { state: "done" | "current" | "locked" }) {
   }
 }
 
-type ProjectGroup = { label: string | null; projects: FtProject[] };
+type ProjectGroup = { label: string; projects: FtProject[] };
 
-function groupProjects(projects: FtProject[]): ProjectGroup[] {
+function splitProjects(projects: FtProject[]): {
+  groups: ProjectGroup[];
+  standalone: FtProject[];
+} {
   const groups: ProjectGroup[] = [];
-  const seen = new Set<string>();
+  const standalone: FtProject[] = [];
+  const seenGroups = new Set<string>();
 
   for (const p of projects) {
-    if (seen.has(p.slug)) continue;
     if (p.group) {
+      if (seenGroups.has(p.group)) continue;
+      seenGroups.add(p.group);
       const members = projects.filter((q) => q.group === p.group);
-      for (const m of members) seen.add(m.slug);
       const label = p.group.replace(/^circle\d+-/, "").replace(/-/g, " ");
       groups.push({ label, projects: members });
     } else {
-      seen.add(p.slug);
-      groups.push({ label: null, projects: [p] });
+      standalone.push(p);
     }
   }
-  return groups;
+  return { groups, standalone };
 }
 
-function countEffective(projects: FtProject[], completed: Set<string>): number {
+function countEffective(projects: FtProject[]): number {
   const groupsSeen = new Set<string>();
   let count = 0;
   for (const p of projects) {

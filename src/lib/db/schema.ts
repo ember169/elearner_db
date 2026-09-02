@@ -593,6 +593,14 @@ export const userContentBlocks = sqliteTable("user_content_blocks", {
 
 // --- V4: Mentor Chat ---
 
+export const manualProjectCompletions = sqliteTable("manual_project_completions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  slug: text("slug").notNull().unique(),
+  completedAt: text("completed_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
 export const mentorMessages = sqliteTable("mentor_messages", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   role: text("role").notNull(),

@@ -40,99 +40,213 @@ const STATUS_TEXT: Record<NodeStatus, string> = {
   locked: "var(--cb-muted)",
 };
 
-type Row = { circle: number; nodes: TreeNode[] };
-type TreeNode =
-  | { kind: "single"; project: FtProject; status: NodeStatus }
-  | { kind: "group"; label: string; projects: { project: FtProject; status: NodeStatus }[] }
-  | { kind: "chain"; label: string; projects: FtProject[]; status: NodeStatus };
+const NODE_W = 100;
+const NODE_H = 32;
+const GAP_X = 12;
+const GAP_Y = 48;
+const GROUP_PAD = 6;
+const GROUP_LABEL_H = 14;
 
-function buildRows(
+type LayoutNode = {
+  slug: string;
+  name: string;
+  status: NodeStatus;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  group?: string;
+};
+
+type GroupBox = {
+  label: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+};
+
+type Edge = {
+  fromSlug: string;
+  toSlug: string;
+};
+
+function layoutTree(
   completed: Set<string>,
   inProgress: Set<string>,
   available: Set<string>,
-): Row[] {
+) {
   const byCircle = new Map<number, FtProject[]>();
   for (const p of FT_COMMON_CORE) {
-    const list = byCircle.get(p.circle) ?? [];
-    list.push(p);
-    byCircle.set(p.circle, list);
+    const arr = byCircle.get(p.circle) ?? [];
+    arr.push(p);
+    byCircle.set(p.circle, arr);
   }
 
-  const rows: Row[] = [];
+  const nodes: LayoutNode[] = [];
+  const groups: GroupBox[] = [];
+  const edges: Edge[] = [];
+  const nodeMap = new Map<string, LayoutNode>();
+
+  let globalY = 16;
+
   for (const [circle, projects] of Array.from(byCircle.entries()).sort(([a], [b]) => a - b)) {
-    const nodes: TreeNode[] = [];
-    const seen = new Set<string>();
+    // Separate into sub-rows based on intra-circle dependencies
+    const subRows = buildSubRows(projects, circle);
 
-    for (const p of projects) {
-      if (seen.has(p.slug)) continue;
+    for (const subRow of subRows) {
+      const { items, rowH } = layoutRow(subRow, globalY, completed, inProgress, available);
 
-      if (p.group) {
-        const members = projects.filter((q) => q.group === p.group);
-        for (const m of members) seen.add(m.slug);
-        const label = p.group.replace(/^circle\d+-/, "").replace(/-/g, " ");
-        nodes.push({
-          kind: "group",
-          label,
-          projects: members.map((m) => ({
-            project: m,
-            status: getStatus(m.slug, completed, inProgress, available),
-          })),
-        });
-        continue;
-      }
-
-      // Detect sequential chains (cpp00→cpp01→...)
-      const chain: FtProject[] = [p];
-      seen.add(p.slug);
-      let current = p;
-      while (true) {
-        const next = projects.find(
-          (q) => !seen.has(q.slug) && q.prerequisites.length === 1 && q.prerequisites[0] === current.slug && !q.group,
-        );
-        if (!next) break;
-        chain.push(next);
-        seen.add(next.slug);
-        current = next;
-      }
-
-      if (chain.length >= 3) {
-        const chainStatus = chain.every((c) => completed.has(c.slug))
-          ? "done" as const
-          : chain.some((c) => inProgress.has(c.slug) || completed.has(c.slug))
-            ? "in-progress" as const
-            : available.has(chain[0].slug)
-              ? "available" as const
-              : "locked" as const;
-        const first = chain[0].name.replace(/ Module /, "");
-        const last = chain[chain.length - 1].name.replace(/ Module /, "");
-        nodes.push({ kind: "chain", label: `${first} → ${last}`, projects: chain, status: chainStatus });
-      } else {
-        for (const c of chain) {
-          nodes.push({ kind: "single", project: c, status: getStatus(c.slug, completed, inProgress, available) });
+      for (const item of items) {
+        if (item.kind === "node") {
+          nodes.push(item.node);
+          nodeMap.set(item.node.slug, item.node);
+        } else {
+          groups.push(item.groupBox);
+          for (const n of item.nodes) {
+            nodes.push(n);
+            nodeMap.set(n.slug, n);
+          }
         }
       }
+
+      globalY += rowH + GAP_Y;
     }
-    rows.push({ circle, nodes });
   }
+
+  // Build edges from actual prerequisites
+  for (const p of FT_COMMON_CORE) {
+    for (const prereq of p.prerequisites) {
+      if (nodeMap.has(prereq) && nodeMap.has(p.slug)) {
+        edges.push({ fromSlug: prereq, toSlug: p.slug });
+      }
+    }
+  }
+
+  return { nodes, groups, edges, nodeMap, totalH: globalY + 16 };
+}
+
+type SubRow = FtProject[];
+
+function buildSubRows(projects: FtProject[], circle: number): SubRow[] {
+  // Find projects whose prerequisites are ALL from previous circles (entry points)
+  // vs projects that depend on other projects within this circle
+  const slugsInCircle = new Set(projects.map((p) => p.slug));
+  const entryProjects: FtProject[] = [];
+  const dependentProjects: FtProject[] = [];
+
+  for (const p of projects) {
+    const hasIntraCircleDep = p.prerequisites.some((pr) => slugsInCircle.has(pr));
+    if (hasIntraCircleDep) {
+      dependentProjects.push(p);
+    } else {
+      entryProjects.push(p);
+    }
+  }
+
+  if (dependentProjects.length === 0) {
+    return [entryProjects];
+  }
+
+  // Build layers: keep pulling projects whose intra-circle deps are all placed
+  const rows: SubRow[] = [entryProjects];
+  const placed = new Set(entryProjects.map((p) => p.slug));
+  let remaining = [...dependentProjects];
+
+  while (remaining.length > 0) {
+    const nextRow: FtProject[] = [];
+    const stillRemaining: FtProject[] = [];
+
+    for (const p of remaining) {
+      const intraDeps = p.prerequisites.filter((pr) => slugsInCircle.has(pr));
+      if (intraDeps.every((d) => placed.has(d))) {
+        nextRow.push(p);
+      } else {
+        stillRemaining.push(p);
+      }
+    }
+
+    if (nextRow.length === 0) {
+      // Avoid infinite loop — dump remaining into last row
+      rows.push(stillRemaining);
+      break;
+    }
+
+    rows.push(nextRow);
+    for (const p of nextRow) placed.add(p.slug);
+    remaining = stillRemaining;
+  }
+
   return rows;
 }
 
-const NODE_H = 34;
-const NODE_GAP = 10;
-const ROW_GAP = 56;
-const GROUP_PAD = 4;
-const MINI_H = 22;
-const MINI_W = 56;
+type RowItem =
+  | { kind: "node"; node: LayoutNode }
+  | { kind: "group"; groupBox: GroupBox; nodes: LayoutNode[] };
 
-function nodeWidth(n: TreeNode): number {
-  switch (n.kind) {
-    case "single":
-      return Math.max(80, n.project.name.length * 8 + 24);
-    case "group":
-      return n.projects.length * (MINI_W + 4) + GROUP_PAD * 2 + 8;
-    case "chain":
-      return Math.max(120, n.label.length * 7.5 + 24);
+function layoutRow(
+  projects: FtProject[],
+  y: number,
+  completed: Set<string>,
+  inProgress: Set<string>,
+  available: Set<string>,
+): { items: RowItem[]; rowH: number } {
+  const items: RowItem[] = [];
+  let x = 20;
+  let maxH = NODE_H;
+
+  const seenGroups = new Set<string>();
+
+  for (const p of projects) {
+    const status = getStatus(p.slug, completed, inProgress, available);
+
+    if (p.group) {
+      if (seenGroups.has(p.group)) continue;
+      seenGroups.add(p.group);
+
+      const members = projects.filter((q) => q.group === p.group);
+      const memberW = Math.max(60, ...members.map((m) => m.name.length * 7 + 16));
+      const totalInnerW = members.length * memberW + (members.length - 1) * 4;
+      const boxW = totalInnerW + GROUP_PAD * 2;
+      const boxH = NODE_H + GROUP_LABEL_H + GROUP_PAD * 2;
+
+      const label = p.group.replace(/^circle\d+-/, "").replace(/-/g, " ");
+      const groupBox: GroupBox = { label, x, y, w: boxW, h: boxH };
+
+      const groupNodes: LayoutNode[] = members.map((m, i) => {
+        const st = getStatus(m.slug, completed, inProgress, available);
+        return {
+          slug: m.slug,
+          name: m.name,
+          status: st,
+          x: x + GROUP_PAD + i * (memberW + 4),
+          y: y + GROUP_LABEL_H + GROUP_PAD,
+          w: memberW,
+          h: NODE_H - 4,
+          group: p.group,
+        };
+      });
+
+      items.push({ kind: "group", groupBox, nodes: groupNodes });
+      x += boxW + GAP_X;
+      maxH = Math.max(maxH, boxH);
+    } else {
+      const w = Math.max(NODE_W, p.name.length * 8 + 20);
+      const node: LayoutNode = {
+        slug: p.slug,
+        name: p.name,
+        status,
+        x,
+        y,
+        w,
+        h: NODE_H,
+      };
+      items.push({ kind: "node", node });
+      x += w + GAP_X;
+    }
   }
+
+  return { items, rowH: maxH };
 }
 
 export function DepTree({
@@ -144,34 +258,40 @@ export function DepTree({
   const completed = new Set(completedProjects);
   const inProgress = new Set(inProgressProjects);
   const available = new Set(availableSlugs);
-  const rows = buildRows(completed, inProgress, available);
 
-  const rowWidths = rows.map((r) =>
-    r.nodes.reduce((sum, n) => sum + nodeWidth(n) + NODE_GAP, -NODE_GAP),
+  const { nodes, groups, edges, nodeMap, totalH } = layoutTree(
+    completed,
+    inProgress,
+    available,
   );
-  const maxW = Math.max(...rowWidths, 600);
-  const svgW = maxW + 80;
 
-  let y = 16;
-  const rowPositions: { circle: number; y: number; nodes: { x: number; w: number; node: TreeNode }[] }[] = [];
+  const maxX = Math.max(
+    ...nodes.map((n) => n.x + n.w),
+    ...groups.map((g) => g.x + g.w),
+    600,
+  );
+  const svgW = maxX + 60;
 
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
-    const totalW = rowWidths[i];
-    let x = (svgW - 40 - totalW) / 2 + 20;
-    const nodePos: { x: number; w: number; node: TreeNode }[] = [];
-    const nodeH = row.nodes.some((n) => n.kind === "group") ? NODE_H + MINI_H + GROUP_PAD * 2 : NODE_H;
-
-    for (const n of row.nodes) {
-      const w = nodeWidth(n);
-      nodePos.push({ x, w, node: n });
-      x += w + NODE_GAP;
+  // Identify circles for labels
+  const circleYs = new Map<number, number>();
+  for (const p of FT_COMMON_CORE) {
+    const node = nodeMap.get(p.slug);
+    if (node) {
+      const existing = circleYs.get(p.circle);
+      if (existing === undefined || node.y < existing) {
+        circleYs.set(p.circle, node.y);
+      }
     }
-    rowPositions.push({ circle: row.circle, y, nodes: nodePos });
-    y += nodeH + ROW_GAP;
   }
 
-  const svgH = y + 20;
+  // Deduplicate edges for & gates: when multiple edges share the same target
+  // AND source from the same circle, draw a gate
+  const edgesByTarget = new Map<string, Edge[]>();
+  for (const e of edges) {
+    const arr = edgesByTarget.get(e.toSlug) ?? [];
+    arr.push(e);
+    edgesByTarget.set(e.toSlug, arr);
+  }
 
   return (
     <div className="space-y-3">
@@ -186,7 +306,7 @@ export function DepTree({
 
       <div className="overflow-x-auto rounded-cb-card border border-cb-line bg-cb-card p-4">
         <svg
-          viewBox={`0 0 ${svgW} ${svgH}`}
+          viewBox={`0 0 ${svgW} ${totalH}`}
           width="100%"
           style={{ minWidth: 600 }}
           className="block"
@@ -212,167 +332,181 @@ export function DepTree({
             </marker>
           </defs>
 
-          {rowPositions.map((row, ri) => {
-            const nodeH = row.nodes.some((n) => n.node.kind === "group")
-              ? NODE_H + MINI_H + GROUP_PAD * 2
-              : NODE_H;
+          {/* Circle labels */}
+          {Array.from(circleYs.entries()).map(([circle, y]) => (
+            <text
+              key={`cl${circle}`}
+              x={svgW - 12}
+              y={y + NODE_H / 2}
+              textAnchor="end"
+              dominantBaseline="central"
+              fill={circle <= currentCircle ? "var(--cb-or)" : "var(--cb-muted)"}
+              fontFamily="var(--font-mono)"
+              fontSize="10"
+              fontWeight="500"
+              letterSpacing=".1em"
+            >
+              C{circle}
+            </text>
+          ))}
+
+          {/* Groups */}
+          {groups.map((g) => (
+            <g key={g.label}>
+              <rect
+                x={g.x}
+                y={g.y}
+                width={g.w}
+                height={g.h}
+                rx={6}
+                fill="none"
+                stroke="var(--cb-or)"
+                strokeWidth={0.5}
+                strokeDasharray="3 2"
+              />
+              <text
+                x={g.x + GROUP_PAD}
+                y={g.y + 10}
+                fill="var(--cb-or)"
+                fontSize={9}
+                fontFamily="var(--font-mono)"
+                fontWeight={500}
+                letterSpacing=".08em"
+              >
+                PICK ONE · {g.label.toUpperCase()}
+              </text>
+            </g>
+          ))}
+
+          {/* Nodes */}
+          {nodes.map((n) => (
+            <g key={n.slug} opacity={n.group && n.status === "locked" ? 0.5 : 1}>
+              <rect
+                x={n.x}
+                y={n.y}
+                width={n.w}
+                height={n.h}
+                rx={n.group ? 4 : 6}
+                fill={STATUS_FILL[n.status]}
+                stroke={STATUS_STROKE[n.status]}
+                strokeWidth={0.5}
+              />
+              <text
+                x={n.x + n.w / 2}
+                y={n.y + n.h / 2}
+                textAnchor="middle"
+                dominantBaseline="central"
+                fill={STATUS_TEXT[n.status]}
+                fontSize={n.group ? 10 : 11}
+                fontWeight={n.status === "done" ? 600 : 400}
+              >
+                {n.name.length > 14 ? n.name.slice(0, 13) + "…" : n.name}
+              </text>
+            </g>
+          ))}
+
+          {/* Edges */}
+          {edges.map((e, i) => {
+            const from = nodeMap.get(e.fromSlug);
+            const to = nodeMap.get(e.toSlug);
+            if (!from || !to) return null;
+
+            const x1 = from.x + from.w / 2;
+            const y1 = from.y + from.h;
+            const x2 = to.x + to.w / 2;
+            const y2 = to.y;
+
+            if (Math.abs(y2 - y1) < 4) {
+              // Same row — horizontal arrow
+              const startX = from.x + from.w;
+              const endX = to.x;
+              return (
+                <line
+                  key={i}
+                  x1={startX + 2}
+                  y1={from.y + from.h / 2}
+                  x2={endX - 2}
+                  y2={to.y + to.h / 2}
+                  stroke="var(--cb-line)"
+                  strokeWidth={1}
+                  markerEnd="url(#dep-arrow)"
+                />
+              );
+            }
+
+            // Vertical or L-shaped
+            const midY = y1 + (y2 - y1) / 2;
+            if (Math.abs(x1 - x2) < 2) {
+              return (
+                <line
+                  key={i}
+                  x1={x1}
+                  y1={y1 + 2}
+                  x2={x2}
+                  y2={y2 - 2}
+                  stroke="var(--cb-line)"
+                  strokeWidth={1}
+                  markerEnd="url(#dep-arrow)"
+                />
+              );
+            }
 
             return (
-              <g key={ri}>
-                {/* Circle label */}
+              <path
+                key={i}
+                d={`M${x1} ${y1 + 2} L${x1} ${midY} L${x2} ${midY} L${x2} ${y2 - 2}`}
+                fill="none"
+                stroke="var(--cb-line)"
+                strokeWidth={1}
+                markerEnd="url(#dep-arrow)"
+              />
+            );
+          })}
+
+          {/* & gates for multi-prerequisite targets */}
+          {Array.from(edgesByTarget.entries()).map(([target, tEdges]) => {
+            if (tEdges.length < 2) return null;
+            const toNode = nodeMap.get(target);
+            if (!toNode) return null;
+            const fromNodes = tEdges
+              .map((e) => nodeMap.get(e.fromSlug))
+              .filter((n): n is LayoutNode => !!n);
+            if (fromNodes.length < 2) return null;
+
+            // Only show gate if sources are from same sub-row (similar y)
+            const ySpread = Math.max(...fromNodes.map((n) => n.y)) - Math.min(...fromNodes.map((n) => n.y));
+            if (ySpread > NODE_H) return null;
+
+            const minX = Math.min(...fromNodes.map((n) => n.x + n.w / 2));
+            const maxX = Math.max(...fromNodes.map((n) => n.x + n.w / 2));
+            const midX = (minX + maxX) / 2;
+            const fromY = fromNodes[0].y + fromNodes[0].h;
+            const midY = fromY + (toNode.y - fromY) / 2;
+
+            return (
+              <g key={`gate-${target}`}>
+                <rect
+                  x={midX - 18}
+                  y={midY - 8}
+                  width={36}
+                  height={16}
+                  rx={8}
+                  fill="var(--cb-or-tint)"
+                  stroke="var(--cb-or)"
+                  strokeWidth={0.5}
+                />
                 <text
-                  x={svgW - 12}
-                  y={row.y + nodeH / 2}
-                  textAnchor="end"
+                  x={midX}
+                  y={midY}
+                  textAnchor="middle"
                   dominantBaseline="central"
-                  fill={row.circle <= currentCircle ? "var(--cb-or)" : "var(--cb-muted)"}
+                  fill="var(--cb-or)"
+                  fontSize={8}
+                  fontWeight={700}
                   fontFamily="var(--font-mono)"
-                  fontSize="10"
-                  fontWeight="500"
-                  letterSpacing=".1em"
                 >
-                  C{row.circle}
+                  &amp; ALL
                 </text>
-
-                {/* Nodes */}
-                {row.nodes.map((np, ni) => {
-                  const n = np.node;
-                  if (n.kind === "single") {
-                    return (
-                      <g key={ni}>
-                        <rect
-                          x={np.x}
-                          y={row.y}
-                          width={np.w}
-                          height={NODE_H}
-                          rx={6}
-                          fill={STATUS_FILL[n.status]}
-                          stroke={STATUS_STROKE[n.status]}
-                          strokeWidth={0.5}
-                        />
-                        <text
-                          x={np.x + np.w / 2}
-                          y={row.y + NODE_H / 2}
-                          textAnchor="middle"
-                          dominantBaseline="central"
-                          fill={STATUS_TEXT[n.status]}
-                          fontSize={12}
-                          fontWeight={n.status === "done" || n.status === "in-progress" ? 600 : 400}
-                        >
-                          {n.project.name}
-                        </text>
-                      </g>
-                    );
-                  }
-
-                  if (n.kind === "chain") {
-                    return (
-                      <g key={ni}>
-                        <rect
-                          x={np.x}
-                          y={row.y}
-                          width={np.w}
-                          height={NODE_H}
-                          rx={6}
-                          fill={STATUS_FILL[n.status]}
-                          stroke={STATUS_STROKE[n.status]}
-                          strokeWidth={0.5}
-                        />
-                        <text
-                          x={np.x + np.w / 2}
-                          y={row.y + NODE_H / 2 - 4}
-                          textAnchor="middle"
-                          dominantBaseline="central"
-                          fill={STATUS_TEXT[n.status]}
-                          fontSize={11}
-                          fontWeight={500}
-                        >
-                          {n.label}
-                        </text>
-                        <text
-                          x={np.x + np.w / 2}
-                          y={row.y + NODE_H / 2 + 8}
-                          textAnchor="middle"
-                          dominantBaseline="central"
-                          fill="var(--cb-muted)"
-                          fontSize={9}
-                          fontFamily="var(--font-mono)"
-                        >
-                          {n.projects.length} modules
-                        </text>
-                      </g>
-                    );
-                  }
-
-                  // Group
-                  const groupH = NODE_H + MINI_H + GROUP_PAD;
-                  return (
-                    <g key={ni}>
-                      <rect
-                        x={np.x}
-                        y={row.y}
-                        width={np.w}
-                        height={groupH}
-                        rx={6}
-                        fill="none"
-                        stroke="var(--cb-or)"
-                        strokeWidth={0.5}
-                        strokeDasharray="3 2"
-                      />
-                      <text
-                        x={np.x + 6}
-                        y={row.y + 10}
-                        fill="var(--cb-or)"
-                        fontSize={9}
-                        fontFamily="var(--font-mono)"
-                        fontWeight={500}
-                        letterSpacing=".08em"
-                      >
-                        PICK ONE · {n.label.toUpperCase()}
-                      </text>
-                      {n.projects.map((gp, gi) => {
-                        const mx = np.x + GROUP_PAD + gi * (MINI_W + 4);
-                        const my = row.y + NODE_H - 4;
-                        return (
-                          <g key={gi} opacity={gp.status === "locked" ? 0.5 : 1}>
-                            <rect
-                              x={mx}
-                              y={my}
-                              width={MINI_W}
-                              height={MINI_H}
-                              rx={4}
-                              fill={STATUS_FILL[gp.status]}
-                              stroke={STATUS_STROKE[gp.status]}
-                              strokeWidth={0.5}
-                            />
-                            <text
-                              x={mx + MINI_W / 2}
-                              y={my + MINI_H / 2}
-                              textAnchor="middle"
-                              dominantBaseline="central"
-                              fill={STATUS_TEXT[gp.status]}
-                              fontSize={9}
-                            >
-                              {gp.project.name.length > 8
-                                ? gp.project.name.slice(0, 7) + "…"
-                                : gp.project.name}
-                            </text>
-                          </g>
-                        );
-                      })}
-                    </g>
-                  );
-                })}
-
-                {/* Connectors to next row */}
-                {ri < rowPositions.length - 1 && (
-                  <ConnectorSet
-                    from={row}
-                    to={rowPositions[ri + 1]}
-                    fromH={nodeH}
-                    svgW={svgW}
-                  />
-                )}
               </g>
             );
           })}
@@ -383,7 +517,10 @@ export function DepTree({
           <LegendItem color="var(--cb-or)" label="In progress / available" />
           <LegendItem color="var(--cb-line)" label="Locked" hollow />
           <span className="flex items-center gap-1.5 font-cb-mono text-[10px] text-cb-muted">
-            <span className="inline-flex items-center justify-center rounded-lg bg-cb-or-tint px-1.5 py-px text-[9px] font-bold text-cb-or" style={{ border: "0.5px solid var(--cb-or)" }}>
+            <span
+              className="inline-flex items-center justify-center rounded-lg bg-cb-or-tint px-1.5 py-px text-[9px] font-bold text-cb-or"
+              style={{ border: "0.5px solid var(--cb-or)" }}
+            >
               &amp;
             </span>
             All prerequisites required
@@ -391,95 +528,6 @@ export function DepTree({
         </div>
       </div>
     </div>
-  );
-}
-
-function ConnectorSet({
-  from,
-  to,
-  fromH,
-  svgW,
-}: {
-  from: { y: number; nodes: { x: number; w: number; node: TreeNode }[] };
-  to: { y: number; nodes: { x: number; w: number; node: TreeNode }[] };
-  fromH: number;
-  svgW: number;
-}) {
-  const fromBottom = from.y + fromH;
-  const toTop = to.y;
-  const midY = (fromBottom + toTop) / 2;
-
-  const fromCenters = from.nodes.map((n) => n.x + n.w / 2);
-  const toCenters = to.nodes.map((n) => n.x + n.w / 2);
-
-  const multiplePrereqs = to.nodes.length > 1 && from.nodes.length > 1;
-
-  return (
-    <g>
-      {/* Lines from source nodes down to midY */}
-      {fromCenters.map((cx, i) => (
-        <line
-          key={`fd${i}`}
-          x1={cx}
-          y1={fromBottom}
-          x2={cx}
-          y2={midY}
-          stroke="var(--cb-line)"
-          strokeWidth={1}
-        />
-      ))}
-
-      {/* Horizontal connector at midY if multiple sources */}
-      {fromCenters.length > 1 && (
-        <>
-          <line
-            x1={Math.min(...fromCenters)}
-            y1={midY}
-            x2={Math.max(...fromCenters)}
-            y2={midY}
-            stroke="var(--cb-line)"
-            strokeWidth={1}
-          />
-          {/* & gate */}
-          <rect
-            x={(Math.min(...fromCenters) + Math.max(...fromCenters)) / 2 - 18}
-            y={midY - 8}
-            width={36}
-            height={16}
-            rx={8}
-            fill="var(--cb-or-tint)"
-            stroke="var(--cb-or)"
-            strokeWidth={0.5}
-          />
-          <text
-            x={(Math.min(...fromCenters) + Math.max(...fromCenters)) / 2}
-            y={midY}
-            textAnchor="middle"
-            dominantBaseline="central"
-            fill="var(--cb-or)"
-            fontSize={8}
-            fontWeight={700}
-            fontFamily="var(--font-mono)"
-          >
-            &amp; ALL
-          </text>
-        </>
-      )}
-
-      {/* Lines from midY down to target nodes */}
-      {toCenters.map((cx, i) => (
-        <line
-          key={`td${i}`}
-          x1={cx}
-          y1={midY}
-          x2={cx}
-          y2={toTop}
-          stroke="var(--cb-line)"
-          strokeWidth={1}
-          markerEnd="url(#dep-arrow)"
-        />
-      ))}
-    </g>
   );
 }
 
