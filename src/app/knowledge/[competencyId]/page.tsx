@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
-import { competencyValidations } from "@/lib/db/schema";
+import { competencyValidations, manualProjectCompletions } from "@/lib/db/schema";
 import { listArticles } from "@/lib/knowledge/store";
 import { listResources } from "@/lib/learn/store";
 import { getCompetency } from "@/lib/mentor/competency-map";
@@ -19,7 +19,8 @@ export default async function CompetencyHubPage({
   const competency = getCompetency(competencyId);
   if (!competency) notFound();
 
-  const guidance = runGuidanceEngine();
+  const manualSlugs = db.select().from(manualProjectCompletions).all().map((r) => r.slug);
+  const guidance = runGuidanceEngine(new Set(manualSlugs));
   const signals = computeCompetencySignals(guidance.snapshot, guidance.ftProgress);
   const validation = db
     .select()
