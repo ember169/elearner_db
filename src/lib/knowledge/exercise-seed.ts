@@ -16,6 +16,8 @@ import { AD_EXERCISES } from "./seed-data/exercises/ad";
 import { RECON_OSINT_EXERCISES } from "./seed-data/exercises/recon-osint";
 import { NETWORKING_EXERCISES } from "./seed-data/exercises/networking";
 import { SCRIPTING_BINEXP_EXERCISES } from "./seed-data/exercises/scripting-binexp";
+import { LINUX_SYSTEMS_EXERCISES } from "./seed-data/exercises/linux-systems";
+import { WINDOWS_MALDEV_EXERCISES } from "./seed-data/exercises/windows-maldev";
 
 const ALL_EXERCISES: SeedExercise[] = [
   ...CPP_OOP_EXERCISES,
@@ -28,6 +30,8 @@ const ALL_EXERCISES: SeedExercise[] = [
   ...RECON_OSINT_EXERCISES,
   ...NETWORKING_EXERCISES,
   ...SCRIPTING_BINEXP_EXERCISES,
+  ...LINUX_SYSTEMS_EXERCISES,
+  ...WINDOWS_MALDEV_EXERCISES,
 ];
 
 /**
