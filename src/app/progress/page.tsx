@@ -1,33 +1,21 @@
 import { db } from "@/lib/db";
 import {
   ftProfile,
-  htbProfile,
-  maldevProfile,
-  rootmeProfile,
-  activityFeed,
-  syncLog,
   competencyValidations,
   assessments,
+  syncLog,
 } from "@/lib/db/schema";
 import { desc } from "drizzle-orm";
 import { runGuidanceEngine, flattenGoals } from "@/lib/guidance/engine";
-import { computeCompetencySignals } from "@/lib/mentor/competency-signals";
 import { COMPETENCIES } from "@/lib/mentor/competency-map";
+import { FT_COMMON_CORE } from "@/lib/guidance/ft-project-tree";
 import { ProgressClient } from "@/components/progress/progress-client";
+import type { CircleSlice } from "@/components/progress/core-donut";
 
 export const dynamic = "force-dynamic";
 
 export default function ProgressPage() {
   const ft = db.select().from(ftProfile).limit(1).all()[0] ?? null;
-  const htb = db.select().from(htbProfile).limit(1).all()[0] ?? null;
-  const maldev = db.select().from(maldevProfile).limit(1).all()[0] ?? null;
-  const rootme = db.select().from(rootmeProfile).limit(1).all()[0] ?? null;
-  const activity = db
-    .select()
-    .from(activityFeed)
-    .orderBy(desc(activityFeed.timestamp))
-    .limit(500)
-    .all();
 
   const lastSync =
     db
@@ -38,22 +26,26 @@ export default function ProgressPage() {
       .all()[0] ?? null;
 
   const guidance = runGuidanceEngine();
+  const { ftProgress } = guidance;
 
-  const signals = computeCompetencySignals(
-    guidance.snapshot,
-    guidance.ftProgress
-  );
+  // Build CircleSlice[] with state
+  const circles: CircleSlice[] = Object.entries(ftProgress.circleBreakdown)
+    .sort(([a], [b]) => Number(a) - Number(b))
+    .map(([circle, { total, done }]) => {
+      const c = Number(circle);
+      const state: CircleSlice["state"] =
+        done === total && total > 0
+          ? "done"
+          : c <= ftProgress.currentCircle
+            ? "current"
+            : "locked";
+      return { circle: c, done, total, state };
+    });
 
-  const competencies = COMPETENCIES.map((c) => ({
-    id: c.id,
-    label: c.label,
-    area: c.area,
-    level: signals[c.id]?.autoLevel ?? 0,
-    evidence: signals[c.id]?.evidence ?? "",
-  }));
+  const coreDone = ftProgress.completedProjects.length;
+  const coreTotal = FT_COMMON_CORE.length;
 
-  // Entry-point state for Goals and Assess. Both left the nav; a card that
-  // carries its own numbers is worth more than the mute nav item it replaces.
+  // Goals entry
   const leafGoals = flattenGoals(guidance.goals).filter(
     (g) => g.status === "active" && g.children.length === 0,
   );
@@ -62,6 +54,7 @@ export default function ProgressPage() {
     behind: leafGoals.filter((g) => g.pacing && !g.pacing.onTrack).length,
   };
 
+  // Assess entry
   const validations = db.select().from(competencyValidations).all();
   const openAssessments = db
     .select()
@@ -78,13 +71,14 @@ export default function ProgressPage() {
     <ProgressClient
       goalsEntry={goalsEntry}
       assessEntry={assessEntry}
-      ft={ft}
-      htb={htb}
-      maldev={maldev}
-      rootme={rootme}
-      activity={activity}
-      ftProgress={guidance.ftProgress}
-      competencies={competencies}
+      level={ft?.level ?? null}
+      circles={circles}
+      coreDone={coreDone}
+      coreTotal={coreTotal}
+      currentCircle={ftProgress.currentCircle}
+      completedProjects={ftProgress.completedProjects}
+      inProgressProjects={ftProgress.inProgressProjects}
+      availableProjects={ftProgress.availableProjects}
       lastSync={lastSync?.startedAt ?? null}
     />
   );
