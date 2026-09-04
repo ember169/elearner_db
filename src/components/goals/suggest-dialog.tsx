@@ -112,7 +112,7 @@ export function SuggestDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[520px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-[15px]">
+          <DialogTitle className="flex items-center gap-2 text-cb-body">
             <Zap className="h-4 w-4" style={{ color: "var(--primary)" }} />
             Goal Suggestion
           </DialogTitle>
@@ -120,7 +120,7 @@ export function SuggestDialog({
 
         {!suggestion && !loading && !error && (
           <div className="py-4 text-center space-y-3">
-            <p className="text-[14px] text-muted-foreground">
+            <p className="text-cb-foot text-muted-foreground">
               Generate a goal tree based on your competency gaps and current progress.
             </p>
             <div className="flex justify-center gap-2">
@@ -133,14 +133,14 @@ export function SuggestDialog({
                 Use LLM
               </Button>
             </div>
-            <p className="text-[14px] text-muted-foreground/60">
+            <p className="text-cb-foot text-muted-foreground/60">
               Quick uses your competency data directly. LLM generates custom suggestions (needs API key).
             </p>
           </div>
         )}
 
         {loading && (
-          <div className="py-8 text-center text-[14px] text-muted-foreground">
+          <div className="py-8 text-center text-cb-foot text-muted-foreground">
             <RefreshCw className="h-4 w-4 animate-spin mx-auto mb-2" />
             Generating suggestions...
           </div>
@@ -148,7 +148,7 @@ export function SuggestDialog({
 
         {error && (
           <div className="py-4">
-            <p className="text-[14px] text-red-400 mb-3">{error}</p>
+            <p className="text-cb-foot text-red-400 mb-3">{error}</p>
             <Button variant="ghost" size="sm" onClick={() => generate("quick")}>
               Try quick suggest instead
             </Button>
@@ -158,18 +158,18 @@ export function SuggestDialog({
         {suggestion && (
           <div className="space-y-3">
             {llmError && (
-              <p className="text-[12px] text-muted-foreground/70 px-2 py-1 rounded-sm" style={{ background: "color-mix(in oklch, var(--status-warning) 8%, transparent)" }}>
+              <p className="text-cb-foot text-muted-foreground/70 px-2 py-1 rounded-sm" style={{ background: "color-mix(in oklch, var(--status-warning) 8%, transparent)" }}>
                 LLM failed: {llmError.length > 100 ? llmError.slice(0, 100) + "..." : llmError}
               </p>
             )}
             <div className="flex items-center gap-2">
-              <p className="text-[15px] text-muted-foreground italic flex-1">
+              <p className="text-cb-body text-muted-foreground italic flex-1">
                 &ldquo;{suggestion.reasoning}&rdquo;
               </p>
               {resultMode && (
                 <Badge
                   variant="outline"
-                  className="text-[11px] px-1.5 py-0.5 font-semibold shrink-0"
+                  className="text-cb-foot px-1.5 py-0.5 font-semibold shrink-0"
                   style={{
                     borderColor: resultMode === "llm" ? "var(--platform-maldev)" : "var(--cb-success)",
                     color: resultMode === "llm" ? "var(--platform-maldev)" : "var(--cb-success)",
@@ -182,17 +182,17 @@ export function SuggestDialog({
             </div>
 
             <div className="space-y-1">
-              <div className="flex items-center gap-2 text-[14px] font-semibold">
+              <div className="flex items-center gap-2 text-cb-foot font-semibold">
                 <Badge
                   variant="outline"
-                  className="text-[14px] px-1 py-0"
+                  className="text-cb-foot px-1 py-0"
                   style={{ borderColor: "var(--primary)", color: "var(--primary)" }}
                 >
                   EPIC
                 </Badge>
                 {suggestion.epic.title}
                 {suggestion.epic.deadline && (
-                  <span className="text-muted-foreground font-normal text-[14px]">
+                  <span className="text-muted-foreground font-normal text-cb-foot">
                     by {suggestion.epic.deadline}
                   </span>
                 )}
@@ -200,7 +200,7 @@ export function SuggestDialog({
 
               {suggestion.issues.map((issue, idx) => (
                 <div key={idx} className="pl-3">
-                  <label className="flex items-center gap-2 text-[15px] py-0.5 cursor-pointer">
+                  <label className="flex items-center gap-2 text-cb-body py-0.5 cursor-pointer">
                     <Checkbox
                       checked={selectedIssues.has(idx)}
                       onCheckedChange={(checked) => {
@@ -210,21 +210,21 @@ export function SuggestDialog({
                       }}
                       className="h-3 w-3"
                     />
-                    <Badge variant="outline" className="text-[14px] px-1 py-0">ISSUE</Badge>
+                    <Badge variant="outline" className="text-cb-foot px-1 py-0">ISSUE</Badge>
                     <span className="font-medium">{issue.title}</span>
                     {issue.deadline && (
-                      <span className="text-muted-foreground text-[14px]">by {issue.deadline}</span>
+                      <span className="text-muted-foreground text-cb-foot">by {issue.deadline}</span>
                     )}
-                    <span className="text-muted-foreground text-[14px]">&middot; {issue.tasks.length} tasks</span>
+                    <span className="text-muted-foreground text-cb-foot">&middot; {issue.tasks.length} tasks</span>
                   </label>
                   {selectedIssues.has(idx) && (
                     <div className="pl-6 space-y-0.5">
                       {issue.tasks.map((task, tIdx) => (
-                        <div key={tIdx} className="text-[14px] text-muted-foreground flex items-center gap-1.5">
+                        <div key={tIdx} className="text-cb-foot text-muted-foreground flex items-center gap-1.5">
                           <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/30" />
                           {task.title}
                           {task.ftSlug && (
-                            <span className="font-mono text-[15px]">{task.ftSlug}</span>
+                            <span className="font-mono text-cb-body">{task.ftSlug}</span>
                           )}
                         </div>
                       ))}

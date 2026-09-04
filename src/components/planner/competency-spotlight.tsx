@@ -21,12 +21,12 @@ export function CompetencySpotlight({ competencies }: { competencies: Competency
 
   return (
     <div className="rounded-cb-card border border-cb-line bg-cb-card px-4 py-4">
-      <p className="cb-label-mono text-[10px] text-cb-muted">Biggest gaps</p>
+      <p className="cb-label-mono text-cb-caption text-cb-muted">Biggest gaps</p>
 
       <div className="mt-3 space-y-2.5">
         {gaps.map((c) => (
           <div key={c.id} className="flex items-center gap-3">
-            <span className="w-[112px] shrink-0 truncate font-cb-sans text-[13px] text-cb-second">
+            <span className="w-[112px] shrink-0 truncate font-cb-sans text-cb-foot text-cb-second">
               {c.label}
             </span>
             {/* Progress segments: filled in the accent, remaining in --cb-line.
@@ -43,7 +43,7 @@ export function CompetencySpotlight({ competencies }: { competencies: Competency
                 />
               ))}
             </div>
-            <span className="cb-label-mono w-6 shrink-0 text-right text-[10px] text-cb-muted">
+            <span className="cb-label-mono w-6 shrink-0 text-right text-cb-caption text-cb-muted">
               L{c.level}
             </span>
           </div>
@@ -51,13 +51,13 @@ export function CompetencySpotlight({ competencies }: { competencies: Competency
       </div>
 
       {targetAreas.length > 0 && (
-        <p className="mt-3 font-cb-sans text-[13px] text-cb-muted">
+        <p className="mt-3 font-cb-sans text-cb-foot text-cb-muted">
           This week targets {targetAreas.join(" + ")}
         </p>
       )}
       <Link
         href="/progress"
-        className="cb-label-mono mt-2 inline-block text-[10px] text-cb-or"
+        className="cb-label-mono mt-2 inline-block text-cb-caption text-cb-or"
       >
         full map
       </Link>

@@ -271,8 +271,8 @@ export function GoalsClient({
                 <Trash2 className="h-5 w-5 text-red-400" />
               </div>
               <div>
-                <DialogTitle className="text-[15px]">Delete &ldquo;{deleteGoalObj?.title}&rdquo;?</DialogTitle>
-                <p className="text-[14px] text-muted-foreground mt-0.5">
+                <DialogTitle className="text-cb-body">Delete &ldquo;{deleteGoalObj?.title}&rdquo;?</DialogTitle>
+                <p className="text-cb-foot text-muted-foreground mt-0.5">
                   This {deleteGoalObj?.parentGoalId ? "issue" : "goal"} has {deleteDescendantCount} child {deleteChildLabel}.
                 </p>
               </div>

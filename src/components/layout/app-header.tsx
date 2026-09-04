@@ -25,7 +25,7 @@ export function AppHeader() {
     <header className="flex items-center justify-between px-5 pt-3 pb-1 md:hidden">
       <Link href="/" className="flex items-center gap-2">
         <CartableoMark size={26} />
-        <span className="cb-content-title text-[19px] text-cb-text">Cartableo</span>
+        <span className="cb-content-title text-cb-head text-cb-text">Cartableo</span>
       </Link>
       <Link
         href="/settings"

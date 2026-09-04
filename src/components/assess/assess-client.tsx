@@ -309,7 +309,7 @@ export function AssessClient({
                 ) : (
                   <X className="h-4 w-4 text-destructive" />
                 )}
-                <span className="text-[14px]">
+                <span className="text-cb-foot">
                   {gradingDone.status === "completed"
                     ? `Grading complete for ${competencies.find((c) => c.id === gradingDone.competencyId)?.label ?? gradingDone.competencyId}`
                     : `Grading failed for ${competencies.find((c) => c.id === gradingDone.competencyId)?.label ?? gradingDone.competencyId} — check your AI configuration`}
@@ -344,7 +344,7 @@ export function AssessClient({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <ClipboardCheck className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-[15px] font-semibold">
+                  <span className="text-cb-body font-semibold">
                     {competencies.find((c) => c.id === selectedCompetency)?.label} — History
                   </span>
                 </div>
@@ -353,7 +353,7 @@ export function AssessClient({
                 </Button>
               </div>
               {history.length === 0 ? (
-                <p className="text-[14px] text-muted-foreground">No completed assessments yet.</p>
+                <p className="text-cb-foot text-muted-foreground">No completed assessments yet.</p>
               ) : (
                 <div className="space-y-2">
                   {history.map((a) => (
@@ -362,7 +362,7 @@ export function AssessClient({
                       onClick={() => viewPastAssessment(a.id)}
                       className="w-full text-left px-3 py-2 rounded-sm border border-border hover:bg-muted/50 transition-colors"
                     >
-                      <div className="flex items-center gap-3 text-[14px]">
+                      <div className="flex items-center gap-3 text-cb-foot">
                         <span className="font-medium">Attempt #{a.attemptNumber}</span>
                         <Badge variant={a.overallScore != null && a.overallScore >= 60 ? "success" : "danger"}>
                           {a.overallScore != null ? `${Math.round(a.overallScore)}%` : "N/A"}
@@ -418,7 +418,7 @@ export function AssessClient({
             Back
           </Button>
           <div className="flex items-center gap-2">
-            <span className="text-[14px] text-muted-foreground">
+            <span className="text-cb-foot text-muted-foreground">
               {comp?.label}
             </span>
             <Badge variant="outline">
@@ -441,7 +441,7 @@ export function AssessClient({
             <Separator />
 
             <div className="space-y-2">
-              <label className="text-[14px] font-medium">Your answer</label>
+              <label className="text-cb-foot font-medium">Your answer</label>
               <textarea
                 value={answer}
                 onChange={(e) => setAnswer(e.target.value)}
@@ -459,16 +459,16 @@ export function AssessClient({
                 }}
                 rows={8}
                 placeholder="Write your answer here. Use markdown code blocks for code snippets."
-                className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-[14px] font-mono placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-y"
+                className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-cb-foot font-mono placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-y"
               />
             </div>
 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="text-[13px] text-muted-foreground">Flag:</span>
+                <span className="text-cb-foot text-muted-foreground">Flag:</span>
                 <button
                   onClick={() => setDifficultyFlag(difficultyFlag === "too_easy" ? null : "too_easy")}
-                  className={`flex items-center gap-1 px-2 py-1 rounded-sm text-[13px] border transition-colors ${
+                  className={`flex items-center gap-1 px-2 py-1 rounded-sm text-cb-foot border transition-colors ${
                     difficultyFlag === "too_easy"
                       ? "border-green-600 bg-green-600/10 text-green-400"
                       : "border-border text-muted-foreground hover:text-foreground"
@@ -479,7 +479,7 @@ export function AssessClient({
                 </button>
                 <button
                   onClick={() => setDifficultyFlag(difficultyFlag === "too_hard" ? null : "too_hard")}
-                  className={`flex items-center gap-1 px-2 py-1 rounded-sm text-[13px] border transition-colors ${
+                  className={`flex items-center gap-1 px-2 py-1 rounded-sm text-cb-foot border transition-colors ${
                     difficultyFlag === "too_hard"
                       ? "border-red-600 bg-red-600/10 text-red-400"
                       : "border-border text-muted-foreground hover:text-foreground"
@@ -553,15 +553,15 @@ export function AssessClient({
         <Card>
           <CardContent className="pt-4 pb-4 px-4 space-y-3">
             <div className="flex items-center gap-3">
-              <span className="text-[15px] font-semibold">{comp?.label}</span>
+              <span className="text-cb-body font-semibold">{comp?.label}</span>
               <Badge variant={assessmentData.overallScore != null && assessmentData.overallScore >= 60 ? "success" : "danger"}>
                 {assessmentData.overallScore != null ? `${Math.round(assessmentData.overallScore)}%` : "N/A"}
               </Badge>
-              <span className="text-[14px] text-muted-foreground">
+              <span className="text-cb-foot text-muted-foreground">
                 Attempt #{assessmentData.attemptNumber}
               </span>
             </div>
-            <div className="flex items-center gap-4 text-[14px]">
+            <div className="flex items-center gap-4 text-cb-foot">
               <div>
                 <span className="text-muted-foreground">Activity level: </span>
                 <span className="font-medium">{assessmentData.activityLevel}/5</span>
@@ -576,8 +576,8 @@ export function AssessClient({
                 const gaps = JSON.parse(assessmentData.gapsJson) as string[];
                 if (gaps.length > 0) return (
                   <div>
-                    <span className="text-[13px] text-muted-foreground">Identified gaps: </span>
-                    <span className="text-[13px]">{gaps.join(", ")}</span>
+                    <span className="text-cb-foot text-muted-foreground">Identified gaps: </span>
+                    <span className="text-cb-foot">{gaps.join(", ")}</span>
                   </div>
                 );
               } catch {}
@@ -591,7 +591,7 @@ export function AssessClient({
           <Card key={q.id}>
             <CardContent className="pt-4 pb-4 px-4 space-y-3">
               <div className="flex items-center gap-2">
-                <span className="text-[14px] font-medium">Q{i + 1}</span>
+                <span className="text-cb-foot font-medium">Q{i + 1}</span>
                 <Badge variant="secondary">{q.questionType.replace(/_/g, "-")}</Badge>
                 <Badge variant="outline">Diff {q.difficulty}</Badge>
                 {q.score != null && (
@@ -604,7 +604,7 @@ export function AssessClient({
                 )}
               </div>
 
-              <div className="text-[14px] whitespace-pre-wrap">
+              <div className="text-cb-foot whitespace-pre-wrap">
                 <QuestionRenderer text={q.questionText} />
               </div>
 
@@ -612,8 +612,8 @@ export function AssessClient({
                 <>
                   <Separator />
                   <div>
-                    <span className="text-[13px] font-medium text-muted-foreground">Your answer:</span>
-                    <div className="mt-1 text-[14px] whitespace-pre-wrap font-mono bg-muted/30 rounded-sm px-3 py-2">
+                    <span className="text-cb-foot font-medium text-muted-foreground">Your answer:</span>
+                    <div className="mt-1 text-cb-foot whitespace-pre-wrap font-mono bg-muted/30 rounded-sm px-3 py-2">
                       {q.studentAnswer}
                     </div>
                   </div>
@@ -627,9 +627,9 @@ export function AssessClient({
                     <>
                       <Separator />
                       <div className="space-y-1.5">
-                        <span className="text-[13px] font-medium text-muted-foreground">Grading:</span>
+                        <span className="text-cb-foot font-medium text-muted-foreground">Grading:</span>
                         {grading.criteriaScores?.map((cs: { id: string; awarded: number; rationale: string }) => (
-                          <div key={cs.id} className="flex items-start gap-2 text-[13px]">
+                          <div key={cs.id} className="flex items-start gap-2 text-cb-foot">
                             <span className={cs.awarded > 0 ? "text-green-400" : "text-red-400"}>
                               {cs.awarded > 0 ? "✓" : "✗"}
                             </span>
@@ -639,7 +639,7 @@ export function AssessClient({
                           </div>
                         ))}
                         {grading.feedback && (
-                          <p className="text-[13px] text-muted-foreground mt-2">{grading.feedback}</p>
+                          <p className="text-cb-foot text-muted-foreground mt-2">{grading.feedback}</p>
                         )}
                       </div>
                     </>
@@ -648,20 +648,20 @@ export function AssessClient({
               })() : q.studentAnswer && (
                 <>
                   <Separator />
-                  <p className="text-[13px] text-red-400">Grading failed for this question. Check your Assessment AI configuration in Settings.</p>
+                  <p className="text-cb-foot text-red-400">Grading failed for this question. Check your Assessment AI configuration in Settings.</p>
                 </>
               )}
 
               {/* Raw data toggle */}
               <button
                 onClick={() => setShowRaw((prev) => ({ ...prev, [q.id]: !prev[q.id] }))}
-                className="flex items-center gap-1 text-[12px] text-muted-foreground hover:text-foreground transition-colors"
+                className="flex items-center gap-1 text-cb-foot text-muted-foreground hover:text-foreground transition-colors"
               >
                 {showRaw[q.id] ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
                 {showRaw[q.id] ? "Hide" : "Show"} raw data
               </button>
               {showRaw[q.id] && (
-                <pre className="text-[11px] font-mono bg-muted/30 rounded-sm px-3 py-2 overflow-x-auto max-h-[200px] overflow-y-auto">
+                <pre className="text-cb-foot font-mono bg-muted/30 rounded-sm px-3 py-2 overflow-x-auto max-h-[200px] overflow-y-auto">
                   {q.scoreJson
                     ? JSON.stringify(JSON.parse(q.scoreJson), null, 2)
                     : JSON.stringify({ rubric: JSON.parse(q.rubricJson), note: "No grading data — LLM call failed" }, null, 2)}
@@ -720,27 +720,27 @@ function CompetencyCard({
     <Card className="hover:border-primary/30 transition-colors">
       <CardContent className="pt-3 pb-3 px-3 space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-[14px] font-medium truncate">{data.label}</span>
+          <span className="text-cb-foot font-medium truncate">{data.label}</span>
           <Badge variant={statusVariant[status] ?? "outline"}>{status}</Badge>
         </div>
 
         {/* Dual level bars */}
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="text-[11px] text-muted-foreground w-14">Activity</span>
+            <span className="text-cb-foot text-muted-foreground w-14">Activity</span>
             <LevelBar level={data.activityLevel} color="primary" />
-            <span className="text-[11px] tabular-nums w-4">{data.activityLevel}</span>
+            <span className="text-cb-foot tabular-nums w-4">{data.activityLevel}</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[11px] text-muted-foreground w-14">Validated</span>
+            <span className="text-cb-foot text-muted-foreground w-14">Validated</span>
             <LevelBar level={data.validation?.validatedLevel ?? 0} color="validated" />
-            <span className="text-[11px] tabular-nums w-4">{data.validation?.validatedLevel ?? "-"}</span>
+            <span className="text-cb-foot tabular-nums w-4">{data.validation?.validatedLevel ?? "-"}</span>
           </div>
         </div>
 
         {/* Assessment info */}
         {data.latestAssessment && (
-          <div className="text-[12px] text-muted-foreground">
+          <div className="text-cb-foot text-muted-foreground">
             Last: {data.latestAssessment.completedAt
               ? new Date(data.latestAssessment.completedAt).toLocaleDateString("fr-FR")
               : data.latestAssessment.status}
@@ -808,8 +808,8 @@ function QuestionRenderer({ text }: { text: string }) {
           const lang = match?.[1] ?? "";
           const code = match?.[2] ?? part.slice(3, -3);
           return (
-            <pre key={i} className="bg-muted/40 rounded-sm px-3 py-2 overflow-x-auto text-[13px] font-mono my-2">
-              {lang && <div className="text-[11px] text-muted-foreground mb-1">{lang}</div>}
+            <pre key={i} className="bg-muted/40 rounded-sm px-3 py-2 overflow-x-auto text-cb-foot font-mono my-2">
+              {lang && <div className="text-cb-foot text-muted-foreground mb-1">{lang}</div>}
               <code>{code}</code>
             </pre>
           );

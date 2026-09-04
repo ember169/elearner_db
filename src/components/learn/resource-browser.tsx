@@ -104,7 +104,7 @@ function Chip({
       type="button"
       onClick={onClick}
       className={cn(
-        "flex items-center gap-1 rounded-full border px-2.5 py-1 text-[13px] transition-colors",
+        "flex items-center gap-1 rounded-full border px-2.5 py-1 text-cb-foot transition-colors",
         active
           ? "border-primary/40 bg-primary/12 text-primary"
           : "border-border text-muted-foreground hover:text-foreground"
@@ -136,7 +136,7 @@ function PlatformBadge({ platform }: { platform: string }) {
   const color = PLATFORM_COLORS[platform] ?? PLATFORM_COLORS.general;
   return (
     <span
-      className="inline-flex h-5 shrink-0 items-center rounded-full px-2 text-[12px] font-semibold tracking-wide"
+      className="inline-flex h-5 shrink-0 items-center rounded-full px-2 text-cb-foot font-semibold tracking-wide"
       style={{ color, backgroundColor: `color-mix(in oklch, ${color} 14%, transparent)` }}
     >
       {PLATFORM_LABELS[platform] ?? platform.toUpperCase()}
@@ -391,14 +391,14 @@ export function ResourceBrowser({
           )}
         </div>
 
-        <p className="text-[13px] text-muted-foreground">
+        <p className="text-cb-foot text-muted-foreground">
           {filtered.length} of {resources.length} resources
         </p>
       </div>
 
       {error && (
         <Card className="border-destructive/30 bg-destructive/5">
-          <CardContent className="px-4 py-3 text-[14px] text-destructive">
+          <CardContent className="px-4 py-3 text-cb-foot text-destructive">
             {error}
           </CardContent>
         </Card>
@@ -411,7 +411,7 @@ export function ResourceBrowser({
             <Card>
               <CardContent className="px-4 py-8 text-center">
                 <BookOpen className="mx-auto h-6 w-6 text-muted-foreground/50" />
-                <p className="mt-2 text-[14px] text-muted-foreground">
+                <p className="mt-2 text-cb-foot text-muted-foreground">
                   No resources match the current search and filters.
                 </p>
               </CardContent>
@@ -431,9 +431,9 @@ export function ResourceBrowser({
                     ) : (
                       <ChevronDown className="h-4 w-4 text-muted-foreground" />
                     )}
-                    <span className="text-[15px] font-semibold">{group.label}</span>
+                    <span className="text-cb-body font-semibold">{group.label}</span>
                     <Badge variant="outline">{group.area}</Badge>
-                    <span className="text-[13px] text-muted-foreground">
+                    <span className="text-cb-foot text-muted-foreground">
                       {group.items.length}
                     </span>
                   </button>
@@ -457,7 +457,7 @@ export function ResourceBrowser({
                         >
                           <div className="flex items-start gap-2">
                             <StatusDot status={r.status} />
-                            <span className="min-w-0 flex-1 break-words text-[14px] font-medium leading-snug">
+                            <span className="min-w-0 flex-1 break-words text-cb-foot font-medium leading-snug">
                               {r.title}
                             </span>
                             <PlatformBadge platform={r.platform} />
@@ -469,7 +469,7 @@ export function ResourceBrowser({
                               </Badge>
                             )}
                             {r.contentType && (
-                              <span className="text-[12px] text-muted-foreground">
+                              <span className="text-cb-foot text-muted-foreground">
                                 {r.contentType}
                               </span>
                             )}
@@ -565,17 +565,17 @@ function ResourceDetail({
           </Button>
         </div>
 
-        <h2 className="text-[16px] font-semibold leading-snug">{resource.title}</h2>
+        <h2 className="text-cb-body font-semibold leading-snug">{resource.title}</h2>
 
         {resource.description && (
-          <p className="text-[14px] leading-relaxed text-muted-foreground">
+          <p className="text-cb-foot leading-relaxed text-muted-foreground">
             {resource.description}
           </p>
         )}
 
         <Separator />
 
-        <dl className="space-y-1.5 text-[13px]">
+        <dl className="space-y-1.5 text-cb-foot">
           {resource.contentType && (
             <div className="flex justify-between gap-3">
               <dt className="text-muted-foreground">Type</dt>
@@ -604,7 +604,7 @@ function ResourceDetail({
 
         {competencyIds.length > 0 && (
           <div className="space-y-1.5">
-            <p className="text-[13px] text-muted-foreground">Competencies</p>
+            <p className="text-cb-foot text-muted-foreground">Competencies</p>
             <div className="flex flex-wrap gap-1">
               {competencyIds.map((id) => (
                 <Badge key={id} variant="secondary">
@@ -623,7 +623,7 @@ function ResourceDetail({
 
         {tags.length > 0 && (
           <div className="space-y-1.5">
-            <p className="text-[13px] text-muted-foreground">Tags</p>
+            <p className="text-cb-foot text-muted-foreground">Tags</p>
             <div className="flex flex-wrap gap-1">
               {tags.map((t) => (
                 <Badge key={t} variant="outline">
@@ -637,7 +637,7 @@ function ResourceDetail({
         <Separator />
 
         <div className="space-y-1.5">
-          <p className="text-[13px] text-muted-foreground">Status</p>
+          <p className="text-cb-foot text-muted-foreground">Status</p>
           <div className="flex flex-wrap gap-1.5">
             {STATUSES.map((s) => (
               <Button
@@ -673,7 +673,7 @@ function ResourceDetail({
             Start learning
           </Button>
           {started && (
-            <p className="text-[13px] text-muted-foreground text-center">{started}</p>
+            <p className="text-cb-foot text-muted-foreground text-center">{started}</p>
           )}
         </div>
 

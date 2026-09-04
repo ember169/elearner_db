@@ -83,11 +83,11 @@ export function CoreDonut({
           )}
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="cb-label-mono text-[9px] text-cb-muted">42 level</span>
-          <span className="font-cb-serif text-[38px] leading-none text-cb-text">
+          <span className="cb-label-mono text-cb-caption text-cb-muted">42 level</span>
+          <span className="font-cb-serif text-cb-hero leading-none text-cb-text">
             {level != null ? level.toFixed(2) : "—"}
           </span>
-          <span className="mt-1 font-cb-mono text-[11px] tabular-nums text-cb-second">
+          <span className="mt-1 font-cb-mono text-cb-foot tabular-nums text-cb-second">
             {coreDone}/{coreTotal} core
           </span>
         </div>
@@ -111,7 +111,7 @@ export function CircleBars({ circles }: { circles: CircleSlice[] }) {
           c.state === "current" ? Math.max(pct, 8) : c.done > 0 ? pct : 0;
         return (
           <div key={c.circle} className="flex items-center gap-3">
-            <span className="w-6 shrink-0 font-cb-mono text-[11px] text-cb-muted">
+            <span className="w-6 shrink-0 font-cb-mono text-cb-foot text-cb-muted">
               C{c.circle}
             </span>
             <div className="h-[7px] flex-1 overflow-hidden rounded-full bg-cb-raised">
@@ -120,7 +120,7 @@ export function CircleBars({ circles }: { circles: CircleSlice[] }) {
                 style={{ width: `${barWidth}%` }}
               />
             </div>
-            <span className="w-9 shrink-0 text-right font-cb-mono text-[11px] tabular-nums text-cb-second">
+            <span className="w-9 shrink-0 text-right font-cb-mono text-cb-foot tabular-nums text-cb-second">
               {c.done}/{c.total}
             </span>
           </div>

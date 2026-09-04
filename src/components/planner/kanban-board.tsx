@@ -248,7 +248,7 @@ export function StatusKanbanBoard({
                 }}
               />
               <span
-                className="cb-label-mono text-[10px]"
+                className="cb-label-mono text-cb-caption"
                 style={{
                   color:
                     col.id === "in_progress"
@@ -259,7 +259,7 @@ export function StatusKanbanBoard({
                 {col.label}
               </span>
               {colTotals[ci].count > 0 && (
-                <span className="font-cb-mono text-[10px] tabular-nums text-cb-muted">
+                <span className="font-cb-mono text-cb-caption tabular-nums text-cb-muted">
                   {colTotals[ci].count} · {colTotals[ci].hours.toFixed(0)}h
                 </span>
               )}
@@ -285,7 +285,7 @@ export function StatusKanbanBoard({
                   style={{ background: lane.color }}
                 />
                 <span
-                  className="cb-label-mono text-[10px]"
+                  className="cb-label-mono text-cb-caption"
                   style={{
                     color: lane.color,
                     writingMode: "vertical-lr",
@@ -461,7 +461,7 @@ function BoardCard({
           style={{ color: statusStyle.color }}
         />
         <span
-          className="rounded-cb-chip-sm px-2 py-0.5 font-cb-mono text-[10px]"
+          className="rounded-cb-chip-sm px-2 py-0.5 font-cb-mono text-cb-caption"
           style={{
             color: platformColor,
             background: `color-mix(in oklch, ${platformColor} 12%, transparent)`,
@@ -472,7 +472,7 @@ function BoardCard({
 
         {(item.status === "blocked" || item.status === "stuck") && (
           <span
-            className="cb-label-mono ml-auto rounded-cb-chip-sm px-2 py-0.5 text-[10px]"
+            className="cb-label-mono ml-auto rounded-cb-chip-sm px-2 py-0.5 text-cb-caption"
             style={{
               color: statusStyle.color,
               background: `color-mix(in oklch, ${statusStyle.color} 12%, transparent)`,
@@ -485,7 +485,7 @@ function BoardCard({
         {!overlay && onItemUpdate && (
           <DropdownMenu>
             <DropdownMenuTrigger
-              className="ml-auto text-[14px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+              className="ml-auto text-cb-foot text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
               render={<button />}
               onClick={(e) => e.stopPropagation()}
             >
@@ -494,7 +494,7 @@ function BoardCard({
             <DropdownMenuContent align="end" side="bottom" sideOffset={2}>
               {onOpenDetail && (
                 <DropdownMenuItem
-                  className="font-cb-sans text-[13px]"
+                  className="font-cb-sans text-cb-foot"
                   onClick={(e) => {
                     e.stopPropagation();
                     onOpenDetail(item.id);
@@ -506,7 +506,7 @@ function BoardCard({
               {moveActions.map((a) => (
                 <DropdownMenuItem
                   key={a.id}
-                  className="font-cb-sans text-[13px]"
+                  className="font-cb-sans text-cb-foot"
                   onClick={(e) => {
                     e.stopPropagation();
                     onItemUpdate(item.id, { boardStatus: a.id });
@@ -516,7 +516,7 @@ function BoardCard({
                 </DropdownMenuItem>
               ))}
               <DropdownMenuItem
-                className="font-cb-sans text-[13px]"
+                className="font-cb-sans text-cb-foot"
                 onClick={(e) => {
                   e.stopPropagation();
                   onItemUpdate(item.id, { status: "blocked" });
@@ -525,7 +525,7 @@ function BoardCard({
                 Mark blocked
               </DropdownMenuItem>
               <DropdownMenuItem
-                className="font-cb-sans text-[13px]"
+                className="font-cb-sans text-cb-foot"
                 onClick={(e) => {
                   e.stopPropagation();
                   onItemUpdate(item.id, { status: "stuck" });
@@ -535,7 +535,7 @@ function BoardCard({
               </DropdownMenuItem>
               {onDelete && (
                 <DropdownMenuItem
-                  className="font-cb-mono text-[11px] text-cb-danger"
+                  className="font-cb-mono text-cb-foot text-cb-danger"
                   onClick={(e) => {
                     e.stopPropagation();
                     onDelete(item.id);
@@ -555,7 +555,7 @@ function BoardCard({
         {item.goalId ? (
           <a
             href={`/goals?goal=${item.goalId}`}
-            className="text-[14px] font-medium leading-snug hover:underline block"
+            className="text-cb-foot font-medium leading-snug hover:underline block"
             style={{
               color: "var(--foreground)",
               textDecoration: done ? "line-through" : undefined,
@@ -569,7 +569,7 @@ function BoardCard({
             href={item.link}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[14px] font-medium leading-snug text-primary hover:underline block"
+            className="text-cb-foot font-medium leading-snug text-primary hover:underline block"
             onClick={(e) => e.stopPropagation()}
             style={{ textDecoration: done ? "line-through" : undefined }}
           >
@@ -582,14 +582,14 @@ function BoardCard({
               e.stopPropagation();
               onOpenDetail(item.id);
             }}
-            className="block text-left text-[14px] font-medium leading-snug hover:underline"
+            className="block text-left text-cb-foot font-medium leading-snug hover:underline"
             style={{ textDecoration: done ? "line-through" : undefined }}
           >
             {item.title}
           </button>
         ) : (
           <p
-            className="text-[14px] font-medium leading-snug"
+            className="text-cb-foot font-medium leading-snug"
             style={{ textDecoration: done ? "line-through" : undefined }}
           >
             {item.title}
@@ -598,7 +598,7 @@ function BoardCard({
       </div>
 
       {item.why && (
-        <p className="text-[12px] text-muted-foreground leading-snug pl-2 mt-0.5 line-clamp-2">
+        <p className="text-cb-foot text-muted-foreground leading-snug pl-2 mt-0.5 line-clamp-2">
           {item.why}
         </p>
       )}
@@ -606,14 +606,14 @@ function BoardCard({
       {/* Bottom row */}
       <div className="flex items-center gap-1 mt-1.5 pl-2">
         <Clock className="h-[10px] w-[10px] text-muted-foreground/60" />
-        <span className="text-[12px] text-muted-foreground/60 tabular-nums">
+        <span className="text-cb-foot text-muted-foreground/60 tabular-nums">
           {(item.estimatedHours ?? 2) < 1
             ? `${((item.estimatedHours ?? 2) * 60).toFixed(0)}min`
             : `${(item.estimatedHours ?? 2).toFixed(0)}h`}
         </span>
         {item.status === "blocked" && item.blockedReason && (
           <span
-            className="text-[12px] ml-1 truncate"
+            className="text-cb-foot ml-1 truncate"
             style={{ color: "var(--status-blocked)", maxWidth: "80px" }}
           >
             {item.blockedReason}

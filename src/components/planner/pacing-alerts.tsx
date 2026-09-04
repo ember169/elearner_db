@@ -18,7 +18,7 @@ export function PacingAlerts({ goals }: { goals: GoalSlim[] }) {
     return (
       <div className="flex items-center gap-2 rounded-cb-card border border-cb-line bg-cb-card px-4 py-3">
         <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-cb-success" />
-        <span className="font-cb-sans text-[13px] text-cb-muted">
+        <span className="font-cb-sans text-cb-foot text-cb-muted">
           All goals on track
         </span>
       </div>
@@ -27,7 +27,7 @@ export function PacingAlerts({ goals }: { goals: GoalSlim[] }) {
 
   return (
     <div className="space-y-1.5">
-      <p className="cb-label-mono text-[10px] text-cb-muted">Pacing alerts</p>
+      <p className="cb-label-mono text-cb-caption text-cb-muted">Pacing alerts</p>
 
       {behind.map((goal) => {
         const days = goal.pacing!.daysRemaining;
@@ -51,14 +51,14 @@ export function PacingAlerts({ goals }: { goals: GoalSlim[] }) {
                 className="h-1.5 w-1.5 shrink-0 rounded-full"
                 style={{ background: platformColor }}
               />
-              <span className="truncate font-cb-sans text-[14px] font-bold text-cb-text">
+              <span className="truncate font-cb-sans text-cb-foot font-bold text-cb-text">
                 {goal.title}
               </span>
-              <span className={`cb-label-mono ml-auto shrink-0 text-[10px] ${tone.text}`}>
+              <span className={`cb-label-mono ml-auto shrink-0 text-cb-caption ${tone.text}`}>
                 {days}d left
               </span>
             </div>
-            <p className="mt-1 font-cb-mono text-[11px] text-cb-muted">
+            <p className="mt-1 font-cb-mono text-cb-foot text-cb-muted">
               {goal.pacing!.percentComplete.toFixed(0)}% · need{" "}
               {goal.pacing!.requiredPace}, at {goal.pacing!.currentPace}
             </p>

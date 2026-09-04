@@ -54,7 +54,7 @@ export function RelatedArticles({
 
   return (
     <div className="space-y-1.5">
-      <p className="cb-label-mono flex items-center gap-1 text-[10px] text-cb-muted">
+      <p className="cb-label-mono flex items-center gap-1 text-cb-caption text-cb-muted">
         <Notebook className="h-3 w-3" />
         read in Knowledge
       </p>
@@ -62,10 +62,10 @@ export function RelatedArticles({
         {articles.slice(0, 6).map((a) => {
           const inner = (
             <>
-              <span className="cb-label-mono shrink-0 text-[10px] text-cb-second">
+              <span className="cb-label-mono shrink-0 text-cb-caption text-cb-second">
                 L{a.depthTier}
               </span>
-              <span className="truncate font-cb-sans text-[13px] text-cb-second group-hover:text-cb-text">
+              <span className="truncate font-cb-sans text-cb-foot text-cb-second group-hover:text-cb-text">
                 {a.title}
               </span>
             </>

@@ -41,7 +41,7 @@ export function ExportMenu({ articleId }: { articleId: number }) {
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="cb-label-mono flex items-center gap-1 rounded-cb-chip-sm bg-cb-raised px-2 py-1.5 text-[10px] text-cb-second transition-colors hover:bg-cb-raised-hover hover:text-cb-text"
+        className="cb-label-mono flex items-center gap-1 rounded-cb-chip-sm bg-cb-raised px-2 py-1.5 text-cb-caption text-cb-second transition-colors hover:bg-cb-raised-hover hover:text-cb-text"
       >
         <Download className="h-3 w-3" />
         export
@@ -62,7 +62,7 @@ export function ExportMenu({ articleId }: { articleId: number }) {
                 ? { target: "_blank", rel: "noopener noreferrer" }
                 : {})}
               onClick={() => setOpen(false)}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left font-cb-sans text-[14px] text-cb-second transition-colors hover:bg-cb-raised hover:text-cb-text"
+              className="flex w-full items-center gap-2 px-3 py-2 text-left font-cb-sans text-cb-foot text-cb-second transition-colors hover:bg-cb-raised hover:text-cb-text"
             >
               <item.icon className="h-3.5 w-3.5" />
               {item.label}

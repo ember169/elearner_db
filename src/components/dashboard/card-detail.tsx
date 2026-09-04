@@ -47,11 +47,11 @@ function ExerciseBlock({ ex }: { ex: Exercise }) {
         ) : (
           <ChevronRight className="h-3.5 w-3.5 shrink-0 text-cb-muted" />
         )}
-        <span className="font-cb-sans text-[14px] font-bold text-cb-text">
+        <span className="font-cb-sans text-cb-foot font-bold text-cb-text">
           {ex.assignmentName}
         </span>
         {ex.expectedFiles && (
-          <span className="cb-label-mono ml-auto text-[10px] text-cb-muted">
+          <span className="cb-label-mono ml-auto text-cb-caption text-cb-muted">
             {ex.expectedFiles}
           </span>
         )}
@@ -61,11 +61,11 @@ function ExerciseBlock({ ex }: { ex: Exercise }) {
         <div className="space-y-3 border-t border-cb-line px-3 py-3">
           {ex.tests.length > 0 && (
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="cb-label-mono text-[10px] text-cb-muted">tests</span>
+              <span className="cb-label-mono text-cb-caption text-cb-muted">tests</span>
               {ex.tests.map((t) => (
                 <span
                   key={t}
-                  className="cb-label-mono rounded-cb-chip-sm bg-cb-or-tint px-2 py-0.5 text-[10px] text-cb-or"
+                  className="cb-label-mono rounded-cb-chip-sm bg-cb-or-tint px-2 py-0.5 text-cb-caption text-cb-or"
                 >
                   {t}
                 </span>
@@ -73,12 +73,12 @@ function ExerciseBlock({ ex }: { ex: Exercise }) {
             </div>
           )}
           {ex.allowedFunctions && (
-            <p className="font-cb-mono text-[11px] text-cb-second">
+            <p className="font-cb-mono text-cb-foot text-cb-second">
               <span className="text-cb-muted">allowed: </span>
               {ex.allowedFunctions}
             </p>
           )}
-          <pre className="overflow-x-auto whitespace-pre-wrap rounded-cb-chip-sm bg-cb-card p-3 font-cb-mono text-[12px] leading-relaxed text-cb-second">
+          <pre className="overflow-x-auto whitespace-pre-wrap rounded-cb-chip-sm bg-cb-card p-3 font-cb-mono text-cb-foot leading-relaxed text-cb-second">
             {ex.subject}
           </pre>
 
@@ -87,13 +87,13 @@ function ExerciseBlock({ ex }: { ex: Exercise }) {
               <button
                 type="button"
                 onClick={() => setShowSolution((v) => !v)}
-                className="cb-label-mono flex items-center gap-1 text-[10px] text-cb-or"
+                className="cb-label-mono flex items-center gap-1 text-cb-caption text-cb-or"
               >
                 {showSolution ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
                 {showSolution ? "hide solution" : "show solution"}
               </button>
               {showSolution && (
-                <pre className="mt-2 overflow-x-auto rounded-cb-chip-sm border border-cb-line bg-cb-card p-3 font-cb-mono text-[12px] leading-relaxed text-cb-second">
+                <pre className="mt-2 overflow-x-auto rounded-cb-chip-sm border border-cb-line bg-cb-card p-3 font-cb-mono text-cb-foot leading-relaxed text-cb-second">
                   {ex.solution}
                 </pre>
               )}
@@ -147,17 +147,17 @@ export function CardDetail({ itemId, onClose }: { itemId: number; onClose: () =>
             <Loader2 className="h-5 w-5 animate-spin text-cb-muted" />
           </div>
         )}
-        {error && <p className="py-8 text-center font-cb-sans text-[14px] text-cb-danger">{error}</p>}
+        {error && <p className="py-8 text-center font-cb-sans text-cb-foot text-cb-danger">{error}</p>}
 
         {ctx && (
           <div className="space-y-4">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-2">
-                <span className="cb-label-mono rounded-cb-chip-sm bg-cb-raised px-2 py-1 text-[10px] text-cb-second">
+                <span className="cb-label-mono rounded-cb-chip-sm bg-cb-raised px-2 py-1 text-cb-caption text-cb-second">
                   {PLATFORM_LABELS[ctx.item.type] ?? ctx.item.type}
                 </span>
                 {ctx.level?.label && (
-                  <span className="cb-label-mono rounded-cb-chip-sm bg-cb-or-tint px-2 py-1 text-[10px] text-cb-or">
+                  <span className="cb-label-mono rounded-cb-chip-sm bg-cb-or-tint px-2 py-1 text-cb-caption text-cb-or">
                     {ctx.level.label}
                   </span>
                 )}
@@ -167,15 +167,15 @@ export function CardDetail({ itemId, onClose }: { itemId: number; onClose: () =>
               </button>
             </div>
 
-            <h2 className="font-cb-sans text-[20px] font-bold leading-snug text-cb-text">
+            <h2 className="font-cb-sans text-cb-head leading-snug text-cb-text">
               {ctx.item.title}
             </h2>
 
             {ctx.summary && (
-              <p className="font-cb-sans text-[14px] leading-relaxed text-cb-second">{ctx.summary}</p>
+              <p className="font-cb-sans text-cb-foot leading-relaxed text-cb-second">{ctx.summary}</p>
             )}
             {ctx.item.why && (
-              <p className="font-cb-sans text-[13px] italic leading-relaxed text-cb-muted">
+              <p className="font-cb-sans text-cb-foot italic leading-relaxed text-cb-muted">
                 {ctx.item.why}
               </p>
             )}
@@ -183,7 +183,7 @@ export function CardDetail({ itemId, onClose }: { itemId: number; onClose: () =>
             {ctx.goal && (
               <Link
                 href={`/goals?goal=${ctx.goal.id}`}
-                className="cb-label-mono inline-flex items-center gap-1 text-[10px] text-cb-or"
+                className="cb-label-mono inline-flex items-center gap-1 text-cb-caption text-cb-or"
               >
                 goal · {ctx.goal.title}
               </Link>
@@ -191,19 +191,19 @@ export function CardDetail({ itemId, onClose }: { itemId: number; onClose: () =>
 
             {ctx.competencies.length > 0 && (
               <div className="space-y-1.5">
-                <p className="cb-label-mono text-[10px] text-cb-muted">requires</p>
+                <p className="cb-label-mono text-cb-caption text-cb-muted">requires</p>
                 <div className="flex flex-wrap gap-1.5">
                   {ctx.competencies.map((c) => (
                     <Link
                       key={c.id}
                       href={`/knowledge/${c.id}`}
-                      className="cb-label-mono rounded-cb-chip-sm bg-cb-or-tint px-2 py-1 text-[10px] text-cb-or hover:bg-cb-or/25"
+                      className="cb-label-mono rounded-cb-chip-sm bg-cb-or-tint px-2 py-1 text-cb-caption text-cb-or hover:bg-cb-or/25"
                     >
                       {c.label}
                     </Link>
                   ))}
                   {ctx.skills.map((sk) => (
-                    <span key={sk} className="cb-label-mono rounded-cb-chip-sm bg-cb-raised px-2 py-1 text-[10px] text-cb-second">
+                    <span key={sk} className="cb-label-mono rounded-cb-chip-sm bg-cb-raised px-2 py-1 text-cb-caption text-cb-second">
                       {sk}
                     </span>
                   ))}
@@ -213,7 +213,7 @@ export function CardDetail({ itemId, onClose }: { itemId: number; onClose: () =>
 
             {ctx.exam && (
               <div className="space-y-2">
-                <p className="cb-label-mono text-[10px] text-cb-muted">
+                <p className="cb-label-mono text-cb-caption text-cb-muted">
                   possible subjects · {ctx.exam.exercises.length}
                 </p>
                 <div className="space-y-1.5">
@@ -228,7 +228,7 @@ export function CardDetail({ itemId, onClose }: { itemId: number; onClose: () =>
                       href={src.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="cb-label-mono inline-flex items-center gap-1 text-[10px] text-cb-muted hover:text-cb-text"
+                      className="cb-label-mono inline-flex items-center gap-1 text-cb-caption text-cb-muted hover:text-cb-text"
                     >
                       <ExternalLink className="h-3 w-3" />
                       {src.name}
@@ -240,7 +240,7 @@ export function CardDetail({ itemId, onClose }: { itemId: number; onClose: () =>
 
             {ctx.relatedArticles.length > 0 && (
               <div className="space-y-1.5">
-                <p className="cb-label-mono flex items-center gap-1 text-[10px] text-cb-muted">
+                <p className="cb-label-mono flex items-center gap-1 text-cb-caption text-cb-muted">
                   <Notebook className="h-3 w-3" /> read at this level
                 </p>
                 <div className="space-y-1">
@@ -250,8 +250,8 @@ export function CardDetail({ itemId, onClose }: { itemId: number; onClose: () =>
                       href={`/knowledge?article=${a.id}`}
                       className="flex items-center gap-2 rounded-cb-chip-sm px-2 py-1.5 transition-colors hover:bg-cb-raised"
                     >
-                      <span className="cb-label-mono shrink-0 text-[10px] text-cb-second">L{a.depthTier}</span>
-                      <span className="truncate font-cb-sans text-[13px] text-cb-second">{a.title}</span>
+                      <span className="cb-label-mono shrink-0 text-cb-caption text-cb-second">L{a.depthTier}</span>
+                      <span className="truncate font-cb-sans text-cb-foot text-cb-second">{a.title}</span>
                     </a>
                   ))}
                 </div>
@@ -260,7 +260,7 @@ export function CardDetail({ itemId, onClose }: { itemId: number; onClose: () =>
 
             {ctx.relatedResources.length > 0 && (
               <div className="space-y-1.5">
-                <p className="cb-label-mono flex items-center gap-1 text-[10px] text-cb-muted">
+                <p className="cb-label-mono flex items-center gap-1 text-cb-caption text-cb-muted">
                   <BookOpen className="h-3 w-3" /> practise at this level · {ctx.relatedResources.length}
                 </p>
                 <div className="flex flex-wrap gap-1.5">
@@ -270,10 +270,10 @@ export function CardDetail({ itemId, onClose }: { itemId: number; onClose: () =>
                       href={`/learn?resource=${r.id}`}
                       className="flex items-center gap-1.5 rounded-cb-chip-sm bg-cb-raised px-2 py-1 transition-colors hover:bg-cb-raised-hover"
                     >
-                      <span className="cb-label-mono text-[10px] text-cb-muted">
+                      <span className="cb-label-mono text-cb-caption text-cb-muted">
                         {PLATFORM_LABELS[r.platform] ?? r.platform}
                       </span>
-                      <span className="max-w-[180px] truncate font-cb-sans text-[12px] text-cb-second">{r.title}</span>
+                      <span className="max-w-[180px] truncate font-cb-sans text-cb-foot text-cb-second">{r.title}</span>
                     </a>
                   ))}
                 </div>
@@ -285,7 +285,7 @@ export function CardDetail({ itemId, onClose }: { itemId: number; onClose: () =>
                 href={ctx.item.link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex w-full items-center justify-center gap-1.5 rounded-cb-card border border-cb-line py-3 font-cb-sans text-[14px] font-bold text-cb-second transition-colors hover:border-cb-or hover:text-cb-or"
+                className="flex w-full items-center justify-center gap-1.5 rounded-cb-card border border-cb-line py-3 font-cb-sans text-cb-foot font-bold text-cb-second transition-colors hover:border-cb-or hover:text-cb-or"
               >
                 <ExternalLink className="h-3.5 w-3.5" />
                 Open externally

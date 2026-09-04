@@ -80,7 +80,7 @@ function Widget({
       {(title || action) && (
         <div className="mb-3 flex items-baseline justify-between gap-2">
           {title && (
-            <h2 className="cb-label-mono text-[10px] text-cb-muted">{title}</h2>
+            <h2 className="cb-label-mono text-cb-caption text-cb-muted">{title}</h2>
           )}
           {action}
         </div>
@@ -103,16 +103,16 @@ function StatTile({
   return (
     <div className="rounded-cb-card border border-cb-line bg-cb-raised px-3 py-3">
       <div className="flex items-baseline gap-1">
-        <span className="font-cb-serif text-[24px] leading-none text-cb-text">
+        <span className="font-cb-serif text-cb-title leading-none text-cb-text">
           {value}
         </span>
         {sub && (
-          <span className="font-cb-mono text-[11px] tabular-nums text-cb-muted">
+          <span className="font-cb-mono text-cb-foot tabular-nums text-cb-muted">
             {sub}
           </span>
         )}
       </div>
-      <p className="mt-1.5 cb-label-mono text-[9px] text-cb-muted">{label}</p>
+      <p className="mt-1.5 cb-label-mono text-cb-caption text-cb-muted">{label}</p>
     </div>
   );
 }
@@ -193,11 +193,11 @@ export function TodayDashboard({
   return (
     <div className="space-y-4">
       <div className="flex items-baseline gap-3">
-        <span className="cb-label-mono text-[10px] text-cb-muted">{todayLabel()}</span>
+        <span className="cb-label-mono text-cb-caption text-cb-muted">{todayLabel()}</span>
       </div>
 
       {error && (
-        <div className="rounded-cb-card border border-cb-line bg-cb-danger-tint px-4 py-3 font-cb-sans text-[14px] text-cb-danger">
+        <div className="rounded-cb-card border border-cb-line bg-cb-danger-tint px-4 py-3 font-cb-sans text-cb-foot text-cb-danger">
           {error}
         </div>
       )}
@@ -243,7 +243,7 @@ export function TodayDashboard({
         {/* Within reach */}
         <Widget title="within reach" className="lg:col-span-3">
           {withinReach.length === 0 ? (
-            <p className="py-3 font-cb-sans text-[13px] text-cb-muted">
+            <p className="py-3 font-cb-sans text-cb-foot text-cb-muted">
               No goals close to the line right now — keep chipping at the board.
             </p>
           ) : (
@@ -252,10 +252,10 @@ export function TodayDashboard({
                 g.kind === "goal" ? (
                   <div key={g.id}>
                     <div className="flex items-baseline justify-between gap-2">
-                      <span className="min-w-0 truncate font-cb-sans text-[13px] font-medium text-cb-text">
+                      <span className="min-w-0 truncate font-cb-sans text-cb-foot font-medium text-cb-text">
                         {g.title}
                       </span>
-                      <span className="shrink-0 font-cb-mono text-[11px] tabular-nums text-cb-or">
+                      <span className="shrink-0 font-cb-mono text-cb-foot tabular-nums text-cb-or">
                         {g.pct}%
                       </span>
                     </div>
@@ -265,7 +265,7 @@ export function TodayDashboard({
                         style={{ width: `${g.pct}%` }}
                       />
                     </div>
-                    <p className="mt-1 font-cb-mono text-[10px] text-cb-muted">
+                    <p className="mt-1 font-cb-mono text-cb-caption text-cb-muted">
                       {g.current}/{g.target}
                     </p>
                   </div>
@@ -275,14 +275,14 @@ export function TodayDashboard({
                     className="flex items-center justify-between gap-2"
                   >
                     <div className="min-w-0">
-                      <span className="block truncate font-cb-sans text-[13px] font-medium text-cb-text">
+                      <span className="block truncate font-cb-sans text-cb-foot font-medium text-cb-text">
                         {g.title}
                       </span>
-                      <span className="font-cb-mono text-[10px] text-cb-muted">
+                      <span className="font-cb-mono text-cb-caption text-cb-muted">
                         circle {g.circle} · {g.hours}h
                       </span>
                     </div>
-                    <span className="cb-label-mono shrink-0 rounded-cb-chip-sm bg-cb-or-tint px-2 py-0.5 text-[9px] text-cb-or">
+                    <span className="cb-label-mono shrink-0 rounded-cb-chip-sm bg-cb-or-tint px-2 py-0.5 text-cb-caption text-cb-or">
                       ready
                     </span>
                   </div>
@@ -299,7 +299,7 @@ export function TodayDashboard({
         >
           <CompetencyPulse competencies={competencies} />
           {weakest.length > 0 && (
-            <p className="mt-3 font-cb-sans text-[12px] text-cb-second">
+            <p className="mt-3 font-cb-sans text-cb-foot text-cb-second">
               <span className="text-cb-muted">focus next · </span>
               {weakest.map((c) => c.label).join(", ")}
             </p>
@@ -314,14 +314,14 @@ export function TodayDashboard({
             <button
               type="button"
               onClick={onSeeBoard}
-              className="cb-label-mono text-[10px] text-cb-or"
+              className="cb-label-mono text-cb-caption text-cb-or"
             >
               see board · {boardCount}
             </button>
           }
         >
           {focus.length === 0 ? (
-            <div className="rounded-cb-card border border-dashed border-cb-line px-4 py-6 text-center font-cb-sans text-[13px] text-cb-muted">
+            <div className="rounded-cb-card border border-dashed border-cb-line px-4 py-6 text-center font-cb-sans text-cb-foot text-cb-muted">
               Nothing in flight. Pull something from the board.
             </div>
           ) : (
@@ -336,13 +336,13 @@ export function TodayDashboard({
                     onClick={() => setDetailId(item.id)}
                     className="min-w-0 flex-1 text-left"
                   >
-                    <span className="cb-label-mono inline-block rounded-cb-chip-sm bg-cb-card px-2 py-1 text-[10px] text-cb-second">
+                    <span className="cb-label-mono inline-block rounded-cb-chip-sm bg-cb-card px-2 py-1 text-cb-caption text-cb-second">
                       {PLATFORM_LABELS[item.type] ?? item.type}
                     </span>
-                    <h3 className="mt-1.5 font-cb-sans text-[14px] font-bold leading-snug text-cb-text">
+                    <h3 className="mt-1.5 font-cb-sans text-cb-foot font-bold leading-snug text-cb-text">
                       {item.title}
                     </h3>
-                    <p className="mt-1 font-cb-mono text-[10px] text-cb-muted">
+                    <p className="mt-1 font-cb-mono text-cb-caption text-cb-muted">
                       {[
                         item.boardStatus === "in_progress" ? "in progress" : "todo",
                         item.estimatedHours ? `${item.estimatedHours}h` : null,
@@ -356,7 +356,7 @@ export function TodayDashboard({
                     type="button"
                     onClick={() => void markDone(item.id)}
                     disabled={busyId === item.id}
-                    className="flex h-9 shrink-0 items-center gap-1 rounded-cb-card bg-cb-card px-3 font-cb-sans text-[13px] font-bold text-cb-text transition-colors hover:bg-cb-raised-hover disabled:opacity-50"
+                    className="flex h-9 shrink-0 items-center gap-1 rounded-cb-card bg-cb-card px-3 font-cb-sans text-cb-foot font-bold text-cb-text transition-colors hover:bg-cb-raised-hover disabled:opacity-50"
                   >
                     {busyId === item.id && <Loader2 className="h-3 w-3 animate-spin" />}
                     Done
@@ -374,20 +374,20 @@ export function TodayDashboard({
             className="lg:col-span-6"
             action={
               briefingStale ? (
-                <span className="cb-label-mono rounded-cb-chip-sm bg-cb-warn-tint px-2 py-0.5 text-[10px] text-cb-warn">
+                <span className="cb-label-mono rounded-cb-chip-sm bg-cb-warn-tint px-2 py-0.5 text-cb-caption text-cb-warn">
                   stale
                 </span>
               ) : undefined
             }
           >
-            <p className="font-cb-sans text-[14px] leading-[1.6] text-cb-second">
+            <p className="font-cb-sans text-cb-foot leading-[1.6] text-cb-second">
               {shown}
             </p>
             {briefing && collapsedBriefing && briefing !== collapsedBriefing && (
               <button
                 type="button"
                 onClick={() => setExpanded((v) => !v)}
-                className="mt-2 font-cb-mono text-[11px] text-cb-or"
+                className="mt-2 font-cb-mono text-cb-foot text-cb-or"
               >
                 {expanded ? "collapse" : "read more"}
               </button>

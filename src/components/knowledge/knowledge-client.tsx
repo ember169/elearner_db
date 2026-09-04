@@ -166,7 +166,7 @@ export function KnowledgeClient({
           {competency ? (
             <Link
               href={`/knowledge/${competency.id}`}
-              className="flex items-center gap-1.5 font-cb-sans text-[14px] text-cb-muted transition-colors hover:text-cb-text"
+              className="flex items-center gap-1.5 font-cb-sans text-cb-foot text-cb-muted transition-colors hover:text-cb-text"
             >
               <ArrowLeft className="h-4 w-4" />
               {competency.label}
@@ -175,7 +175,7 @@ export function KnowledgeClient({
             <button
               type="button"
               onClick={() => setArticle(null)}
-              className="flex items-center gap-1.5 font-cb-sans text-[14px] text-cb-muted transition-colors hover:text-cb-text"
+              className="flex items-center gap-1.5 font-cb-sans text-cb-foot text-cb-muted transition-colors hover:text-cb-text"
             >
               <ArrowLeft className="h-4 w-4" />
               All competencies
@@ -186,21 +186,21 @@ export function KnowledgeClient({
 
         <header className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="cb-label-mono rounded-cb-chip-sm bg-cb-raised px-2 py-1 text-[10px] text-cb-second">
+            <span className="cb-label-mono rounded-cb-chip-sm bg-cb-raised px-2 py-1 text-cb-caption text-cb-second">
               L{article.depthTier} · {TIER_PURPOSE[article.depthTier]}
             </span>
             {competency && (
-              <span className="cb-label-mono rounded-cb-chip-sm bg-cb-raised px-2 py-1 text-[10px] text-cb-second">
+              <span className="cb-label-mono rounded-cb-chip-sm bg-cb-raised px-2 py-1 text-cb-caption text-cb-second">
                 {competency.label}
               </span>
             )}
             {aboveLevel && (
-              <span className="cb-label-mono rounded-cb-chip-sm bg-cb-warn-tint px-2 py-1 text-[10px] text-cb-warn">
+              <span className="cb-label-mono rounded-cb-chip-sm bg-cb-warn-tint px-2 py-1 text-cb-caption text-cb-warn">
                 above your level
               </span>
             )}
           </div>
-          <h1 className="cb-content-title text-[32px] text-cb-text">{article.title}</h1>
+          <h1 className="cb-content-title text-cb-title text-cb-text">{article.title}</h1>
           {/* The other half of the Learn/Knowledge crossing: the resources that
               practise this competency. */}
           <RelatedResources competencyId={article.competencyId} />
@@ -231,7 +231,7 @@ export function KnowledgeClient({
                     aria-current={current}
                     title={t.title}
                     className={cn(
-                      "cb-label-mono flex items-center gap-1 rounded-cb-chip-sm px-2 py-1 text-[10px] transition-colors",
+                      "cb-label-mono flex items-center gap-1 rounded-cb-chip-sm px-2 py-1 text-cb-caption transition-colors",
                       current
                         ? "bg-cb-or text-cb-on-or"
                         : "bg-cb-raised text-cb-second hover:bg-cb-raised-hover hover:text-cb-text",
@@ -311,7 +311,7 @@ export function KnowledgeClient({
     <div className="space-y-5">
       <div>
         <h1 className="page-title text-cb-text">Knowledge</h1>
-        <p className="mt-1 font-cb-sans text-[14px] text-cb-muted">
+        <p className="mt-1 font-cb-sans text-cb-foot text-cb-muted">
           Courses written for each competency, six depth tiers deep. Every tier is
           readable — the level badge is a marker, not a gate.
         </p>
@@ -323,7 +323,7 @@ export function KnowledgeClient({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search competencies and articles"
-          className="h-11 w-full rounded-cb-button border border-cb-line bg-cb-card pl-9 pr-9 font-cb-sans text-[15px] text-cb-text placeholder:text-cb-muted focus-visible:border-cb-or focus-visible:outline-none"
+          className="h-11 w-full rounded-cb-button border border-cb-line bg-cb-card pl-9 pr-9 font-cb-sans text-cb-body text-cb-text placeholder:text-cb-muted focus-visible:border-cb-or focus-visible:outline-none"
         />
         {search && (
           <button
@@ -338,19 +338,19 @@ export function KnowledgeClient({
       </div>
 
       {error && (
-        <div className="rounded-cb-card border border-cb-line bg-cb-danger-tint px-4 py-3 font-cb-sans text-[14px] text-cb-danger">
+        <div className="rounded-cb-card border border-cb-line bg-cb-danger-tint px-4 py-3 font-cb-sans text-cb-foot text-cb-danger">
           {error}
         </div>
       )}
 
       {groups.length === 0 ? (
-        <div className="rounded-cb-card border border-dashed border-cb-line px-4 py-8 text-center font-cb-sans text-[14px] text-cb-muted">
+        <div className="rounded-cb-card border border-dashed border-cb-line px-4 py-8 text-center font-cb-sans text-cb-foot text-cb-muted">
           No competency matches that search.
         </div>
       ) : (
         groups.map((group) => (
           <section key={group.area} className="space-y-2">
-            <h2 className="cb-label-mono text-[10px] text-cb-muted">{group.area}</h2>
+            <h2 className="cb-label-mono text-cb-caption text-cb-muted">{group.area}</h2>
             <div className="grid gap-3 md:grid-cols-2">
               {group.items.map((c) => (
                 <CompetencyCard
@@ -387,13 +387,13 @@ function CompetencyCard({
             article inline; this is the whole-competency view. */}
         <Link
           href={`/knowledge/${competency.id}`}
-          className="font-cb-sans text-[15px] font-bold text-cb-text hover:text-cb-or"
+          className="font-cb-sans text-cb-body font-bold text-cb-text hover:text-cb-or"
         >
           {competency.label}
         </Link>
         <span
           className={cn(
-            "cb-label-mono flex shrink-0 items-center gap-1 rounded-cb-chip-sm px-2 py-1 text-[10px]",
+            "cb-label-mono flex shrink-0 items-center gap-1 rounded-cb-chip-sm px-2 py-1 text-cb-caption",
             competency.isValidated
               ? "bg-cb-or-tint text-cb-or"
               : "bg-cb-raised text-cb-second"
@@ -409,7 +409,7 @@ function CompetencyCard({
         </span>
       </div>
 
-      <p className="mt-1.5 font-cb-sans text-[13px] leading-[1.5] text-cb-muted">
+      <p className="mt-1.5 font-cb-sans text-cb-foot leading-[1.5] text-cb-muted">
         {competency.description}
       </p>
 
@@ -421,7 +421,7 @@ function CompetencyCard({
             return (
               <span
                 key={tier}
-                className="cb-label-mono rounded-cb-chip-sm border border-dashed border-cb-line px-2 py-1 text-[10px] text-cb-muted"
+                className="cb-label-mono rounded-cb-chip-sm border border-dashed border-cb-line px-2 py-1 text-cb-caption text-cb-muted"
                 title="No article for this tier yet"
               >
                 L{tier}
@@ -438,7 +438,7 @@ function CompetencyCard({
               disabled={isLoading}
               title={`${found.title} — ${atLevel ? "at your level" : "above your level"}`}
               className={cn(
-                "cb-label-mono flex items-center gap-1 rounded-cb-chip-sm px-2 py-1 text-[10px] transition-colors",
+                "cb-label-mono flex items-center gap-1 rounded-cb-chip-sm px-2 py-1 text-cb-caption transition-colors",
                 atLevel
                   ? "bg-cb-or-tint text-cb-or hover:bg-cb-or/25"
                   : "bg-cb-raised text-cb-second hover:bg-cb-raised-hover"

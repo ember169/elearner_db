@@ -83,28 +83,28 @@ function GoalCard({
                 <>
                   <Badge
                     variant="outline"
-                    className="text-[14px] px-1 py-0"
+                    className="text-cb-foot px-1 py-0"
                     style={{ borderColor: platformColor, color: platformColor }}
                   >
                     EPIC
                   </Badge>
-                  <span className="text-[15px] font-bold" style={{ color: platformColor }}>
+                  <span className="text-cb-body font-bold" style={{ color: platformColor }}>
                     {PLATFORM_LABELS[goal.category ?? "general"]}
                   </span>
                 </>
               )}
               {isCadence && (
-                <Badge variant="outline" className="text-[14px] px-1 py-0 font-mono">
+                <Badge variant="outline" className="text-cb-foot px-1 py-0 font-mono">
                   /wk
                 </Badge>
               )}
             </div>
-            <h3 className="text-[14px] font-semibold truncate">{goal.title}</h3>
+            <h3 className="text-cb-foot font-semibold truncate">{goal.title}</h3>
             {isCadence && goal.pacing && (
               <div className="flex items-center gap-2">
                 <Badge
                   variant="outline"
-                  className="text-[14px] px-1 py-0"
+                  className="text-cb-foot px-1 py-0"
                   style={{
                     borderColor: goal.pacing.onTrack ? "var(--status-success)" : "var(--status-danger)",
                     color: goal.pacing.onTrack ? "var(--status-success)" : "var(--status-danger)",
@@ -112,13 +112,13 @@ function GoalCard({
                 >
                   {goal.pacing.onTrack ? "ON PACE" : "BEHIND"}
                 </Badge>
-                <span className="text-[14px] text-muted-foreground">
+                <span className="text-cb-foot text-muted-foreground">
                   {goal.currentValue ?? 0}/{goal.cadenceValue ?? 0} this week
                 </span>
               </div>
             )}
             {!isCadence && !isEpic && goal.deadline && (
-              <p className="text-[14px] text-muted-foreground">
+              <p className="text-cb-foot text-muted-foreground">
                 by {fmtMonth(goal.deadline)} · {goal.metricSource ? "Auto" : "Manual"}
               </p>
             )}
@@ -130,7 +130,7 @@ function GoalCard({
                   return (
                     <span
                       key={child.id}
-                      className={`text-[15px] px-1.5 py-0.5 rounded-sm ${
+                      className={`text-cb-body px-1.5 py-0.5 rounded-sm ${
                         done
                           ? "bg-green-500/10 text-green-500"
                           : behind
@@ -149,14 +149,14 @@ function GoalCard({
 
           <div className="text-right flex-shrink-0">
             {isCadence ? (
-              <span className="text-[28px] font-bold" style={{ color: platformColor }}>
+              <span className="text-cb-title" style={{ color: platformColor }}>
                 {goal.currentValue ?? 0}
               </span>
             ) : (
               <div>
-                <span className="text-[18px] font-bold">{progress}%</span>
+                <span className="text-cb-head">{progress}%</span>
                 {goal.targetValue && (
-                  <p className="text-[15px] text-muted-foreground">
+                  <p className="text-cb-body text-muted-foreground">
                     {goal.currentValue ?? 0}/{goal.targetValue}
                   </p>
                 )}
@@ -204,7 +204,7 @@ function MobileGoalsList({
       <div className="flex items-center justify-between px-4 pb-2">
         <div>
           <h1 className="page-title">Goals</h1>
-          <p className="text-[15px] text-muted-foreground">
+          <p className="text-cb-body text-muted-foreground">
             {activeCount} active
             {behindGoals.length > 0 && (
               <span className="text-red-400"> · {behindGoals.length} behind</span>
@@ -231,7 +231,7 @@ function MobileGoalsList({
       {behindGoals.length > 0 && (
         <div className="mx-4 mb-2 px-3 py-2 rounded-sm bg-red-500/10 border border-red-500/20">
           {behindGoals.map((g) => (
-            <div key={g.id} className="flex items-center gap-1.5 text-[15px] text-red-400 py-0.5">
+            <div key={g.id} className="flex items-center gap-1.5 text-cb-body text-red-400 py-0.5">
               <AlertTriangle className="h-3 w-3 flex-shrink-0" />
               <span className="truncate">{g.title} behind pace</span>
             </div>
@@ -273,7 +273,7 @@ function MobileEpicView({
     <div className="flex flex-col h-full">
       <div className="px-4 pb-3">
         <button
-          className="flex items-center gap-0.5 text-[17px] text-primary mb-2"
+          className="flex items-center gap-0.5 text-cb-card text-primary mb-2"
           onClick={onBack}
         >
           <ChevronLeft className="h-5 w-5" />
@@ -282,20 +282,20 @@ function MobileEpicView({
         <div className="flex items-center gap-1.5 mb-1">
           <Badge
             variant="outline"
-            className="text-[14px] px-1 py-0"
+            className="text-cb-foot px-1 py-0"
             style={{ borderColor: platformColor, color: platformColor }}
           >
             EPIC
           </Badge>
-          <span className="text-[15px] font-bold" style={{ color: platformColor }}>
+          <span className="text-cb-body font-bold" style={{ color: platformColor }}>
             {PLATFORM_LABELS[goal.category ?? "general"]}
           </span>
         </div>
-        <h1 className="text-[20px] font-bold">{goal.title}</h1>
+        <h1 className="text-cb-head">{goal.title}</h1>
         <div className="flex items-center gap-2 mt-1">
           <Badge
             variant="outline"
-            className="text-[14px] px-1 py-0"
+            className="text-cb-foot px-1 py-0"
             style={{
               borderColor: isBehind ? "var(--status-danger)" : "var(--status-success)",
               color: isBehind ? "var(--status-danger)" : "var(--status-success)",
@@ -304,7 +304,7 @@ function MobileEpicView({
             {isBehind ? "BEHIND" : "ON TRACK"}
           </Badge>
           {goal.deadline && (
-            <span className="text-[15px] text-muted-foreground">
+            <span className="text-cb-body text-muted-foreground">
               by {fmtMonth(goal.deadline)}
             </span>
           )}
@@ -314,22 +314,22 @@ function MobileEpicView({
       <div className="px-4 grid grid-cols-2 gap-2 mb-4">
         <div className="rounded-sm border border-border p-3 text-center">
           <div>
-            <span className="text-[22px] font-bold">{goal.currentValue ?? 0}</span>
-            <span className="text-[14px] text-muted-foreground">/{goal.targetValue ?? "?"}</span>
+            <span className="text-cb-title">{goal.currentValue ?? 0}</span>
+            <span className="text-cb-foot text-muted-foreground">/{goal.targetValue ?? "?"}</span>
           </div>
-          <p className="text-[14px] text-muted-foreground">Projects</p>
+          <p className="text-cb-foot text-muted-foreground">Projects</p>
         </div>
         <div className="rounded-sm border border-border p-3 text-center">
           <div>
-            <span className="text-[22px] font-bold">{childrenDone}</span>
-            <span className="text-[14px] text-muted-foreground">/{goal.children.length}</span>
+            <span className="text-cb-title">{childrenDone}</span>
+            <span className="text-cb-foot text-muted-foreground">/{goal.children.length}</span>
           </div>
-          <p className="text-[14px] text-muted-foreground">Milestones</p>
+          <p className="text-cb-foot text-muted-foreground">Milestones</p>
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 pb-4">
-        <p className="text-[14px] font-bold uppercase tracking-wider text-muted-foreground mb-2">
+        <p className="text-cb-foot font-bold uppercase tracking-wider text-muted-foreground mb-2">
           Issues
         </p>
         <div className="space-y-1">
@@ -348,15 +348,15 @@ function MobileEpicView({
                 {done ? (
                   <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
                 ) : null}
-                <span className={`text-[15px] flex-1 ${done ? "line-through" : "font-medium"}`}>
+                <span className={`text-cb-body flex-1 ${done ? "line-through" : "font-medium"}`}>
                   {child.title.replace("Complete ", "")}
                 </span>
                 {behind && (
-                  <Badge variant="outline" className="text-[14px] px-1 py-0 text-red-400 border-red-400">
+                  <Badge variant="outline" className="text-cb-foot px-1 py-0 text-red-400 border-red-400">
                     BEHIND
                   </Badge>
                 )}
-                <span className="text-[14px] text-muted-foreground">
+                <span className="text-cb-foot text-muted-foreground">
                   {child.currentValue ?? 0}/{child.targetValue ?? child.children.length}
                 </span>
                 {!done && <ChevronRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />}
@@ -364,7 +364,7 @@ function MobileEpicView({
             );
           })}
           <button
-            className="w-full py-2.5 rounded-sm border border-dashed border-border text-[14px] text-muted-foreground"
+            className="w-full py-2.5 rounded-sm border border-dashed border-border text-cb-foot text-muted-foreground"
             onClick={onNewChild}
           >
             + Add issue
@@ -401,24 +401,24 @@ function MobileIssueView({
     <div className="flex flex-col h-full">
       <div className="px-4 pb-3">
         <button
-          className="flex items-center gap-0.5 text-[17px] text-primary mb-2"
+          className="flex items-center gap-0.5 text-cb-card text-primary mb-2"
           onClick={onBack}
         >
           <ChevronLeft className="h-5 w-5" />
           {parent?.title.replace("Complete ", "") ?? "Goals"}
         </button>
         <div className="flex items-center gap-1.5 mb-1">
-          <Badge variant="outline" className="text-[14px] px-1 py-0">
+          <Badge variant="outline" className="text-cb-foot px-1 py-0">
             ISSUE
           </Badge>
           {isBehind && (
-            <Badge variant="outline" className="text-[14px] px-1 py-0 text-red-400 border-red-400">
+            <Badge variant="outline" className="text-cb-foot px-1 py-0 text-red-400 border-red-400">
               BEHIND
             </Badge>
           )}
         </div>
-        <h1 className="text-[20px] font-bold">{goal.title.replace("Complete ", "")}</h1>
-        <p className="text-[15px] text-muted-foreground mt-0.5">
+        <h1 className="text-cb-head">{goal.title.replace("Complete ", "")}</h1>
+        <p className="text-cb-body text-muted-foreground mt-0.5">
           {goal.deadline && <>by {fmtDate(goal.deadline)} · </>}
           {daysLeft !== null && <>{daysLeft}d left · </>}
           {doneCount}/{goal.children.length} tasks
@@ -433,7 +433,7 @@ function MobileIssueView({
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 pb-4">
-        <p className="text-[14px] font-bold uppercase tracking-wider text-muted-foreground mb-2">
+        <p className="text-cb-foot font-bold uppercase tracking-wider text-muted-foreground mb-2">
           Tasks
         </p>
         <div className="space-y-1">
@@ -457,12 +457,12 @@ function MobileIssueView({
                 ) : (
                   <span className="h-4 w-4 border border-muted-foreground/40 rounded-sm flex-shrink-0" />
                 )}
-                <span className={`text-[15px] flex-1 ${done ? "line-through" : ""}`}>
+                <span className={`text-cb-body flex-1 ${done ? "line-through" : ""}`}>
                   {task.title}
                 </span>
                 {task.deadline && !done && (
                   <span
-                    className={`text-[14px] ${
+                    className={`text-cb-foot ${
                       taskDeadlineWarning ? "text-amber-400" : "text-muted-foreground"
                     }`}
                   >
@@ -475,7 +475,7 @@ function MobileIssueView({
             );
           })}
           <button
-            className="w-full py-2.5 rounded-sm border border-dashed border-border text-[14px] text-muted-foreground"
+            className="w-full py-2.5 rounded-sm border border-dashed border-border text-cb-foot text-muted-foreground"
             onClick={onNewChild}
           >
             + Add task
@@ -530,7 +530,7 @@ function MobileTaskView({
     <div className="flex flex-col h-full">
       <div className="px-4 pb-3">
         <button
-          className="flex items-center gap-0.5 text-[17px] text-primary mb-3"
+          className="flex items-center gap-0.5 text-cb-card text-primary mb-3"
           onClick={onBack}
         >
           <ChevronLeft className="h-5 w-5" />
@@ -545,7 +545,7 @@ function MobileTaskView({
           >
             {isCompleted && <Check className="h-3 w-3 text-background" />}
           </span>
-          <h1 className={`text-[20px] font-bold ${isCompleted ? "line-through opacity-50" : ""}`}>
+          <h1 className={`text-cb-head ${isCompleted ? "line-through opacity-50" : ""}`}>
             {goal.title}
           </h1>
         </div>
@@ -554,7 +554,7 @@ function MobileTaskView({
       <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-4">
         <div className="space-y-2">
           <MetaRow label="Status">
-            <span className="flex items-center gap-1.5 text-[15px]">
+            <span className="flex items-center gap-1.5 text-cb-body">
               <span
                 className="h-2 w-2 rounded-full"
                 style={{
@@ -568,12 +568,12 @@ function MobileTaskView({
           </MetaRow>
           {goal.ftSlug && (
             <MetaRow label="Project">
-              <code className="text-[14px] font-mono">{goal.ftSlug}</code>
+              <code className="text-cb-foot font-mono">{goal.ftSlug}</code>
             </MetaRow>
           )}
           {goal.deadline && (
             <MetaRow label="Deadline">
-              <span className="text-[15px]">
+              <span className="text-cb-body">
                 {fmtDate(goal.deadline)}
                 {daysLeft !== null && (
                   <span className="text-muted-foreground"> · {daysLeft}d</span>
@@ -583,7 +583,7 @@ function MobileTaskView({
           )}
           {goal.metricSource && (
             <MetaRow label="Auto-done">
-              <span className="text-[15px]">On validation ✓</span>
+              <span className="text-cb-body">On validation ✓</span>
             </MetaRow>
           )}
         </div>
@@ -617,7 +617,7 @@ function MobileTaskView({
 function MetaRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center">
-      <span className="w-[90px] text-[14px] text-muted-foreground flex-shrink-0">{label}</span>
+      <span className="w-[90px] text-cb-foot text-muted-foreground flex-shrink-0">{label}</span>
       {children}
     </div>
   );
@@ -667,22 +667,22 @@ function MobileStandaloneView({
     <div className="flex flex-col h-full">
       <div className="px-4 pb-3">
         <button
-          className="flex items-center gap-0.5 text-[17px] text-primary mb-3"
+          className="flex items-center gap-0.5 text-cb-card text-primary mb-3"
           onClick={onBack}
         >
           <ChevronLeft className="h-5 w-5" />
           Goals
         </button>
         {isCadence && (
-          <Badge variant="outline" className="text-[14px] px-1 py-0 font-mono mb-1">
+          <Badge variant="outline" className="text-cb-foot px-1 py-0 font-mono mb-1">
             /wk
           </Badge>
         )}
-        <h1 className="text-[20px] font-bold">{goal.title}</h1>
+        <h1 className="text-cb-head">{goal.title}</h1>
         {goal.pacing && (
           <Badge
             variant="outline"
-            className="text-[14px] px-1 py-0 mt-1"
+            className="text-cb-foot px-1 py-0 mt-1"
             style={{
               borderColor: goal.pacing.onTrack ? "var(--status-success)" : "var(--status-danger)",
               color: goal.pacing.onTrack ? "var(--status-success)" : "var(--status-danger)",
@@ -696,18 +696,18 @@ function MobileStandaloneView({
       <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-4">
         {isCadence ? (
           <div className="text-center py-4">
-            <span className="text-[44px] font-bold" style={{ color: platformColor }}>
+            <span className="text-cb-hero" style={{ color: platformColor }}>
               {goal.currentValue ?? 0}
             </span>
-            <span className="text-[14px] text-muted-foreground">
+            <span className="text-cb-foot text-muted-foreground">
               / {goal.cadenceValue ?? 0} this week
             </span>
           </div>
         ) : (
           <div className="rounded-sm border border-border p-3">
             <div className="flex items-baseline gap-1 mb-2">
-              <span className="text-[22px] font-bold">{goal.currentValue ?? 0}</span>
-              <span className="text-[14px] text-muted-foreground">/ {goal.targetValue ?? "?"}</span>
+              <span className="text-cb-title">{goal.currentValue ?? 0}</span>
+              <span className="text-cb-foot text-muted-foreground">/ {goal.targetValue ?? "?"}</span>
             </div>
             <Progress
               value={progress}
@@ -719,25 +719,25 @@ function MobileStandaloneView({
 
         <div className="space-y-2">
           <MetaRow label="Platform">
-            <span className="text-[15px]" style={{ color: platformColor }}>
+            <span className="text-cb-body" style={{ color: platformColor }}>
               {PLATFORM_LABELS[goal.category ?? "general"]}
             </span>
           </MetaRow>
           {goal.metricSource && (
             <MetaRow label="Metric">
-              <code className="text-[15px] font-mono">{goal.metricSource}</code>
+              <code className="text-cb-body font-mono">{goal.metricSource}</code>
             </MetaRow>
           )}
           {isCadence && (
             <MetaRow label="Rate">
-              <span className="text-[15px]">
+              <span className="text-cb-body">
                 ≥ {goal.cadenceValue}/{goal.cadenceUnit === "per_week" ? "week" : "month"}
               </span>
             </MetaRow>
           )}
           {goal.deadline && (
             <MetaRow label="Deadline">
-              <span className="text-[15px]">{fmtDate(goal.deadline)}</span>
+              <span className="text-cb-body">{fmtDate(goal.deadline)}</span>
             </MetaRow>
           )}
         </div>

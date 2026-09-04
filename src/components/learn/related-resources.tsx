@@ -45,7 +45,7 @@ export function RelatedResources({ competencyId }: { competencyId: string }) {
 
   return (
     <div className="space-y-1.5">
-      <p className="cb-label-mono flex items-center gap-1 text-[10px] text-cb-muted">
+      <p className="cb-label-mono flex items-center gap-1 text-cb-caption text-cb-muted">
         <BookOpen className="h-3 w-3" />
         practise in Learn · {resources.length}
       </p>
@@ -56,10 +56,10 @@ export function RelatedResources({ competencyId }: { competencyId: string }) {
             href={`/learn?resource=${r.id}`}
             className="flex items-center gap-1.5 rounded-cb-chip-sm bg-cb-raised px-2 py-1 transition-colors hover:bg-cb-raised-hover"
           >
-            <span className="cb-label-mono text-[10px] text-cb-muted">
+            <span className="cb-label-mono text-cb-caption text-cb-muted">
               {PLATFORM_LABELS[r.platform] ?? r.platform}
             </span>
-            <span className="max-w-[180px] truncate font-cb-sans text-[12px] text-cb-second">
+            <span className="max-w-[180px] truncate font-cb-sans text-cb-foot text-cb-second">
               {r.title}
             </span>
           </a>

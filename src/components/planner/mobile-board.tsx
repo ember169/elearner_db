@@ -89,8 +89,8 @@ export function MobileBoardView({
               onClick={() => setTab(t.id)}
               className={
                 active
-                  ? "flex-1 rounded-cb-chip bg-cb-or py-2 font-cb-sans text-[13px] font-bold text-cb-on-or transition-colors"
-                  : "flex-1 rounded-cb-chip py-2 font-cb-sans text-[13px] font-bold text-cb-muted transition-colors"
+                  ? "flex-1 rounded-cb-chip bg-cb-or py-2 font-cb-sans text-cb-foot font-bold text-cb-on-or transition-colors"
+                  : "flex-1 rounded-cb-chip py-2 font-cb-sans text-cb-foot font-bold text-cb-muted transition-colors"
               }
             >
               {t.label}
@@ -98,8 +98,8 @@ export function MobileBoardView({
                 <span
                   className={
                     active
-                      ? "ml-1.5 font-cb-mono text-[11px] text-cb-on-or/70"
-                      : "ml-1.5 font-cb-mono text-[11px] text-cb-muted"
+                      ? "ml-1.5 font-cb-mono text-cb-foot text-cb-on-or/70"
+                      : "ml-1.5 font-cb-mono text-cb-foot text-cb-muted"
                   }
                 >
                   {t.count}
@@ -164,7 +164,7 @@ function StatusListView({
   return (
     <div className="space-y-4">
       {items.length === 0 && (
-        <p className="text-[15px] text-muted-foreground py-6 text-center">
+        <p className="text-cb-body text-muted-foreground py-6 text-center">
           {emptyText}
         </p>
       )}
@@ -190,10 +190,10 @@ function StatusListView({
 
       {sideProject && (
         <div className="mt-4">
-          <p className="text-[15px] font-semibold text-muted-foreground uppercase mb-2">
+          <p className="text-cb-body font-semibold text-muted-foreground uppercase mb-2">
             Weekend: {sideProject.title}
           </p>
-          <p className="text-[14px] text-muted-foreground">{sideProject.description}</p>
+          <p className="text-cb-foot text-muted-foreground">{sideProject.description}</p>
         </div>
       )}
 
@@ -218,7 +218,7 @@ function BacklogListView({
   return (
     <div className="space-y-2">
       {items.length === 0 && (
-        <p className="text-[15px] text-muted-foreground py-6 text-center">
+        <p className="text-cb-body text-muted-foreground py-6 text-center">
           Backlog is empty. Hit Regenerate to get new items.
         </p>
       )}
@@ -252,7 +252,7 @@ function LaneBadge({ lane }: { lane: { label: string; color: string } }) {
   return (
     <div className="flex items-center gap-1.5 mb-1 mt-1">
       <div className="w-1.5 h-1.5 rounded-full" style={{ background: lane.color }} />
-      <span className="text-[15px] font-semibold uppercase tracking-wider" style={{ color: lane.color }}>
+      <span className="text-cb-body font-semibold uppercase tracking-wider" style={{ color: lane.color }}>
         {lane.label}
       </span>
     </div>
@@ -284,7 +284,7 @@ function MobileCard({
     >
       <Icon className="h-3 w-3 shrink-0" style={{ color }} />
       <span
-        className="shrink-0 rounded-cb-chip-sm px-2 py-0.5 font-cb-mono text-[10px]"
+        className="shrink-0 rounded-cb-chip-sm px-2 py-0.5 font-cb-mono text-cb-caption"
         style={{
           color: platformColor,
           background: `color-mix(in oklch, ${platformColor} 15%, transparent)`,
@@ -297,7 +297,7 @@ function MobileCard({
         {item.goalId ? (
           <a
             href={`/goals?goal=${item.goalId}`}
-            className={`${compact ? "text-[15px]" : "text-[15px]"} font-medium truncate block hover:underline`}
+            className={`${compact ? "text-cb-body" : "text-cb-body"} font-medium truncate block hover:underline`}
             style={{ textDecoration: isDone ? "line-through" : undefined }}
           >
             {item.title}
@@ -306,14 +306,14 @@ function MobileCard({
           <button
             type="button"
             onClick={() => onOpenDetail(item.id)}
-            className="block w-full truncate text-left text-[15px] font-medium"
+            className="block w-full truncate text-left text-cb-body font-medium"
             style={{ textDecoration: isDone ? "line-through" : undefined }}
           >
             {item.title}
           </button>
         ) : (
           <span
-            className={`${compact ? "text-[15px]" : "text-[15px]"} font-medium truncate block`}
+            className={`${compact ? "text-cb-body" : "text-cb-body"} font-medium truncate block`}
             style={{ textDecoration: isDone ? "line-through" : undefined }}
           >
             {item.title}
@@ -321,7 +321,7 @@ function MobileCard({
         )}
       </div>
 
-      <span className="text-[14px] text-muted-foreground tabular-nums shrink-0">
+      <span className="text-cb-foot text-muted-foreground tabular-nums shrink-0">
         {formatHours(item.estimatedHours)}
       </span>
 
@@ -331,7 +331,7 @@ function MobileCard({
             <button
               key={a.label}
               onClick={a.action}
-              className="rounded-cb-chip-sm bg-cb-or-tint px-2 py-1 font-cb-mono text-[11px] text-cb-or transition-colors"
+              className="rounded-cb-chip-sm bg-cb-or-tint px-2 py-1 font-cb-mono text-cb-foot text-cb-or transition-colors"
             >
               {a.label}
             </button>

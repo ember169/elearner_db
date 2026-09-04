@@ -79,7 +79,7 @@ export function CompetencyHub({
     <div className="mx-auto min-w-0 max-w-4xl space-y-6">
       <Link
         href="/learn"
-        className="flex items-center gap-1.5 font-cb-sans text-[14px] text-cb-muted transition-colors hover:text-cb-text"
+        className="flex items-center gap-1.5 font-cb-sans text-cb-foot text-cb-muted transition-colors hover:text-cb-text"
       >
         <ArrowLeft className="h-4 w-4" />
         All competencies
@@ -87,14 +87,14 @@ export function CompetencyHub({
 
       <header className="space-y-2">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="cb-label-mono rounded-cb-chip-sm bg-cb-raised px-2 py-1 text-[10px] text-cb-second">
+          <span className="cb-label-mono rounded-cb-chip-sm bg-cb-raised px-2 py-1 text-cb-caption text-cb-second">
             {area}
           </span>
           <span
             className={
               isValidated
-                ? "cb-label-mono flex items-center gap-1 rounded-cb-chip-sm bg-cb-or-tint px-2 py-1 text-[10px] text-cb-or"
-                : "cb-label-mono rounded-cb-chip-sm bg-cb-raised px-2 py-1 text-[10px] text-cb-second"
+                ? "cb-label-mono flex items-center gap-1 rounded-cb-chip-sm bg-cb-or-tint px-2 py-1 text-cb-caption text-cb-or"
+                : "cb-label-mono rounded-cb-chip-sm bg-cb-raised px-2 py-1 text-cb-caption text-cb-second"
             }
             title={isValidated ? "Validated by assessment" : "Inferred from platform activity"}
           >
@@ -103,7 +103,7 @@ export function CompetencyHub({
           </span>
         </div>
         <h1 className="page-title text-cb-text">{label}</h1>
-        <p className="font-cb-sans text-[14px] leading-relaxed text-cb-muted">
+        <p className="font-cb-sans text-cb-foot leading-relaxed text-cb-muted">
           {description}
         </p>
       </header>
@@ -111,9 +111,9 @@ export function CompetencyHub({
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
         {/* Understand — the six tiers. */}
         <section className="space-y-2">
-          <h2 className="font-cb-sans text-[17px] font-bold text-cb-text">
+          <h2 className="font-cb-sans text-cb-card text-cb-text">
             Understand
-            <span className="cb-label-mono ml-2 text-[10px] text-cb-muted">
+            <span className="cb-label-mono ml-2 text-cb-caption text-cb-muted">
               {readDone}/{articles.length || 6}
             </span>
           </h2>
@@ -126,8 +126,8 @@ export function CompetencyHub({
                     key={tier}
                     className="flex items-center gap-2 rounded-cb-card border border-dashed border-cb-line px-3 py-2.5"
                   >
-                    <span className="cb-label-mono text-[10px] text-cb-muted">L{tier}</span>
-                    <span className="font-cb-sans text-[13px] text-cb-muted">
+                    <span className="cb-label-mono text-cb-caption text-cb-muted">L{tier}</span>
+                    <span className="font-cb-sans text-cb-foot text-cb-muted">
                       No article yet
                     </span>
                   </div>
@@ -154,7 +154,7 @@ export function CompetencyHub({
                   </button>
                   <span
                     className={cn(
-                      "cb-label-mono shrink-0 rounded-cb-chip-sm px-2 py-1 text-[10px]",
+                      "cb-label-mono shrink-0 rounded-cb-chip-sm px-2 py-1 text-cb-caption",
                       reached
                         ? "bg-cb-or text-cb-on-or"
                         : "bg-cb-raised text-cb-second",
@@ -166,10 +166,10 @@ export function CompetencyHub({
                     href={`/knowledge?article=${found.id}`}
                     className="min-w-0 flex-1"
                   >
-                    <span className="block truncate font-cb-sans text-[14px] font-bold text-cb-text group-hover:text-cb-or">
+                    <span className="block truncate font-cb-sans text-cb-foot font-bold text-cb-text group-hover:text-cb-or">
                       {found.title}
                     </span>
-                    <span className="cb-label-mono text-[10px] text-cb-muted">
+                    <span className="cb-label-mono text-cb-caption text-cb-muted">
                       {TIER_PURPOSE[tier]}
                       {!reached && " · above your level"}
                     </span>
@@ -182,14 +182,14 @@ export function CompetencyHub({
 
         {/* Practice — the Learn resources. */}
         <section className="space-y-2">
-          <h2 className="font-cb-sans text-[17px] font-bold text-cb-text">
+          <h2 className="font-cb-sans text-cb-card text-cb-text">
             Practice
-            <span className="cb-label-mono ml-2 text-[10px] text-cb-muted">
+            <span className="cb-label-mono ml-2 text-cb-caption text-cb-muted">
               {resDone}/{resources.length}
             </span>
           </h2>
           {resources.length === 0 ? (
-            <div className="rounded-cb-card border border-dashed border-cb-line px-3 py-6 text-center font-cb-sans text-[13px] text-cb-muted">
+            <div className="rounded-cb-card border border-dashed border-cb-line px-3 py-6 text-center font-cb-sans text-cb-foot text-cb-muted">
               No resources mapped to this competency.
             </div>
           ) : (
@@ -211,15 +211,15 @@ export function CompetencyHub({
                       }`}
                     />
                   )}
-                  <span className="min-w-0 flex-1 truncate font-cb-sans text-[14px] text-cb-second group-hover:text-cb-text">
+                  <span className="min-w-0 flex-1 truncate font-cb-sans text-cb-foot text-cb-second group-hover:text-cb-text">
                     {r.title}
                   </span>
                   {r.difficulty && (
-                    <span className="cb-label-mono hidden shrink-0 text-[10px] text-cb-muted sm:inline">
+                    <span className="cb-label-mono hidden shrink-0 text-cb-caption text-cb-muted sm:inline">
                       {r.difficulty}
                     </span>
                   )}
-                  <span className="cb-label-mono shrink-0 rounded-cb-chip-sm bg-cb-raised px-2 py-0.5 text-[10px] text-cb-second">
+                  <span className="cb-label-mono shrink-0 rounded-cb-chip-sm bg-cb-raised px-2 py-0.5 text-cb-caption text-cb-second">
                     {PLATFORM_LABELS[r.platform] ?? r.platform}
                   </span>
                 </Link>

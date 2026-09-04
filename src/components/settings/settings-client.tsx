@@ -324,7 +324,7 @@ export function SettingsClient({
           </div>
           <div className="flex items-center gap-2">
             {saveResult && (
-              <span className={`flex items-center gap-1 text-[13px] ${saveResult.ok ? "text-green-500" : "text-red-400"}`}>
+              <span className={`flex items-center gap-1 text-cb-foot ${saveResult.ok ? "text-green-500" : "text-red-400"}`}>
                 {saveResult.ok ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
                 {saveResult.message}
               </span>
@@ -353,26 +353,26 @@ export function SettingsClient({
       >
         <div className="space-y-3">
           <div className="space-y-1.5">
-            <Label className="text-[15px]">Learning objective</Label>
+            <Label className="text-cb-body">Learning objective</Label>
             <textarea
               value={objective}
               onChange={(e) => setObjective(e.target.value)}
               placeholder="Red team / malware development, with solid generalist foundations (networking, web, Linux)."
               rows={3}
-              className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-[14px] placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-cb-foot placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             />
-            <p className="text-[14px] text-muted-foreground">
+            <p className="text-cb-foot text-muted-foreground">
               Describe your long-term goal. The mentor will tailor every recommendation to this.
             </p>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-[15px]">Provider</Label>
+            <Label className="text-cb-body">Provider</Label>
             <div className="flex gap-1">
               {(["anthropic", "local"] as const).map((p) => (
                 <button
                   key={p}
                   onClick={() => setLlmProvider(p)}
-                  className={`px-3 py-1.5 text-[15px] rounded-sm border transition-colors ${
+                  className={`px-3 py-1.5 text-cb-body rounded-sm border transition-colors ${
                     llmProvider === p
                       ? "border-primary bg-primary/10 text-primary font-medium"
                       : "border-border text-muted-foreground hover:text-foreground"
@@ -415,22 +415,22 @@ export function SettingsClient({
               onChange={(e) => setAssessUseMentor(e.target.checked)}
               className="rounded border-border"
             />
-            <span className="text-[14px]">Use Mentor AI configuration</span>
+            <span className="text-cb-foot">Use Mentor AI configuration</span>
           </label>
           {assessUseMentor ? (
-            <p className="text-[14px] text-muted-foreground">
+            <p className="text-cb-foot text-muted-foreground">
               Using the same provider as AI Mentor ({llmProvider === "local" ? "Local LLM" : "Anthropic"}{llmModel ? ` — ${llmModel}` : ""}).
             </p>
           ) : (
             <>
               <div className="space-y-1.5">
-                <Label className="text-[15px]">Provider</Label>
+                <Label className="text-cb-body">Provider</Label>
                 <div className="flex gap-1">
                   {(["anthropic", "openai", "local"] as const).map((p) => (
                     <button
                       key={p}
                       onClick={() => setAssessLlmProvider(p)}
-                      className={`px-3 py-1.5 text-[15px] rounded-sm border transition-colors ${
+                      className={`px-3 py-1.5 text-cb-body rounded-sm border transition-colors ${
                         assessLlmProvider === p
                           ? "border-primary bg-primary/10 text-primary font-medium"
                           : "border-border text-muted-foreground hover:text-foreground"
@@ -463,8 +463,8 @@ export function SettingsClient({
         <CardContent className="pt-4 pb-4 px-4 space-y-3">
           <div className="flex items-center gap-2">
             <Terminal className="h-4 w-4 text-muted-foreground" />
-            <span className="text-[15px] font-semibold tracking-tight">Assessment Logs</span>
-            <span className="text-[13px] text-muted-foreground ml-auto tabular-nums">{assessLogs.length} entries</span>
+            <span className="text-cb-body font-semibold tracking-tight">Assessment Logs</span>
+            <span className="text-cb-foot text-muted-foreground ml-auto tabular-nums">{assessLogs.length} entries</span>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="xs" onClick={loadAssessLogs} disabled={logsLoading}>
@@ -479,7 +479,7 @@ export function SettingsClient({
           </div>
           {assessLogs.length > 0 && (
             <ScrollArea className="h-[240px]">
-              <div className="space-y-0.5 font-mono text-[12px]">
+              <div className="space-y-0.5 font-mono text-cb-foot">
                 {[...assessLogs].reverse().map((log, i) => (
                   <div key={i} className={`px-2 py-1 rounded-sm ${log.level === "error" ? "bg-destructive/10 text-red-400" : "text-muted-foreground"}`}>
                     <span className="tabular-nums opacity-60">
@@ -504,19 +504,19 @@ export function SettingsClient({
         <CardContent className="pt-4 pb-4 px-4 space-y-4">
           <div className="flex items-center gap-2">
             <CalendarClock className="h-4 w-4 text-muted-foreground" />
-            <span className="text-[15px] font-semibold tracking-tight">42 Deadline Planner</span>
+            <span className="text-cb-body font-semibold tracking-tight">42 Deadline Planner</span>
             {deadlineResult?.deadline && (
               <Badge variant="success">Active</Badge>
             )}
           </div>
-          <p className="text-[14px] text-muted-foreground">
+          <p className="text-cb-foot text-muted-foreground">
             Set your target date for completing the 42 common core. The system will backward-plan circle and project deadlines,
             compute required weekly hours, and warn you when the pace is unsustainable.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-[15px]">Common core target date</Label>
+              <Label className="text-cb-body">Common core target date</Label>
               <Input
                 type="date"
                 value={deadlineDate}
@@ -525,7 +525,7 @@ export function SettingsClient({
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[15px]">Weekly 42 budget (hours)</Label>
+              <Label className="text-cb-body">Weekly 42 budget (hours)</Label>
               <Input
                 type="number"
                 value={deadlineBudget}
@@ -550,7 +550,7 @@ export function SettingsClient({
           {deadlineResult?.plan && (
             <div className="space-y-3 mt-2">
               <Separator />
-              <div className="flex items-center gap-6 text-[15px]">
+              <div className="flex items-center gap-6 text-cb-body">
                 <div>
                   <span className="text-muted-foreground">Hours remaining: </span>
                   <span className="font-medium">{deadlineResult.plan.totalHoursRemaining}h</span>
@@ -569,10 +569,10 @@ export function SettingsClient({
 
               {deadlineResult.plan.circlePlans.length > 0 && (
                 <div className="space-y-1">
-                  <p className="text-[14px] font-semibold text-muted-foreground uppercase tracking-wider">Circle deadlines</p>
+                  <p className="text-cb-foot font-semibold text-muted-foreground uppercase tracking-wider">Circle deadlines</p>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                     {deadlineResult.plan.circlePlans.map((cp) => (
-                      <div key={cp.circle} className="px-3 py-2 rounded-sm border border-border text-[14px]">
+                      <div key={cp.circle} className="px-3 py-2 rounded-sm border border-border text-cb-foot">
                         <span className="font-medium">Circle {cp.circle}</span>
                         <span className="text-muted-foreground"> — {cp.totalHours}h</span>
                         <p className="text-muted-foreground">Due {cp.dueBy}</p>
@@ -585,7 +585,7 @@ export function SettingsClient({
               {deadlineResult.plan.warnings.length > 0 && (
                 <div className="space-y-1.5">
                   {deadlineResult.plan.warnings.map((w, i) => (
-                    <div key={i} className="flex items-start gap-2 text-[14px] text-warning">
+                    <div key={i} className="flex items-start gap-2 text-cb-foot text-warning">
                       <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
                       <span>{w}</span>
                     </div>
@@ -687,7 +687,7 @@ export function SettingsClient({
               {syncing ? "Syncing all platforms..." : "Sync now"}
             </Button>
             {syncResult && (
-              <span className={`flex items-center gap-1 text-[13px] ${syncResult.ok ? "text-green-500" : "text-red-400"}`}>
+              <span className={`flex items-center gap-1 text-cb-foot ${syncResult.ok ? "text-green-500" : "text-red-400"}`}>
                 {syncResult.ok ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
                 {syncResult.message}
               </span>
@@ -702,7 +702,7 @@ export function SettingsClient({
               <p className="section-label">Sync history</p>
             </div>
             {recentSyncs.length === 0 ? (
-              <p className="text-[14px] text-muted-foreground">
+              <p className="text-cb-foot text-muted-foreground">
                 No syncs yet. Configure your platforms above and hit Sync.
               </p>
             ) : (
@@ -711,7 +711,7 @@ export function SettingsClient({
                   {recentSyncs.map((sync) => (
                     <div
                       key={sync.id}
-                      className="px-3 py-2.5 rounded-sm border border-border text-[15px]"
+                      className="px-3 py-2.5 rounded-sm border border-border text-cb-body"
                     >
                       <div className="flex items-center gap-2.5">
                         <Badge variant={statusVariant[sync.status] ?? "secondary"}>
@@ -729,12 +729,12 @@ export function SettingsClient({
                               )
                             }
                             title={expandedSyncId === sync.id ? "Collapse" : "Show full error"}
-                            className="text-destructive truncate max-w-[180px] text-[14px] text-left cursor-pointer hover:underline"
+                            className="text-destructive truncate max-w-[180px] text-cb-foot text-left cursor-pointer hover:underline"
                           >
                             {sync.error}
                           </button>
                         )}
-                        <span className="ml-auto text-[14px] text-muted-foreground tabular-nums shrink-0">
+                        <span className="ml-auto text-cb-foot text-muted-foreground tabular-nums shrink-0">
                           {new Date(sync.startedAt).toLocaleString("fr-FR", {
                             dateStyle: "short",
                             timeStyle: "medium",
@@ -743,7 +743,7 @@ export function SettingsClient({
                         </span>
                       </div>
                       {sync.error && expandedSyncId === sync.id && (
-                        <p className="mt-1.5 text-[14px] text-destructive leading-relaxed whitespace-pre-wrap break-words select-text">
+                        <p className="mt-1.5 text-cb-foot text-destructive leading-relaxed whitespace-pre-wrap break-words select-text">
                           {sync.error}
                         </p>
                       )}
@@ -785,19 +785,19 @@ function PlatformSection({
       <CardContent className="pt-4 pb-4 px-4 space-y-3">
         <div className="flex items-center gap-2">
           <span className="text-muted-foreground">{icon}</span>
-          <span className="text-[15px] font-semibold tracking-tight">{name}</span>
+          <span className="text-cb-body font-semibold tracking-tight">{name}</span>
           <Badge variant={configured ? "success" : "outline"}>
             {configured ? "Configured" : "Not set"}
           </Badge>
           {lastSync && (
-            <span className="text-[15px] text-muted-foreground ml-auto tabular-nums">
+            <span className="text-cb-body text-muted-foreground ml-auto tabular-nums">
               Last sync: {formatRelative(lastSync)}
             </span>
           )}
         </div>
         {children}
         <div className="flex items-center gap-3">
-          <p className="text-[14px] text-muted-foreground flex-1">{hint}</p>
+          <p className="text-cb-foot text-muted-foreground flex-1">{hint}</p>
           {onTest && (
             <Button variant="ghost" size="xs" onClick={onTest} disabled={testingNow}>
               <RefreshCw className={`h-3 w-3 mr-1 ${testingNow ? "animate-spin" : ""}`} />
@@ -806,7 +806,7 @@ function PlatformSection({
           )}
         </div>
         {tr && (
-          <p className={`text-[14px] ${tr.ok ? "text-success" : "text-destructive"}`}>
+          <p className={`text-cb-foot ${tr.ok ? "text-success" : "text-destructive"}`}>
             {tr.msg}
           </p>
         )}
@@ -831,7 +831,7 @@ function Field({
 }) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-[15px]">{label}</Label>
+      <Label className="text-cb-body">{label}</Label>
       <Input
         type={type}
         value={value}

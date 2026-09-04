@@ -28,7 +28,7 @@ export function UserBlockView({
   return (
     <figure className="group relative my-4 rounded-cb-card border border-cb-line bg-cb-raised/40 p-3">
       <div className="mb-2 flex items-center justify-between">
-        <figcaption className="cb-label-mono text-[10px] text-cb-muted">
+        <figcaption className="cb-label-mono text-cb-caption text-cb-muted">
           your {block.blockType}
         </figcaption>
         <button
@@ -36,7 +36,7 @@ export function UserBlockView({
           onClick={onDelete}
           disabled={busy}
           aria-label="Delete block"
-          className="cb-label-mono flex items-center gap-1 text-[10px] text-cb-muted opacity-0 transition-opacity hover:text-cb-danger focus-visible:opacity-100 group-hover:opacity-100"
+          className="cb-label-mono flex items-center gap-1 text-cb-caption text-cb-muted opacity-0 transition-opacity hover:text-cb-danger focus-visible:opacity-100 group-hover:opacity-100"
         >
           <Trash2 className="h-3 w-3" />
           delete
@@ -53,7 +53,7 @@ export function UserBlockView({
       ) : block.blockType === "mermaid" ? (
         <MermaidBlock chart={block.content} />
       ) : (
-        <div className="font-cb-sans text-[15px] leading-[1.6] text-cb-second [&_table]:w-full [&_td]:border-b [&_td]:border-cb-line [&_td]:px-2 [&_td]:py-1.5 [&_th]:border-b [&_th]:border-cb-line [&_th]:px-2 [&_th]:py-1.5 [&_th]:text-left">
+        <div className="font-cb-sans text-cb-body leading-[1.6] text-cb-second [&_table]:w-full [&_td]:border-b [&_td]:border-cb-line [&_td]:px-2 [&_td]:py-1.5 [&_th]:border-b [&_th]:border-cb-line [&_th]:px-2 [&_th]:py-1.5 [&_th]:text-left">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{block.content}</ReactMarkdown>
         </div>
       )}

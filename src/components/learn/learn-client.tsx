@@ -48,7 +48,7 @@ export function LearnClient({
     <div className="space-y-5">
       <div>
         <h1 className="page-title text-cb-text">Learn</h1>
-        <p className="mt-1 font-cb-sans text-[14px] text-cb-muted">
+        <p className="mt-1 font-cb-sans text-cb-foot text-cb-muted">
           Everything for a competency in one place — what to read and what to do.
         </p>
       </div>
@@ -66,7 +66,7 @@ export function LearnClient({
             type="button"
             onClick={() => setLens(key)}
             className={cn(
-              "rounded-cb-chip px-3.5 py-1.5 font-cb-sans text-[13px] font-bold transition-colors",
+              "rounded-cb-chip px-3.5 py-1.5 font-cb-sans text-cb-foot font-bold transition-colors",
               lens === key ? "bg-cb-or text-cb-on-or" : "text-cb-muted",
             )}
           >
@@ -86,7 +86,7 @@ export function LearnClient({
         <div className="space-y-5">
           {byArea.map((group) => (
             <section key={group.area} className="space-y-2">
-              <h2 className="cb-label-mono text-[10px] text-cb-muted">{group.area}</h2>
+              <h2 className="cb-label-mono text-cb-caption text-cb-muted">{group.area}</h2>
               <div className="grid gap-2 md:grid-cols-2">
                 {group.items.map((c) => (
                   <CompetencyRow key={c.id} c={c} />
@@ -112,10 +112,10 @@ function CountChip({
   const complete = total > 0 && done >= total;
   return (
     <span className="flex items-center gap-1.5">
-      <span className="cb-label-mono text-[10px] text-cb-muted">{label}</span>
+      <span className="cb-label-mono text-cb-caption text-cb-muted">{label}</span>
       <span
         className={cn(
-          "cb-label-mono rounded-cb-chip-sm px-2 py-0.5 text-[10px]",
+          "cb-label-mono rounded-cb-chip-sm px-2 py-0.5 text-cb-caption",
           complete ? "bg-cb-success-tint text-cb-success" : "bg-cb-raised text-cb-second",
         )}
       >
@@ -142,7 +142,7 @@ function CompetencyRow({ c }: { c: CompetencyProgress }) {
 
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="truncate font-cb-sans text-[15px] font-bold text-cb-text">
+          <span className="truncate font-cb-sans text-cb-body font-bold text-cb-text">
             {c.label}
           </span>
           {c.resTotal > 0 && c.resDone >= c.resTotal && (
@@ -159,7 +159,7 @@ function CompetencyRow({ c }: { c: CompetencyProgress }) {
 
       <span
         className={cn(
-          "cb-label-mono flex shrink-0 items-center gap-1 rounded-cb-chip-sm px-2 py-1 text-[10px]",
+          "cb-label-mono flex shrink-0 items-center gap-1 rounded-cb-chip-sm px-2 py-1 text-cb-caption",
           c.isValidated ? "bg-cb-or-tint text-cb-or" : "bg-cb-raised text-cb-second",
         )}
         title={c.isValidated ? "Validated by assessment" : "Inferred from activity"}

@@ -54,11 +54,11 @@ export function ProgressClient({
           href="/goals"
           className="rounded-cb-card border border-cb-line bg-cb-card p-4 transition-colors hover:bg-cb-raised"
         >
-          <p className="cb-label-mono text-[10px] text-cb-muted">Goals</p>
-          <p className="mt-2 font-cb-sans text-[19px] font-bold text-cb-text">
+          <p className="cb-label-mono text-cb-caption text-cb-muted">Goals</p>
+          <p className="mt-2 font-cb-sans text-cb-head text-cb-text">
             {goalsEntry.active} active
           </p>
-          <p className="mt-1 font-cb-mono text-[11px] text-cb-muted">
+          <p className="mt-1 font-cb-mono text-cb-foot text-cb-muted">
             {goalsEntry.behind > 0 ? (
               <span className="text-cb-warn">{goalsEntry.behind} behind pace</span>
             ) : (
@@ -71,11 +71,11 @@ export function ProgressClient({
           href="/assess"
           className="rounded-cb-card border border-cb-line bg-cb-card p-4 transition-colors hover:bg-cb-raised"
         >
-          <p className="cb-label-mono text-[10px] text-cb-muted">Assess</p>
-          <p className="mt-2 font-cb-sans text-[19px] font-bold text-cb-text">
+          <p className="cb-label-mono text-cb-caption text-cb-muted">Assess</p>
+          <p className="mt-2 font-cb-sans text-cb-head text-cb-text">
             {assessEntry.validated} of {assessEntry.total} validated
           </p>
-          <p className="mt-1 font-cb-mono text-[11px] text-cb-muted">
+          <p className="mt-1 font-cb-mono text-cb-foot text-cb-muted">
             {assessEntry.open > 0 ? (
               <span className="text-cb-or">{assessEntry.open} in progress</span>
             ) : (
@@ -144,16 +144,16 @@ function StatTile({
   return (
     <div className="rounded-cb-card bg-cb-raised px-3 py-3">
       <div className="flex items-baseline gap-1">
-        <span className="font-cb-serif text-[24px] leading-none text-cb-text">
+        <span className="font-cb-serif text-cb-title leading-none text-cb-text">
           {value}
         </span>
         {sub && (
-          <span className="font-cb-mono text-[11px] tabular-nums text-cb-muted">
+          <span className="font-cb-mono text-cb-foot tabular-nums text-cb-muted">
             {sub}
           </span>
         )}
       </div>
-      <p className="mt-1.5 cb-label-mono text-[9px] text-cb-muted">{label}</p>
+      <p className="mt-1.5 cb-label-mono text-cb-caption text-cb-muted">{label}</p>
     </div>
   );
 }

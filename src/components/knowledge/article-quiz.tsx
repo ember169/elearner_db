@@ -75,17 +75,17 @@ export function ArticleQuiz({
       <div className="mb-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <GraduationCap className="h-4 w-4 text-cb-or" />
-          <h2 className="text-sm font-semibold text-cb-text">
+          <h2 className="text-cb-foot font-semibold text-cb-text">
             Check your understanding
           </h2>
-          <span className="text-xs text-cb-muted">
+          <span className="text-cb-foot text-cb-muted">
             {exercises.length} question{exercises.length > 1 ? "s" : ""}
           </span>
         </div>
         {answered > 0 && (
           <span
             className={cn(
-              "rounded-cb-chip-sm px-2 py-0.5 text-xs font-medium tabular-nums",
+              "rounded-cb-chip-sm px-2 py-0.5 text-cb-foot font-medium tabular-nums",
               allDone && correct === exercises.length
                 ? "bg-cb-success-tint text-cb-success"
                 : "bg-cb-raised text-cb-second"
@@ -108,11 +108,11 @@ export function ArticleQuiz({
               className="rounded-cb-card border border-cb-line bg-cb-card p-4"
             >
               <div className="mb-2 flex items-center gap-2">
-                <span className="cb-label-mono text-[10px] uppercase tracking-wide text-cb-muted">
+                <span className="cb-label-mono text-cb-caption uppercase tracking-wide text-cb-muted">
                   {ex.sectionHeading}
                 </span>
               </div>
-              <p className="mb-3 text-sm font-medium leading-relaxed text-cb-text">
+              <p className="mb-3 text-cb-foot font-medium leading-relaxed text-cb-text">
                 <span className="mr-1.5 text-cb-muted">{qi + 1}.</span>
                 {ex.prompt}
               </p>
@@ -143,14 +143,14 @@ export function ArticleQuiz({
                       disabled={isAnswered}
                       onClick={() => answer(ex, oi)}
                       className={cn(
-                        "flex items-start gap-2.5 rounded-cb-chip-sm border px-3 py-2 text-left text-[13px] leading-snug transition-colors",
+                        "flex items-start gap-2.5 rounded-cb-chip-sm border px-3 py-2 text-left text-cb-foot leading-snug transition-colors",
                         tone,
                         !isAnswered && "cursor-pointer"
                       )}
                     >
                       <span
                         className={cn(
-                          "mt-px flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold",
+                          "mt-px flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-cb-caption font-semibold",
                           isAnswered && isCorrectOpt
                             ? "bg-cb-success text-cb-card"
                             : isAnswered && isPicked
@@ -174,7 +174,7 @@ export function ArticleQuiz({
 
               {isAnswered && (
                 <div className="mt-3 rounded-cb-chip-sm border border-cb-line bg-cb-bg p-3">
-                  <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold">
+                  <p className="mb-1 flex items-center gap-1.5 text-cb-foot font-semibold">
                     {gotIt ? (
                       <span className="text-cb-success">Correct</span>
                     ) : (
@@ -186,13 +186,13 @@ export function ArticleQuiz({
                       </span>
                     )}
                   </p>
-                  <p className="text-[13px] leading-relaxed text-cb-second">
+                  <p className="text-cb-foot leading-relaxed text-cb-second">
                     {ex.explanation}
                   </p>
                   <button
                     type="button"
                     onClick={() => reset(ex.id)}
-                    className="mt-2 flex items-center gap-1 text-[11px] text-cb-muted transition-colors hover:text-cb-text"
+                    className="mt-2 flex items-center gap-1 text-cb-foot text-cb-muted transition-colors hover:text-cb-text"
                   >
                     <RotateCcw className="h-3 w-3" />
                     Try again

@@ -49,7 +49,7 @@ function RailItem({ item, active }: { item: NavItem; active: boolean }) {
       )}
     >
       <item.icon className="h-[21px] w-[21px]" strokeWidth={2} />
-      <span className="cb-label-mono text-[9px] leading-none">{item.label}</span>
+      <span className="cb-label-mono text-cb-caption leading-none">{item.label}</span>
     </Link>
   );
 }
@@ -63,7 +63,7 @@ export function Sidebar() {
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-24 flex-col items-center border-r border-cb-line bg-cb-bg md:flex">
         <Link href="/" className="mt-4 mb-3 flex flex-col items-center gap-[9px]">
           <CartableoMark size={38} />
-          <span className="cb-content-title text-[15px] text-cb-text">Cartableo</span>
+          <span className="cb-content-title text-cb-body text-cb-text">Cartableo</span>
         </Link>
 
         <nav className="flex flex-col gap-1">
@@ -95,7 +95,7 @@ export function Sidebar() {
               )}
             >
               <item.icon className="h-5 w-5" strokeWidth={2} />
-              <span className="cb-label-mono text-[9px] leading-none">{item.label}</span>
+              <span className="cb-label-mono text-cb-caption leading-none">{item.label}</span>
             </Link>
           );
         })}

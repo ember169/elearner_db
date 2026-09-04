@@ -118,13 +118,13 @@ export function SuggestPane({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Zap className="h-4 w-4" style={{ color: "var(--primary)" }} />
-            <h2 className="text-[18px] font-bold">Goal Suggestion</h2>
+            <h2 className="text-cb-head">Goal Suggestion</h2>
           </div>
           <div className="flex items-center gap-1">
             {resultMode && (
               <Badge
                 variant="outline"
-                className="text-[11px] px-1.5 py-0.5 font-semibold"
+                className="text-cb-foot px-1.5 py-0.5 font-semibold"
                 style={{
                   borderColor: resultMode === "llm" ? "var(--platform-maldev)" : "var(--cb-success)",
                   color: resultMode === "llm" ? "var(--platform-maldev)" : "var(--cb-success)",
@@ -139,7 +139,7 @@ export function SuggestPane({
               size="sm"
               onClick={() => generate("quick")}
               disabled={loading}
-              className="text-[15px]"
+              className="text-cb-body"
             >
               <RefreshCw className={`h-3 w-3 mr-1 ${loading ? "animate-spin" : ""}`} />
               {suggestion ? "New suggestion" : "Retry"}
@@ -150,14 +150,14 @@ export function SuggestPane({
         {/* Competency gaps context */}
         {gaps.length > 0 && (
           <div className="rounded-sm border border-border px-4 py-3" style={{ background: "var(--card)" }}>
-            <p className="text-[14px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+            <p className="text-cb-foot font-semibold uppercase tracking-wider text-muted-foreground mb-2">
               Competency gaps driving this suggestion
             </p>
             <div className="flex flex-wrap gap-1.5">
               {gaps.slice(0, 6).map((c) => (
                 <span
                   key={c.id}
-                  className="text-[15px] px-2 py-0.5 rounded-sm"
+                  className="text-cb-body px-2 py-0.5 rounded-sm"
                   style={{
                     color: c.level === 0 ? "var(--status-danger)" : "var(--status-warning)",
                     background: c.level === 0
@@ -169,7 +169,7 @@ export function SuggestPane({
                 </span>
               ))}
               {gaps.length > 6 && (
-                <span className="text-[15px] text-muted-foreground px-1">
+                <span className="text-cb-body text-muted-foreground px-1">
                   +{gaps.length - 6} more
                 </span>
               )}
@@ -181,7 +181,7 @@ export function SuggestPane({
         {loading && (
           <div className="py-12 text-center">
             <RefreshCw className="h-5 w-5 animate-spin mx-auto mb-3" style={{ color: "var(--primary)" }} />
-            <p className="text-[15px] text-muted-foreground">Analyzing your progress and gaps...</p>
+            <p className="text-cb-body text-muted-foreground">Analyzing your progress and gaps...</p>
           </div>
         )}
 
@@ -190,9 +190,9 @@ export function SuggestPane({
           <div className="py-6 rounded-sm border border-border px-4" style={{ background: "var(--card)" }}>
             <div className="flex items-center gap-2 mb-2">
               <AlertTriangle className="h-4 w-4" style={{ color: "var(--status-danger)" }} />
-              <p className="text-[15px] font-medium">Failed to generate</p>
+              <p className="text-cb-body font-medium">Failed to generate</p>
             </div>
-            <p className="text-[14px] text-muted-foreground">{error}</p>
+            <p className="text-cb-foot text-muted-foreground">{error}</p>
           </div>
         )}
 
@@ -202,34 +202,34 @@ export function SuggestPane({
             {llmError && (
               <div className="flex items-start gap-2 rounded-sm border border-border px-3 py-2" style={{ background: "color-mix(in oklch, var(--status-warning) 8%, transparent)", borderColor: "color-mix(in oklch, var(--status-warning) 30%, transparent)" }}>
                 <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" style={{ color: "var(--status-warning)" }} />
-                <p className="text-[13px] text-muted-foreground">
+                <p className="text-cb-foot text-muted-foreground">
                   LLM failed: {llmError.length > 120 ? llmError.slice(0, 120) + "..." : llmError}
                 </p>
               </div>
             )}
             {/* Reasoning */}
             <div className="rounded-sm border border-border px-4 py-3" style={{ background: "var(--card)" }}>
-              <p className="text-[14px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+              <p className="text-cb-foot font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
                 Why this suggestion
               </p>
-              <p className="text-[14px] leading-relaxed text-muted-foreground">
+              <p className="text-cb-foot leading-relaxed text-muted-foreground">
                 {suggestion.reasoning}
               </p>
             </div>
 
             {/* Epic + issues tree */}
             <div className="space-y-2">
-              <div className="flex items-center gap-2 text-[15px] font-semibold">
+              <div className="flex items-center gap-2 text-cb-body font-semibold">
                 <Badge
                   variant="outline"
-                  className="text-[14px] px-1 py-0"
+                  className="text-cb-foot px-1 py-0"
                   style={{ borderColor: "var(--primary)", color: "var(--primary)" }}
                 >
                   EPIC
                 </Badge>
                 {suggestion.epic.title}
                 {suggestion.epic.deadline && (
-                  <span className="text-muted-foreground font-normal text-[14px]">
+                  <span className="text-muted-foreground font-normal text-cb-foot">
                     by {suggestion.epic.deadline}
                   </span>
                 )}
@@ -237,7 +237,7 @@ export function SuggestPane({
 
               {suggestion.issues.map((issue, idx) => (
                 <div key={idx} className="pl-4">
-                  <label className="flex items-center gap-2 text-[14px] py-1 cursor-pointer">
+                  <label className="flex items-center gap-2 text-cb-foot py-1 cursor-pointer">
                     <Checkbox
                       checked={selectedIssues.has(idx)}
                       onCheckedChange={(checked) => {
@@ -247,21 +247,21 @@ export function SuggestPane({
                       }}
                       className="h-3.5 w-3.5"
                     />
-                    <Badge variant="outline" className="text-[14px] px-1 py-0">ISSUE</Badge>
+                    <Badge variant="outline" className="text-cb-foot px-1 py-0">ISSUE</Badge>
                     <span className="font-medium">{issue.title}</span>
                     {issue.deadline && (
-                      <span className="text-muted-foreground text-[14px]">by {issue.deadline}</span>
+                      <span className="text-muted-foreground text-cb-foot">by {issue.deadline}</span>
                     )}
-                    <span className="text-muted-foreground text-[14px]">· {issue.tasks.length} tasks</span>
+                    <span className="text-muted-foreground text-cb-foot">· {issue.tasks.length} tasks</span>
                   </label>
                   {selectedIssues.has(idx) && (
                     <div className="pl-7 space-y-1 pb-1">
                       {issue.tasks.map((task, tIdx) => (
-                        <div key={tIdx} className="text-[15px] text-muted-foreground flex items-center gap-1.5">
+                        <div key={tIdx} className="text-cb-body text-muted-foreground flex items-center gap-1.5">
                           <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/30 shrink-0" />
                           {task.title}
                           {task.ftSlug && (
-                            <span className="font-mono text-[15px]">{task.ftSlug}</span>
+                            <span className="font-mono text-cb-body">{task.ftSlug}</span>
                           )}
                         </div>
                       ))}

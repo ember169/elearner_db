@@ -64,7 +64,7 @@ export function AnnotationPopover({
   return (
     <div className="fixed inset-x-3 bottom-3 z-50 mx-auto max-w-lg rounded-cb-card-lg border border-cb-line bg-cb-card p-4 shadow-lg md:bottom-6">
       <div className="mb-2 flex items-start justify-between gap-3">
-        <span className="cb-label-mono flex items-center gap-1 text-[10px] text-cb-or">
+        <span className="cb-label-mono flex items-center gap-1 text-cb-caption text-cb-or">
           <Highlighter className="h-3 w-3" />
           {pending ? "new highlight" : "highlight"}
         </span>
@@ -78,7 +78,7 @@ export function AnnotationPopover({
         </button>
       </div>
 
-      <blockquote className="mb-3 border-l-2 border-cb-or pl-2.5 font-cb-sans text-[14px] leading-[1.5] text-cb-second">
+      <blockquote className="mb-3 border-l-2 border-cb-or pl-2.5 font-cb-sans text-cb-foot leading-[1.5] text-cb-second">
         {quote.length > 220 ? `${quote.slice(0, 220)}…` : quote}
       </blockquote>
 
@@ -87,7 +87,7 @@ export function AnnotationPopover({
         onChange={(e) => setNote(e.target.value)}
         rows={3}
         placeholder="Margin note (optional)"
-        className="w-full resize-y rounded-cb-chip-sm border border-cb-line bg-cb-bg px-3 py-2 font-cb-sans text-[14px] text-cb-text placeholder:text-cb-muted focus-visible:border-cb-or focus-visible:outline-none"
+        className="w-full resize-y rounded-cb-chip-sm border border-cb-line bg-cb-bg px-3 py-2 font-cb-sans text-cb-foot text-cb-text placeholder:text-cb-muted focus-visible:border-cb-or focus-visible:outline-none"
       />
 
       <div className="mt-3 flex items-center justify-between">
@@ -96,7 +96,7 @@ export function AnnotationPopover({
             type="button"
             onClick={() => void onDelete()}
             disabled={busy}
-            className="cb-label-mono flex items-center gap-1 text-[10px] text-cb-muted transition-colors hover:text-cb-danger disabled:opacity-50"
+            className="cb-label-mono flex items-center gap-1 text-cb-caption text-cb-muted transition-colors hover:text-cb-danger disabled:opacity-50"
           >
             <Trash2 className="h-3 w-3" />
             remove
@@ -108,7 +108,7 @@ export function AnnotationPopover({
           type="button"
           disabled={busy}
           onClick={() => void (pending ? onCreate(note) : onSaveNote(note))}
-          className="cb-label-mono rounded-cb-chip-sm bg-cb-or px-3 py-1.5 text-[10px] text-cb-on-or disabled:opacity-50"
+          className="cb-label-mono rounded-cb-chip-sm bg-cb-or px-3 py-1.5 text-cb-caption text-cb-on-or disabled:opacity-50"
         >
           {pending ? "highlight" : "save note"}
         </button>

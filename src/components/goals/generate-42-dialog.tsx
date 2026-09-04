@@ -122,30 +122,30 @@ export function Generate42Dialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[520px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-[15px]">
+          <DialogTitle className="flex items-center gap-2 text-cb-body">
             <CartableoMark size={20} />
             {isSync ? "Sync with 42 plan" : "Generate from 42 plan"}
           </DialogTitle>
         </DialogHeader>
 
         {loading ? (
-          <div className="py-8 text-center text-[14px] text-muted-foreground">
+          <div className="py-8 text-center text-cb-foot text-muted-foreground">
             <RefreshCw className="h-4 w-4 animate-spin mx-auto mb-2" />
             Loading 42 plan data...
           </div>
         ) : !preview ? (
-          <p className="text-[14px] text-muted-foreground py-4">Failed to load data.</p>
+          <p className="text-cb-foot text-muted-foreground py-4">Failed to load data.</p>
         ) : !isSync ? (
           /* GENERATE VIEW */
           <div className="space-y-3">
-            <p className="text-[14px] text-muted-foreground">
+            <p className="text-cb-foot text-muted-foreground">
               Creates an Epic with one Issue per remaining circle and Tasks for each project,
               using deadlines from your backward planner.
             </p>
 
             <div className="space-y-1">
-              <div className="flex items-center gap-2 text-[14px] font-semibold">
-                <Badge variant="outline" className="text-[14px] px-1 py-0"
+              <div className="flex items-center gap-2 text-cb-foot font-semibold">
+                <Badge variant="outline" className="text-cb-foot px-1 py-0"
                   style={{ borderColor: "var(--cb-or)", color: "var(--cb-or)" }}>
                   EPIC
                 </Badge>
@@ -158,7 +158,7 @@ export function Generate42Dialog({
               {preview.circles.map((c) => (
                 <div
                   key={c.circle}
-                  className={`flex items-center gap-2 text-[15px] pl-4 py-0.5 ${c.isComplete ? "opacity-40" : ""}`}
+                  className={`flex items-center gap-2 text-cb-body pl-4 py-0.5 ${c.isComplete ? "opacity-40" : ""}`}
                 >
                   {c.isComplete ? (
                     <Check className="h-3 w-3 text-green-500" />
@@ -172,17 +172,17 @@ export function Generate42Dialog({
                     </span>
                   )}
                   <span className="text-muted-foreground">· {c.totalTasks} tasks</span>
-                  {c.isComplete && <span className="text-green-500 text-[14px]">completed</span>}
+                  {c.isComplete && <span className="text-green-500 text-cb-foot">completed</span>}
                 </div>
               ))}
 
-              <p className="text-[14px] text-muted-foreground pt-1 pl-4">
+              <p className="text-cb-foot text-muted-foreground pt-1 pl-4">
                 {preview.totalTasks} tasks total ({preview.preCompleted} pre-completed) · Auto-track: ft:projects_validated
               </p>
             </div>
 
             {!preview.targetDate && (
-              <p className="text-[15px] text-red-400">
+              <p className="text-cb-body text-red-400">
                 No backward planner deadline set. Go to Settings to set a target date first.
               </p>
             )}
@@ -207,32 +207,32 @@ export function Generate42Dialog({
               <>
                 <div className="grid grid-cols-3 gap-2">
                   <div className="rounded-sm border border-green-500/20 p-2 text-center">
-                    <span className="text-[18px] font-bold text-green-400">{syncDiff.autoCompleted.length}</span>
-                    <p className="text-[14px] text-muted-foreground">Auto-completed</p>
+                    <span className="text-cb-head text-green-400">{syncDiff.autoCompleted.length}</span>
+                    <p className="text-cb-foot text-muted-foreground">Auto-completed</p>
                   </div>
                   <div className="rounded-sm border border-border p-2 text-center"
                     style={{ borderColor: "color-mix(in oklch, var(--cb-or) 30%, transparent)" }}>
-                    <span className="text-[18px] font-bold text-primary">
+                    <span className="text-cb-head text-primary">
                       {syncDiff.newTasks.length}
                     </span>
-                    <p className="text-[14px] text-muted-foreground">New tasks</p>
+                    <p className="text-cb-foot text-muted-foreground">New tasks</p>
                   </div>
                   <div className="rounded-sm border border-amber-500/20 p-2 text-center">
-                    <span className="text-[18px] font-bold text-amber-400">{syncDiff.deadlineShifts.length}</span>
-                    <p className="text-[14px] text-muted-foreground">Deadline shifts</p>
+                    <span className="text-cb-head text-amber-400">{syncDiff.deadlineShifts.length}</span>
+                    <p className="text-cb-foot text-muted-foreground">Deadline shifts</p>
                   </div>
                 </div>
 
                 {syncDiff.autoCompleted.length > 0 && (
                   <div>
-                    <p className="text-[14px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
+                    <p className="text-cb-foot font-bold uppercase tracking-wider text-muted-foreground mb-1">
                       Auto-completed from sync
                     </p>
                     {syncDiff.autoCompleted.map((t) => (
-                      <div key={t.id} className="flex items-center gap-2 text-[15px] py-0.5">
+                      <div key={t.id} className="flex items-center gap-2 text-cb-body py-0.5">
                         <Check className="h-3 w-3 text-green-500" />
                         <span>{t.title}</span>
-                        <span className="text-[15px] font-mono text-muted-foreground">{t.ftSlug}</span>
+                        <span className="text-cb-body font-mono text-muted-foreground">{t.ftSlug}</span>
                       </div>
                     ))}
                   </div>
@@ -240,11 +240,11 @@ export function Generate42Dialog({
 
                 {syncDiff.newTasks.length > 0 && (
                   <div>
-                    <p className="text-[14px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
+                    <p className="text-cb-foot font-bold uppercase tracking-wider text-muted-foreground mb-1">
                       Newly available
                     </p>
                     {syncDiff.newTasks.map((t) => (
-                      <label key={t.slug} className="flex items-center gap-2 text-[15px] py-0.5 cursor-pointer">
+                      <label key={t.slug} className="flex items-center gap-2 text-cb-body py-0.5 cursor-pointer">
                         <Checkbox
                           checked={selectedNewTasks.has(t.slug)}
                           onCheckedChange={(checked) => {
@@ -255,7 +255,7 @@ export function Generate42Dialog({
                           className="h-3 w-3"
                         />
                         <span>{t.name}</span>
-                        <Badge variant="outline" className="text-[14px] px-1 py-0">C{t.circle}</Badge>
+                        <Badge variant="outline" className="text-cb-foot px-1 py-0">C{t.circle}</Badge>
                       </label>
                     ))}
                   </div>
@@ -263,7 +263,7 @@ export function Generate42Dialog({
 
                 {syncDiff.deadlineShifts.length > 0 && (
                   <div>
-                    <label className="flex items-center gap-2 text-[14px] font-bold uppercase tracking-wider text-muted-foreground mb-1 cursor-pointer">
+                    <label className="flex items-center gap-2 text-cb-foot font-bold uppercase tracking-wider text-muted-foreground mb-1 cursor-pointer">
                       <Checkbox
                         checked={applyDeadlines}
                         onCheckedChange={(v) => setApplyDeadlines(!!v)}
@@ -272,7 +272,7 @@ export function Generate42Dialog({
                       Deadline changes
                     </label>
                     {syncDiff.deadlineShifts.map((s) => (
-                      <div key={s.issueId} className="flex items-center gap-2 text-[15px] py-0.5 pl-5">
+                      <div key={s.issueId} className="flex items-center gap-2 text-cb-body py-0.5 pl-5">
                         <span>Circle {s.circle}:</span>
                         <span className="text-muted-foreground">{s.oldDate.slice(0, 7)}</span>
                         <ArrowRight className="h-3 w-3 text-muted-foreground" />
@@ -283,7 +283,7 @@ export function Generate42Dialog({
                 )}
 
                 {totalChanges === 0 && (
-                  <p className="text-[14px] text-muted-foreground py-2">
+                  <p className="text-cb-foot text-muted-foreground py-2">
                     Everything is in sync. No changes needed.
                   </p>
                 )}

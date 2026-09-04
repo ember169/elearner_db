@@ -70,10 +70,10 @@ export function MermaidBlock({ chart }: { chart: string }) {
   if (error) {
     return (
       <figure className="my-4 rounded-cb-card border border-cb-line bg-cb-raised p-3">
-        <figcaption className="cb-label-mono text-[10px] text-cb-muted">
+        <figcaption className="cb-label-mono text-cb-caption text-cb-muted">
           Diagram could not be rendered
         </figcaption>
-        <pre className="mt-2 overflow-x-auto text-[12px] text-cb-second">{chart}</pre>
+        <pre className="mt-2 overflow-x-auto text-cb-foot text-cb-second">{chart}</pre>
       </figure>
     );
   }

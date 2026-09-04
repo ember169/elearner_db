@@ -239,7 +239,7 @@ export function PlannerClient({
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <div className="min-w-0">
           {!embedded && <h1 className="page-title text-cb-text">Board</h1>}
-          <p className="mt-1 truncate font-cb-sans text-[14px] text-cb-muted">
+          <p className="mt-1 truncate font-cb-sans text-cb-foot text-cb-muted">
             {objective}
           </p>
         </div>
@@ -247,7 +247,7 @@ export function PlannerClient({
           <div
             className="flex items-center gap-2 rounded-cb-chip bg-cb-raised px-2.5 py-1.5"
           >
-            <span className="font-cb-mono text-[11px] tabular-nums text-cb-second">
+            <span className="font-cb-mono text-cb-foot tabular-nums text-cb-second">
               {totalHours.toFixed(0)}h
             </span>
             <div className="h-[3px] w-[40px] overflow-hidden rounded-[2px] bg-cb-line">
@@ -278,7 +278,7 @@ export function PlannerClient({
       {/* Mentor briefing + Side project (desktop). When embedded in Home, the
           briefing lives in the Today view, so we render only the side project. */}
       {!embedded && (
-        <p className="cb-label-mono mb-2 hidden text-[10px] text-cb-muted md:block">Briefing</p>
+        <p className="cb-label-mono mb-2 hidden text-cb-caption text-cb-muted md:block">Briefing</p>
       )}
       <div
         className={
@@ -297,14 +297,14 @@ export function PlannerClient({
               style={{ background: "var(--primary)" }}
             >
               <span
-                className="text-[15px] font-bold"
+                className="text-cb-body font-bold"
                 style={{ color: "var(--primary-foreground)" }}
               >
                 M
               </span>
             </div>
             <p
-              className="text-[15px] leading-relaxed flex-1 min-w-0"
+              className="text-cb-body leading-relaxed flex-1 min-w-0"
               style={{ color: "var(--muted-foreground)" }}
             >
               {briefingCollapsed
@@ -321,19 +321,19 @@ export function PlannerClient({
                     String(next)
                   );
                 }}
-                className="text-[15px] text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                className="text-cb-body text-muted-foreground hover:text-foreground transition-colors shrink-0"
               >
                 {briefingCollapsed ? "More" : "Less"}
               </button>
             )}
           </div>
           {briefingSource === "fallback" && hasKey && (
-            <p className="text-[13px] text-muted-foreground mt-1.5 pl-8 opacity-70">
+            <p className="text-cb-foot text-muted-foreground mt-1.5 pl-8 opacity-70">
               Rule-based fallback — LLM unavailable
             </p>
           )}
           {!hasKey && (
-            <p className="text-[15px] text-muted-foreground mt-2 pl-8">
+            <p className="text-cb-body text-muted-foreground mt-2 pl-8">
               Rule-based plan —{" "}
               <a
                 href="/settings"
@@ -361,7 +361,7 @@ export function PlannerClient({
             className="flex items-center justify-center rounded-cb-card border border-dashed border-cb-line px-4 py-4"
             style={{ background: "var(--card)" }}
           >
-            <p className="text-[14px] text-muted-foreground">
+            <p className="text-cb-foot text-muted-foreground">
               <a
                 href="/settings"
                 className="underline hover:text-foreground transition-colors"
@@ -386,14 +386,14 @@ export function PlannerClient({
                 style={{ background: "var(--primary)" }}
               >
                 <span
-                  className="text-[15px] font-bold"
+                  className="text-cb-body font-bold"
                   style={{ color: "var(--primary-foreground)" }}
                 >
                   M
                 </span>
               </div>
               <p
-                className="text-[14px] leading-relaxed flex-1 min-w-0"
+                className="text-cb-foot leading-relaxed flex-1 min-w-0"
                 style={{ color: "var(--muted-foreground)" }}
               >
                 {collapsedBriefing ?? briefing}
@@ -436,7 +436,7 @@ export function PlannerClient({
               }}
             />
             <span
-              className="text-[14px] font-medium"
+              className="text-cb-foot font-medium"
               style={{ color: "var(--foreground)" }}
             >
               {deadlineUrgency === "critical"
@@ -449,7 +449,7 @@ export function PlannerClient({
           {deadlineWarnings.map((w, i) => (
             <p
               key={i}
-              className="text-[14px] leading-relaxed pl-5.5"
+              className="text-cb-foot leading-relaxed pl-5.5"
               style={{ color: "var(--muted-foreground)" }}
             >
               {w}
@@ -459,7 +459,7 @@ export function PlannerClient({
       )}
 
       {/* Desktop: Kanban Board */}
-      <p className="cb-label-mono mb-2 hidden text-[10px] text-cb-muted md:block">Board</p>
+      <p className="cb-label-mono mb-2 hidden text-cb-caption text-cb-muted md:block">Board</p>
       <div className="hidden md:block">
         <StatusKanbanBoard
           items={items}

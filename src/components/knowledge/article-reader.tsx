@@ -43,7 +43,7 @@ const components: Components = {
     if (chart) return <MermaidBlock chart={chart} />;
     return (
       <pre
-        className="my-3 overflow-x-auto rounded-cb-chip-sm border border-cb-line bg-cb-bg p-3 text-[13px] leading-relaxed"
+        className="my-3 overflow-x-auto rounded-cb-chip-sm border border-cb-line bg-cb-bg p-3 text-cb-foot leading-relaxed"
         {...props}
       >
         {children}
@@ -69,24 +69,24 @@ const components: Components = {
     );
   },
   h1: ({ children }) => (
-    <h3 className="mt-6 mb-2 font-cb-sans text-[19px] font-bold text-cb-text">{children}</h3>
+    <h3 className="mt-6 mb-2 font-cb-sans text-cb-head text-cb-text">{children}</h3>
   ),
   h2: ({ children }) => (
-    <h4 className="mt-5 mb-2 font-cb-sans text-[17px] font-bold text-cb-text">{children}</h4>
+    <h4 className="mt-5 mb-2 font-cb-sans text-cb-card text-cb-text">{children}</h4>
   ),
   h3: ({ children }) => (
-    <h5 className="mt-4 mb-1.5 font-cb-sans text-[15px] font-bold text-cb-text">{children}</h5>
+    <h5 className="mt-4 mb-1.5 font-cb-sans text-cb-body font-bold text-cb-text">{children}</h5>
   ),
   p: ({ children }) => (
-    <p className="my-2.5 font-cb-sans text-[15px] leading-[1.6] text-cb-second">{children}</p>
+    <p className="my-2.5 font-cb-sans text-cb-body leading-[1.6] text-cb-second">{children}</p>
   ),
   ul: ({ children }) => (
-    <ul className="my-2.5 list-disc space-y-1 pl-5 font-cb-sans text-[15px] leading-[1.6] text-cb-second">
+    <ul className="my-2.5 list-disc space-y-1 pl-5 font-cb-sans text-cb-body leading-[1.6] text-cb-second">
       {children}
     </ul>
   ),
   ol: ({ children }) => (
-    <ol className="my-2.5 list-decimal space-y-1 pl-5 font-cb-sans text-[15px] leading-[1.6] text-cb-second">
+    <ol className="my-2.5 list-decimal space-y-1 pl-5 font-cb-sans text-cb-body leading-[1.6] text-cb-second">
       {children}
     </ol>
   ),
@@ -104,19 +104,19 @@ const components: Components = {
     </a>
   ),
   blockquote: ({ children }) => (
-    <blockquote className="my-3 border-l-2 border-cb-or pl-3 font-cb-sans text-[15px] italic text-cb-muted">
+    <blockquote className="my-3 border-l-2 border-cb-or pl-3 font-cb-sans text-cb-body italic text-cb-muted">
       {children}
     </blockquote>
   ),
   // Wide tables scroll inside their own container rather than widening the page.
   table: ({ children }) => (
     <div className="my-3 overflow-x-auto rounded-cb-chip-sm border border-cb-line">
-      <table className="w-full border-collapse text-[13px]">{children}</table>
+      <table className="w-full border-collapse text-cb-foot">{children}</table>
     </div>
   ),
   thead: ({ children }) => <thead className="bg-cb-raised">{children}</thead>,
   th: ({ children }) => (
-    <th className="cb-label-mono border-b border-cb-line px-3 py-2 text-left text-[10px] text-cb-muted">
+    <th className="cb-label-mono border-b border-cb-line px-3 py-2 text-left text-cb-caption text-cb-muted">
       {children}
     </th>
   ),
@@ -230,9 +230,9 @@ export function ArticleReader({
         return (
           <section key={section.id} id={`section-${section.id}`}>
             {/* Plain text headings — the family reserves icons for UI chrome. */}
-            <h2 className="mb-2 font-cb-sans text-[21px] font-bold leading-snug text-cb-text">{section.heading}</h2>
+            <h2 className="mb-2 font-cb-sans text-cb-head leading-snug text-cb-text">{section.heading}</h2>
             {section.isExpanded && (
-              <span className="cb-label-mono mb-2 inline-block rounded-cb-chip-sm bg-cb-or-tint px-2 py-1 text-[10px] text-cb-or">
+              <span className="cb-label-mono mb-2 inline-block rounded-cb-chip-sm bg-cb-or-tint px-2 py-1 text-cb-caption text-cb-or">
                 expanded
               </span>
             )}

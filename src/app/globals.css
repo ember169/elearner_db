@@ -181,21 +181,27 @@ a:focus-visible,
   outline-offset: 2px;
 }
 
-/*
- * Type scale — 8 stops for the whole app.
- * Existing components use arbitrary text-[Npx] values; new code should
- * prefer these utilities so sizes converge over time.
- *
- *  --text-caption: 10px  — smallest readable, badges & timestamps
- *  --text-xs:      12px  — secondary labels, metadata
- *  --text-sm:      14px  — body text, form labels
- *  --text-base:    16px  — primary body (Tailwind default)
- *  --text-sub:     15px  — card/dialog titles (between sm and base)
- *  --text-lg:      18px  — section headings, stat labels
- *  --text-xl:      22px  — metric values, mobile headings
- *  --text-2xl:     28px  — page titles
- *  --text-hero:    44px  — hero / splash
- */
+@utility text-cb-hero {
+  font-size: 44px; font-weight: 800; line-height: 0.98; letter-spacing: -0.035em;
+}
+@utility text-cb-title {
+  font-size: 28px; font-weight: 800; line-height: 1.06; letter-spacing: -0.028em;
+}
+@utility text-cb-head {
+  font-size: 20px; font-weight: 700; line-height: 1.2; letter-spacing: -0.02em;
+}
+@utility text-cb-card {
+  font-size: 17px; font-weight: 700; line-height: 1.25; letter-spacing: -0.012em;
+}
+@utility text-cb-body {
+  font-size: 16px; line-height: 1.5;
+}
+@utility text-cb-foot {
+  font-size: 14px; line-height: 1.42;
+}
+@utility text-cb-caption {
+  font-size: 10px; line-height: 1.4;
+}
 
 /* Standalone PWA — hide grid dots for cleaner look */
 @media (display-mode: standalone) {
@@ -212,7 +218,7 @@ a:focus-visible,
 /* Family uppercase label role: JetBrains Mono 500 at .06-.16em tracking. */
 .section-label {
   font-family: var(--font-mono);
-  font-size: 0.6875rem;
+  font-size: 10px;
   font-weight: 500;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -225,10 +231,10 @@ a:focus-visible,
    belongs to content names only: see .cb-content-title. */
 .page-title {
   font-family: var(--font-cb-sans);
-  font-size: 1.625rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.25;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.028em;
+  line-height: 1.06;
 }
 
 /* Content-name role: article titles, the equivalent of the family's recipe and
@@ -245,14 +251,6 @@ a:focus-visible,
   font-weight: 400;
   color: var(--muted-foreground);
   line-height: 1.4;
-}
-
-/* Emphasized numeric callout (platform stats, big metrics) */
-.stat-value {
-  font-size: 1.625rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
 }
 
 /* Gold glow effect */

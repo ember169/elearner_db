@@ -123,8 +123,8 @@ export function CircleCards({
   return (
     <div className="space-y-3">
       <div className="flex items-baseline justify-between">
-        <h2 className="font-cb-sans text-[17px] font-bold text-cb-text">Circles</h2>
-        <span className="cb-label-mono text-[10px] text-cb-muted">
+        <h2 className="font-cb-sans text-cb-card text-cb-text">Circles</h2>
+        <span className="cb-label-mono text-cb-caption text-cb-muted">
           {coreDone} of {coreTotal} projects done
         </span>
       </div>
@@ -156,14 +156,14 @@ export function CircleCards({
               >
                 <div className="flex items-center gap-2">
                   <StatusChip state={state} />
-                  <span className="font-cb-sans text-[15px] font-bold text-cb-text">
+                  <span className="font-cb-sans text-cb-body font-bold text-cb-text">
                     Circle {c}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span
                     className={cn(
-                      "font-cb-mono text-[11px] tabular-nums",
+                      "font-cb-mono text-cb-foot tabular-nums",
                       state === "current" ? "text-cb-or" : "text-cb-second",
                     )}
                   >
@@ -184,10 +184,10 @@ export function CircleCards({
                   {groups.map((group) => (
                     <div key={group.label}>
                       <div className="mb-2 flex items-center gap-2">
-                        <span className="cb-label-mono rounded bg-cb-or-tint px-1.5 py-0.5 text-[9px] text-cb-or">
+                        <span className="cb-label-mono rounded bg-cb-or-tint px-1.5 py-0.5 text-cb-caption text-cb-or">
                           pick one
                         </span>
-                        <span className="font-cb-sans text-[12px] text-cb-muted">
+                        <span className="font-cb-sans text-cb-foot text-cb-muted">
                           {group.label}
                         </span>
                       </div>
@@ -285,7 +285,7 @@ function ProjectCard({
         </button>
         <span
           className={cn(
-            "flex-1 font-cb-sans text-[13px] font-bold",
+            "flex-1 font-cb-sans text-cb-foot font-bold",
             status === "done"
               ? "text-cb-second"
               : status === "locked"
@@ -296,19 +296,19 @@ function ProjectCard({
           {project.name}
         </span>
         {isAlt && (
-          <span className="font-cb-mono text-[10px] text-cb-muted">alt</span>
+          <span className="font-cb-mono text-cb-caption text-cb-muted">alt</span>
         )}
         {isManual && !isSynced && (
-          <span className="cb-label-mono rounded bg-cb-or-tint px-1 py-px text-[8px] text-cb-or">
+          <span className="cb-label-mono rounded bg-cb-or-tint px-1 py-px text-cb-caption text-cb-or">
             manual
           </span>
         )}
-        <span className="font-cb-mono text-[10px] text-cb-muted">
+        <span className="font-cb-mono text-cb-caption text-cb-muted">
           {project.estimatedHours}h
         </span>
       </div>
       {status !== "done" && project.description && (
-        <p className="mt-1 line-clamp-2 font-cb-sans text-[12px] leading-[1.4] text-cb-muted">
+        <p className="mt-1 line-clamp-2 font-cb-sans text-cb-foot leading-[1.4] text-cb-muted">
           {project.description}
         </p>
       )}
@@ -316,7 +316,7 @@ function ProjectCard({
         {project.skills.slice(0, 4).map((s) => (
           <span
             key={s}
-            className="rounded bg-cb-card px-1.5 py-px font-cb-mono text-[9px] text-cb-muted"
+            className="rounded bg-cb-card px-1.5 py-px font-cb-mono text-cb-caption text-cb-muted"
           >
             {s}
           </span>
@@ -327,7 +327,7 @@ function ProjectCard({
 }
 
 function StatusChip({ state }: { state: "done" | "current" | "locked" }) {
-  const base = "cb-label-mono rounded-[6px] px-2 py-0.5 text-[10px]";
+  const base = "cb-label-mono rounded-[6px] px-2 py-0.5 text-cb-caption";
   switch (state) {
     case "done":
       return <span className={cn(base, "bg-cb-success-tint text-cb-success")}>done</span>;

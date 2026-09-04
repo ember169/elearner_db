@@ -104,7 +104,7 @@ export function HomeClient({
               aria-selected={view === key}
               onClick={() => select(key)}
               className={cn(
-                "rounded-cb-chip px-3.5 py-1.5 font-cb-sans text-[13px] font-bold transition-colors",
+                "rounded-cb-chip px-3.5 py-1.5 font-cb-sans text-cb-foot font-bold transition-colors",
                 view === key ? "bg-cb-or text-cb-on-or" : "text-cb-muted",
               )}
             >

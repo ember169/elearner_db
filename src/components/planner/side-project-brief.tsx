@@ -55,19 +55,19 @@ export function SideProjectBrief({
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
             {weekLabel && (
-              <p className="text-[14px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+              <p className="text-cb-foot font-semibold uppercase tracking-wider text-muted-foreground mb-1">
                 Side project {weekLabel}
               </p>
             )}
             <div className="flex items-center gap-2">
-              <h3 className="text-[14px] font-semibold">{project.title}</h3>
+              <h3 className="text-cb-foot font-semibold">{project.title}</h3>
               {isAccepted && (
-                <Badge className="text-[11px] px-1.5 py-0 font-bold uppercase" style={{ background: "color-mix(in oklch, var(--status-done) 15%, transparent)", color: "var(--status-done)", border: "1px solid color-mix(in oklch, var(--status-done) 30%, transparent)" }}>
+                <Badge className="text-cb-foot px-1.5 py-0 font-bold uppercase" style={{ background: "color-mix(in oklch, var(--status-done) 15%, transparent)", color: "var(--status-done)", border: "1px solid color-mix(in oklch, var(--status-done) 30%, transparent)" }}>
                   Accepted
                 </Badge>
               )}
             </div>
-            <p className="text-[14px] text-muted-foreground mt-0.5">
+            <p className="text-cb-foot text-muted-foreground mt-0.5">
               {stepCount} steps · ~{totalHours}h
               {project.capstone_connection && ` · feeds into ${project.capstone_connection.split(" ").slice(0, 4).join(" ")}`}
             </p>
@@ -88,7 +88,7 @@ export function SideProjectBrief({
             )}
             <button
               onClick={() => setExpanded(!expanded)}
-              className="text-[15px] text-muted-foreground hover:text-foreground transition-colors"
+              className="text-cb-body text-muted-foreground hover:text-foreground transition-colors"
             >
               {expanded ? "Collapse" : "Expand"} {expanded ? "↑" : "↓"}
             </button>
@@ -100,7 +100,7 @@ export function SideProjectBrief({
             {project.skills.map((skill) => (
               <span
                 key={skill}
-                className="rounded-cb-chip-sm border border-cb-line px-2 py-0.5 font-cb-mono text-[11px]"
+                className="rounded-cb-chip-sm border border-cb-line px-2 py-0.5 font-cb-mono text-cb-foot"
                 style={{ color: "var(--primary)" }}
               >
                 {skill}
@@ -120,7 +120,7 @@ export function SideProjectBrief({
                   try { await onAccept(); } finally { setAccepting(false); }
                 }}
                 disabled={accepting}
-                className="text-[13px]"
+                className="text-cb-foot"
               >
                 <Check className="h-3 w-3 mr-1" />
                 {accepting ? "Accepting..." : "Accept"}
@@ -134,7 +134,7 @@ export function SideProjectBrief({
                     try { await onRefresh(); } finally { setRefreshing(false); }
                   }}
                   disabled={refreshing}
-                  className="text-[13px]"
+                  className="text-cb-foot"
                 >
                   <X className="h-3 w-3 mr-1" />
                   Decline
@@ -148,7 +148,7 @@ export function SideProjectBrief({
                 <Button
                   size="sm"
                   onClick={onDone}
-                  className="text-[13px]"
+                  className="text-cb-foot"
                   style={{ background: "var(--status-done)" }}
                 >
                   <Check className="h-3 w-3 mr-1" />
@@ -159,19 +159,19 @@ export function SideProjectBrief({
                 <button
                   type="button"
                   onClick={() => setConfirmAbort(true)}
-                  className="font-cb-mono text-[11px] text-cb-muted transition-colors hover:text-cb-danger"
+                  className="font-cb-mono text-cb-foot text-cb-muted transition-colors hover:text-cb-danger"
                 >
                   abort side project
                 </button>
               )}
               {onAbort && confirmAbort && (
                 <div className="flex items-center gap-1.5">
-                  <span className="font-cb-mono text-[11px] text-cb-danger">Are you sure?</span>
+                  <span className="font-cb-mono text-cb-foot text-cb-danger">Are you sure?</span>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => { setConfirmAbort(false); onAbort(); }}
-                    className="font-cb-mono text-[11px] text-cb-danger"
+                    className="font-cb-mono text-cb-foot text-cb-danger"
                   >
                     Yes, abort
                   </Button>
@@ -179,7 +179,7 @@ export function SideProjectBrief({
                     variant="ghost"
                     size="sm"
                     onClick={() => setConfirmAbort(false)}
-                    className="text-[13px]"
+                    className="text-cb-foot"
                   >
                     Cancel
                   </Button>
@@ -192,18 +192,18 @@ export function SideProjectBrief({
 
       {expanded && (
         <div className="px-5 pb-4 space-y-3 border-t border-border pt-3">
-          <p className="text-[15px] text-muted-foreground leading-relaxed">
+          <p className="text-cb-body text-muted-foreground leading-relaxed">
             {project.description}
           </p>
 
           {project.prerequisites && project.prerequisites.length > 0 && (
             <div className="rounded-cb-card bg-cb-raised px-4 py-3">
-              <p className="cb-label-mono mb-2 text-[10px] text-cb-muted">
+              <p className="cb-label-mono mb-2 text-cb-caption text-cb-muted">
                 Prerequisites
               </p>
               <div className="space-y-1">
                 {project.prerequisites.map((p, i) => (
-                  <div key={i} className="flex items-center gap-2 text-[14px]">
+                  <div key={i} className="flex items-center gap-2 text-cb-foot">
                     <span>
                       {p.status === "done" ? (
                         <span className="text-success">{"✓"}</span>
@@ -227,14 +227,14 @@ export function SideProjectBrief({
                   key={i}
                   className="flex items-start gap-3 rounded-cb-card border border-cb-line px-4 py-2.5"
                 >
-                  <span className="text-[14px] font-bold text-muted-foreground mt-0.5 shrink-0">
+                  <span className="text-cb-foot font-bold text-muted-foreground mt-0.5 shrink-0">
                     {i + 1}.
                   </span>
                   <div className="flex-1 min-w-0">
-                    <span className="text-[15px] font-medium">{step.title}</span>
-                    <p className="text-[14px] text-muted-foreground">{step.description}</p>
+                    <span className="text-cb-body font-medium">{step.title}</span>
+                    <p className="text-cb-foot text-muted-foreground">{step.description}</p>
                   </div>
-                  <span className="text-[15px] text-muted-foreground shrink-0">~{step.estimatedHours}h</span>
+                  <span className="text-cb-body text-muted-foreground shrink-0">~{step.estimatedHours}h</span>
                 </div>
               ))}
             </div>
@@ -242,7 +242,7 @@ export function SideProjectBrief({
 
           {project.capstone_connection && (
             <div
-              className="rounded-cb-card px-4 py-3 font-cb-sans text-[14px] leading-relaxed text-cb-muted"
+              className="rounded-cb-card px-4 py-3 font-cb-sans text-cb-foot leading-relaxed text-cb-muted"
               style={{ background: "color-mix(in oklch, var(--primary) 6%, transparent)" }}
             >
               <span className="font-semibold text-primary">Capstone:</span> {project.capstone_connection}

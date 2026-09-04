@@ -296,10 +296,10 @@ export function DepTree({
   return (
     <div className="space-y-3">
       <div className="flex items-baseline justify-between">
-        <h2 className="font-cb-sans text-[17px] font-bold text-cb-text">
+        <h2 className="font-cb-sans text-cb-card text-cb-text">
           Dependency tree
         </h2>
-        <span className="cb-label-mono text-[10px] text-cb-muted">
+        <span className="cb-label-mono text-cb-caption text-cb-muted">
           prerequisites &amp; gates
         </span>
       </div>
@@ -527,9 +527,9 @@ export function DepTree({
           <LegendItem color="var(--cb-success)" label="Done" />
           <LegendItem color="var(--cb-or)" label="In progress / available" />
           <LegendItem color="var(--cb-line)" label="Locked" hollow />
-          <span className="flex items-center gap-1.5 font-cb-mono text-[10px] text-cb-muted">
+          <span className="flex items-center gap-1.5 font-cb-mono text-cb-caption text-cb-muted">
             <span
-              className="inline-flex items-center justify-center rounded-lg bg-cb-or-tint px-1.5 py-px text-[9px] font-bold text-cb-or"
+              className="inline-flex items-center justify-center rounded-lg bg-cb-or-tint px-1.5 py-px text-cb-caption font-bold text-cb-or"
               style={{ border: "0.5px solid var(--cb-or)" }}
             >
               &amp;
@@ -552,7 +552,7 @@ function LegendItem({
   hollow?: boolean;
 }) {
   return (
-    <span className="flex items-center gap-1.5 font-cb-mono text-[10px] text-cb-muted">
+    <span className="flex items-center gap-1.5 font-cb-mono text-cb-caption text-cb-muted">
       <span
         className="inline-block h-2 w-2 rounded-full"
         style={hollow ? { border: `1.5px solid ${color}` } : { background: color }}

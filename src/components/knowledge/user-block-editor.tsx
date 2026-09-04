@@ -79,12 +79,12 @@ export function UserBlockEditor({
       )}
     >
       {error && (
-        <p className="mb-2 font-cb-sans text-[13px] text-cb-danger">{error}</p>
+        <p className="mb-2 font-cb-sans text-cb-foot text-cb-danger">{error}</p>
       )}
 
       {kind === null ? (
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="cb-label-mono mr-1 text-[10px] text-cb-muted">
+          <span className="cb-label-mono mr-1 text-cb-caption text-cb-muted">
             <Plus className="mr-1 inline h-3 w-3" />
             add
           </span>
@@ -103,7 +103,7 @@ export function UserBlockEditor({
                 setKind(k);
                 setDraft(TEMPLATES[k]);
               }}
-              className="cb-label-mono flex items-center gap-1 rounded-cb-chip-sm bg-cb-raised px-2 py-1 text-[10px] text-cb-second transition-colors hover:bg-cb-raised-hover hover:text-cb-text"
+              className="cb-label-mono flex items-center gap-1 rounded-cb-chip-sm bg-cb-raised px-2 py-1 text-cb-caption text-cb-second transition-colors hover:bg-cb-raised-hover hover:text-cb-text"
             >
               <Icon className="h-3 w-3" />
               {label}
@@ -113,12 +113,12 @@ export function UserBlockEditor({
             type="button"
             disabled={busy}
             onClick={() => fileRef.current?.click()}
-            className="cb-label-mono flex items-center gap-1 rounded-cb-chip-sm bg-cb-raised px-2 py-1 text-[10px] text-cb-second transition-colors hover:bg-cb-raised-hover hover:text-cb-text"
+            className="cb-label-mono flex items-center gap-1 rounded-cb-chip-sm bg-cb-raised px-2 py-1 text-cb-caption text-cb-second transition-colors hover:bg-cb-raised-hover hover:text-cb-text"
           >
             <ImageIcon className="h-3 w-3" />
             image
           </button>
-          <span className="cb-label-mono text-[10px] text-cb-muted">
+          <span className="cb-label-mono text-cb-caption text-cb-muted">
             or drop an image here
           </span>
           <input
@@ -136,7 +136,7 @@ export function UserBlockEditor({
       ) : (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <span className="cb-label-mono text-[10px] text-cb-muted">{kind}</span>
+            <span className="cb-label-mono text-cb-caption text-cb-muted">{kind}</span>
             <button
               type="button"
               onClick={() => {
@@ -156,13 +156,13 @@ export function UserBlockEditor({
             onChange={(e) => setDraft(e.target.value)}
             rows={kind === "text" ? 4 : 5}
             placeholder={kind === "text" ? "Markdown supported" : undefined}
-            className="w-full resize-y rounded-cb-chip-sm border border-cb-line bg-cb-bg px-3 py-2 font-cb-mono text-[13px] text-cb-text placeholder:text-cb-muted focus-visible:border-cb-or focus-visible:outline-none"
+            className="w-full resize-y rounded-cb-chip-sm border border-cb-line bg-cb-bg px-3 py-2 font-cb-mono text-cb-foot text-cb-text placeholder:text-cb-muted focus-visible:border-cb-or focus-visible:outline-none"
           />
           <button
             type="button"
             onClick={() => void save()}
             disabled={busy || !draft.trim()}
-            className="cb-label-mono rounded-cb-chip-sm bg-cb-or px-3 py-1.5 text-[10px] text-cb-on-or disabled:opacity-50"
+            className="cb-label-mono rounded-cb-chip-sm bg-cb-or px-3 py-1.5 text-cb-caption text-cb-on-or disabled:opacity-50"
           >
             insert
           </button>

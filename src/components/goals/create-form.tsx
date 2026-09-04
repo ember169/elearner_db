@@ -132,10 +132,10 @@ export function CreateForm({
       <div className="px-6 py-5 max-w-xl">
         {mobile ? (
           <div className="flex items-center justify-between mb-4">
-            <button className="text-[15px] text-muted-foreground" onClick={onCancel}>Cancel</button>
-            <span className="text-[15px] font-bold">{isEditing ? "Edit goal" : "New goal"}</span>
+            <button className="text-cb-body text-muted-foreground" onClick={onCancel}>Cancel</button>
+            <span className="text-cb-body font-bold">{isEditing ? "Edit goal" : "New goal"}</span>
             <button
-              className="text-[15px] font-bold text-primary"
+              className="text-cb-body font-bold text-primary"
               onClick={handleSubmit}
             >
               {isEditing ? "Save" : "Create"}
@@ -146,17 +146,17 @@ export function CreateForm({
             <div className="flex items-center gap-2">
               <Badge
                 variant="outline"
-                className="text-[15px] font-bold uppercase tracking-wider px-1.5 py-0"
+                className="text-cb-body font-bold uppercase tracking-wider px-1.5 py-0"
                 style={{ borderColor: "var(--cb-or)", color: "var(--cb-or)" }}
               >
                 {isEditing ? "EDIT" : "NEW"}
               </Badge>
-              <span className="text-[14px] text-muted-foreground">
+              <span className="text-cb-foot text-muted-foreground">
                 {isEditing ? `Editing "${editingGoal!.title}"` : "Creating a goal"}
               </span>
             </div>
             <button
-              className="text-[15px] text-muted-foreground hover:text-foreground"
+              className="text-cb-body text-muted-foreground hover:text-foreground"
               onClick={onCancel}
             >
               Esc to cancel
@@ -165,7 +165,7 @@ export function CreateForm({
         )}
 
         <input
-          className="w-full text-[20px] font-bold tracking-tight bg-transparent border-b border-dashed border-muted-foreground/30 outline-none py-1 mb-5 placeholder:text-muted-foreground/40"
+          className="w-full text-cb-head bg-transparent border-b border-dashed border-muted-foreground/30 outline-none py-1 mb-5 placeholder:text-muted-foreground/40"
           placeholder="Untitled goal..."
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -174,12 +174,12 @@ export function CreateForm({
 
         {!isEditing && !parentGoal && (
           <div className="flex items-center gap-2 mb-5">
-            <span className="text-[14px] text-muted-foreground">Presets:</span>
+            <span className="text-cb-foot text-muted-foreground">Presets:</span>
             {QUICK_PRESETS.map((p) => (
               <button
                 key={p.title}
                 onClick={() => applyPreset(p)}
-                className="text-[15px] px-2 py-1 rounded-sm border border-border hover:bg-accent transition-colors"
+                className="text-cb-body px-2 py-1 rounded-sm border border-border hover:bg-accent transition-colors"
               >
                 {p.title.replace("Complete 42 common core", "42 common core").replace("Reach 42 level 10", "42 level 10").replace("50 Root-me challenges", "50 RM challs")}
               </button>
@@ -189,10 +189,10 @@ export function CreateForm({
 
         <div className="space-y-3.5">
           <div className="grid grid-cols-[80px_1fr] items-center gap-x-3">
-            <span className="text-[14px] text-muted-foreground">Type</span>
+            <span className="text-cb-foot text-muted-foreground">Type</span>
             <div className="flex rounded-sm border border-border overflow-hidden w-fit">
               <button
-                className="text-[14px] px-3 py-1.5 transition-colors"
+                className="text-cb-foot px-3 py-1.5 transition-colors"
                 style={{
                   background: goalType === "cumulative" ? "var(--accent)" : "transparent",
                   fontWeight: goalType === "cumulative" ? 600 : 400,
@@ -202,7 +202,7 @@ export function CreateForm({
                 Cumulative
               </button>
               <button
-                className="text-[14px] px-3 py-1.5 transition-colors border-l border-border"
+                className="text-cb-foot px-3 py-1.5 transition-colors border-l border-border"
                 style={{
                   background: goalType === "cadence" ? "var(--accent)" : "transparent",
                   fontWeight: goalType === "cadence" ? 600 : 400,
@@ -215,7 +215,7 @@ export function CreateForm({
           </div>
 
           <div className="grid grid-cols-[80px_1fr] items-center gap-x-3">
-            <span className="text-[14px] text-muted-foreground">Platform</span>
+            <span className="text-cb-foot text-muted-foreground">Platform</span>
             <Select
               value={category}
               onValueChange={(v) => {
@@ -223,7 +223,7 @@ export function CreateForm({
                 setMetricSource("");
               }}
             >
-              <SelectTrigger className="w-[160px] h-8 text-[14px]">
+              <SelectTrigger className="w-[160px] h-8 text-cb-foot">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -237,9 +237,9 @@ export function CreateForm({
           </div>
 
           <div className="grid grid-cols-[80px_1fr] items-center gap-x-3">
-            <span className="text-[14px] text-muted-foreground">Auto-track</span>
+            <span className="text-cb-foot text-muted-foreground">Auto-track</span>
             <Select value={metricSource || "manual"} onValueChange={(v) => setMetricSource(!v || v === "manual" ? "" : v)}>
-              <SelectTrigger className="w-[160px] h-8 text-[14px]">
+              <SelectTrigger className="w-[160px] h-8 text-cb-foot">
                 <SelectValue placeholder="Manual" />
               </SelectTrigger>
               <SelectContent>
@@ -256,19 +256,19 @@ export function CreateForm({
           {goalType === "cadence" ? (
             <>
               <div className="grid grid-cols-[80px_1fr] items-center gap-x-3">
-                <span className="text-[14px] text-muted-foreground">Rate</span>
+                <span className="text-cb-foot text-muted-foreground">Rate</span>
                 <div className="flex items-center gap-2">
-                  <span className="text-[14px]">&ge;</span>
+                  <span className="text-cb-foot">&ge;</span>
                   <Input
                     type="number"
                     min="1"
-                    className="w-[80px] h-8 text-[14px]"
+                    className="w-[80px] h-8 text-cb-foot"
                     value={cadenceValue}
                     onChange={(e) => setCadenceValue(e.target.value)}
                     placeholder="e.g., 2"
                   />
                   <Select value={cadenceUnit} onValueChange={(v) => setCadenceUnit(v as "per_week" | "per_month")}>
-                    <SelectTrigger className="w-[120px] h-8 text-[14px]">
+                    <SelectTrigger className="w-[120px] h-8 text-cb-foot">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -282,20 +282,20 @@ export function CreateForm({
           ) : (
             <>
               <div className="grid grid-cols-[80px_1fr] items-center gap-x-3">
-                <span className="text-[14px] text-muted-foreground">Target</span>
+                <span className="text-cb-foot text-muted-foreground">Target</span>
                 <Input
                   type="number"
-                  className="w-[120px] h-8 text-[14px]"
+                  className="w-[120px] h-8 text-cb-foot"
                   value={targetValue}
                   onChange={(e) => setTargetValue(e.target.value)}
                   placeholder="e.g., 50"
                 />
               </div>
               <div className="grid grid-cols-[80px_1fr] items-center gap-x-3">
-                <span className="text-[14px] text-muted-foreground">Deadline</span>
+                <span className="text-cb-foot text-muted-foreground">Deadline</span>
                 <Input
                   type="date"
-                  className="w-[160px] h-8 text-[14px]"
+                  className="w-[160px] h-8 text-cb-foot"
                   value={deadline}
                   onChange={(e) => setDeadline(e.target.value)}
                 />
@@ -304,9 +304,9 @@ export function CreateForm({
           )}
 
           <div className="grid grid-cols-[80px_1fr] items-center gap-x-3">
-            <span className="text-[14px] text-muted-foreground">Parent</span>
+            <span className="text-cb-foot text-muted-foreground">Parent</span>
             <Select value={parentId} onValueChange={(v) => setParentId(v ?? "none")}>
-              <SelectTrigger className="w-[200px] h-8 text-[14px]">
+              <SelectTrigger className="w-[200px] h-8 text-cb-foot">
                 <SelectValue placeholder="None (standalone)" />
               </SelectTrigger>
               <SelectContent>
