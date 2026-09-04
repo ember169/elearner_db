@@ -1073,7 +1073,7 @@ sequenceDiagram
     Note over A,T: Attacker is now authenticated as the victim
 \`\`\`
 
-Two ingredients make it practical: **coercion** (force a victim — often a server or DC — to authenticate to you, e.g. PetitPotam) and **poisoning** (answer LLMNR/NBT-NS name lookups so hosts authenticate to you by mistake).
+Two ingredients make it practical: **coercion** (force a victim — often a server or DC — to authenticate to you, e.g. PetitPotam) and **poisoning** (answer LLMNR/NBT-NS name lookups so hosts authenticate to you by mistake). LLMNR (Link-Local Multicast Name Resolution) and NBT-NS (NetBIOS Name Service) are fallback name-resolution protocols that Windows uses when DNS fails — they broadcast to the local network, so any machine can answer and redirect the victim's authentication.
 
 \`\`\`bash
 # Relay incoming NTLM auth to a chosen target
@@ -1249,7 +1249,9 @@ foremost -i capture.pcap -o extracted/
     sections: [
       {
         heading: "Custom protocol fuzzing",
-        content: `Fuzzing network protocols discovers implementation bugs:
+        content: `> **What is fuzzing?** Fuzzing is automated testing that feeds malformed, unexpected, or random data into a program's inputs — here, network protocol fields. The goal is to trigger crashes that reveal memory corruption bugs (buffer overflows, heap corruption, use-after-free) which may be exploitable. A fuzzer defines the protocol's message structure, then systematically mutates individual fields while monitoring the target for abnormal behavior. Unlike Scapy (L4), which crafts single packets, a fuzzer like boofuzz maintains stateful protocol sessions and runs thousands of mutations automatically.
+
+Fuzzing network protocols discovers implementation bugs:
 
 \`\`\`python
 # Boofuzz — network protocol fuzzer
@@ -1307,7 +1309,9 @@ Detection: look for unusual DNS query patterns (high volume, long labels, entrop
       },
       {
         heading: "Network implant development",
-        content: `Custom network tools for authorized engagements:
+        content: `> **Raw sockets vs library-level networking.** At L4, Scapy abstracted packet crafting — you said \`IP(dst=...)/TCP(dport=...)\` and it handled headers. Raw sockets (\`socket.AF_PACKET, socket.SOCK_RAW\`) operate one layer lower: you receive and parse raw Ethernet frames yourself, using \`struct.unpack\` to extract fields byte-by-byte. This gives full control (no library dependencies, smaller footprint) at the cost of manual header parsing. Both approaches require root.
+
+Custom network tools for authorized engagements:
 
 \`\`\`python
 # Raw socket sniffer

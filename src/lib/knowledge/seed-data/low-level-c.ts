@@ -129,12 +129,32 @@ If the null terminator is missing or overwritten, these functions read past the 
         sortOrder: 3,
       },
       {
+        heading: "Memory errors: what goes wrong and why",
+        content: `C gives you direct access to memory — and with that power comes an entire family of bugs that do not exist in higher-level languages. Before diving into specific vulnerability classes (covered in the next resource), it helps to understand *why* these bugs arise from the concepts you just learned.
+
+**The root cause: no automatic safety net.** C does not check array bounds, does not track whether a pointer is still valid, and does not zero out freed memory. Every pointer operation is a promise from the programmer that the address is valid and the type is correct. When that promise is broken, the result is **undefined behaviour** — the program may crash, silently corrupt data, or behave in ways an attacker can predict and exploit.
+
+**Four families of memory errors:**
+
+| Family | What happens | Why it is possible |
+|--------|-------------|-------------------|
+| **Buffer overflow** | Writing past the end of an array overwrites adjacent memory (return addresses, function pointers, other variables) | C arrays have no bounds checking (as you saw with pointer arithmetic) |
+| **Use-after-free** | Accessing memory through a pointer after calling \`free()\` on it | \`free()\` does not invalidate the pointer — it just marks the memory as reusable |
+| **Double free** | Calling \`free()\` on the same pointer twice corrupts the allocator's internal bookkeeping | The allocator trusts the programmer to free each block exactly once |
+| **Format-string attack** | Passing user-controlled data as the first argument to \`printf()\` lets an attacker read and write arbitrary memory | \`printf\` trusts its format string to describe how many and what type of arguments follow |
+
+**Why attackers care:** each of these errors gives a primitive — the ability to read memory you should not see, or to write data where you should not write. Chaining primitives together is how exploits are built. The next resource examines each family in detail with code examples and mitigations.
+
+**A defensive habit to build now:** always initialize pointers (to \`NULL\` if no valid target yet), always check \`malloc\` return values, always set pointers to \`NULL\` after \`free\`, and never pass user input directly as a format string.`,
+        sortOrder: 4,
+      },
+      {
         heading: "Sources",
         content: `- ISO/IEC 9899:2018 (C17), Sections 6.3.2.3 (Pointers), 6.5.6 (Additive operators), 7.24 (String handling)
 - CWE-121: Stack-based Buffer Overflow — https://cwe.mitre.org/data/definitions/121.html
 - \`man 3 malloc\`, \`man 3 strlen\`
 - Bryant & O'Hallaron, *Computer Systems: A Programmer's Perspective*, Chapter 3 (Machine-Level Representation)`,
-        sortOrder: 4,
+        sortOrder: 5,
       },
     ],
   },
@@ -1892,7 +1912,9 @@ Common concurrency CVEs in the wild:
     sections: [
       {
         heading: "System Calls from the Kernel's Perspective",
-        content: `When a user-space program calls \`read(fd, buf, count)\`, the C library wrapper places the syscall number in \`rax\` (0 for \`read\` on x86-64), arguments in \`rdi\`, \`rsi\`, \`rdx\`, and executes the \`syscall\` instruction. The CPU switches to ring 0, and the kernel dispatches through the syscall table.
+        content: `> **Prerequisite: x86-64 registers and CPU privilege levels.** On x86-64 Linux, the CPU has general-purpose registers: \`rax\` (return value / syscall number), \`rdi\`, \`rsi\`, \`rdx\`, \`rcx\`, \`r8\`, \`r9\` (function arguments in order). The CPU operates at privilege levels called rings: ring 3 (user space — your programs) and ring 0 (kernel space — full hardware access). The \`syscall\` instruction triggers a ring 3→ring 0 transition. GCC inline assembly uses constraints like \`"=a"(ret)\` (output in rax), \`"D"(fd)\` (input in rdi), \`"S"(buf)\` (input in rsi) to map C variables to registers. See also *C Core L3* for calling conventions and stack frame layout.
+
+When a user-space program calls \`read(fd, buf, count)\`, the C library wrapper places the syscall number in \`rax\` (0 for \`read\` on x86-64), arguments in \`rdi\`, \`rsi\`, \`rdx\`, and executes the \`syscall\` instruction. The CPU switches to ring 0, and the kernel dispatches through the syscall table.
 
 You can invoke syscalls directly without libc:
 
@@ -2378,11 +2400,38 @@ For the 42 curriculum, these algorithms are foundational. Efficient sorts (merge
         sortOrder: 3,
       },
       {
+        heading: "From arrays to more flexible structures",
+        content: `Arrays are the simplest way to store a collection, but they have fundamental limitations that motivate the data structures you will learn next:
+
+**Problem 1 — Fixed size.** A C array has a fixed length set at allocation time. If you need more space, you must allocate a new, larger array and copy everything over — an O(n) operation. In contrast, a **linked list** can grow one element at a time by allocating a new node and linking it to the chain, in O(1).
+
+**Problem 2 — Expensive insertion and deletion.** Inserting an element in the middle of an array requires shifting all subsequent elements, costing O(n). A **linked list** can insert or delete at any known position in O(1) by relinking pointers.
+
+**Problem 3 — Slow search by value.** Finding a specific value in an unsorted array requires scanning every element — O(n). A **hash table** maps keys to positions using a hash function, achieving O(1) average-case lookup.
+
+**Problem 4 — No structural constraint.** Sometimes you need a collection that enforces an access pattern: last-in-first-out (**stack**) for undo operations, function calls, and expression parsing, or first-in-first-out (**queue**) for task scheduling and breadth-first traversal.
+
+| Structure    | Insert  | Delete  | Search  | Access by index | Use case |
+|-------------|---------|---------|---------|----------------|----------|
+| Array       | O(n)*   | O(n)*   | O(n)    | O(1)           | Random access, known size |
+| Linked list | O(1)**  | O(1)**  | O(n)    | O(n)           | Frequent insert/delete, unknown size |
+| Hash table  | O(1)*** | O(1)*** | O(1)*** | —              | Fast key-based lookup |
+| Stack       | O(1)    | O(1)    | —       | top only        | LIFO: call stacks, undo, parsing |
+| Queue       | O(1)    | O(1)    | —       | front only      | FIFO: scheduling, BFS |
+
+\\* Middle insertion/deletion. Appending to the end is O(1) amortised.
+\\*\\* At a known position (given a pointer to the node).
+\\*\\*\\* Average case; worst case is O(n) with hash collisions.
+
+The next resource covers each of these structures in detail with C implementations, along with the efficient O(n log n) sorting algorithms that leverage divide-and-conquer.`,
+        sortOrder: 4,
+      },
+      {
         heading: "Sources",
         content: `- Cormen et al. (CLRS), *Introduction to Algorithms*, Chapters 2 (Insertion Sort), 7 (Quicksort), 8 (Sorting in Linear Time)
 - Bloch, J. "Extra, Extra — Read All About It: Nearly All Binary Searches and Mergesorts are Broken" — https://ai.googleblog.com/2006/06/extra-extra-read-all-about-it-nearly.html
 - Sedgewick, R. *Algorithms*, 4th ed., Chapter 2 (Sorting)`,
-        sortOrder: 4,
+        sortOrder: 5,
       },
     ],
   },
@@ -3341,12 +3390,84 @@ Understanding vtables is directly relevant to binary exploitation: corrupting a 
         sortOrder: 2,
       },
       {
+        heading: "C++ syntax essentials for C programmers",
+        content: `If you come from 42's C curriculum, here are the key syntax differences you need before touching C++ code.
+
+**Compilation**: use \`g++\` (or \`c++\`), not \`gcc\`. The standard flag is \`-std=c++98\` for CPP00-CPP08 at 42.
+
+\`\`\`cpp
+g++ -Wall -Wextra -Werror -std=c++98 main.cpp -o program
+\`\`\`
+
+**I/O streams replace printf/scanf**:
+
+\`\`\`cpp
+#include <iostream>
+
+int main() {
+    int x = 42;
+    std::cout << "Value: " << x << std::endl;   // like printf("Value: %d\\n", x);
+    std::cin >> x;                                // like scanf("%d", &x);
+    return 0;
+}
+\`\`\`
+
+\`std::cout\` is an output stream; \`<<\` inserts data into it. \`std::endl\` flushes and adds a newline. \`std::cin\` reads input with \`>>\`.
+
+**Namespaces and \`std::\`**: C++ groups standard library names under the \`std\` namespace. Writing \`std::cout\` means "cout from the std namespace." You can write \`using namespace std;\` to drop the prefix, but 42 forbids it — always qualify with \`std::\`.
+
+**References (the \`&\` in declarations)**: a reference is an alias — a second name for an existing variable. Unlike a pointer, it cannot be null and cannot be reseated.
+
+\`\`\`cpp
+void swap(int &a, int &b) {   // a and b are references, not copies
+    int tmp = a;
+    a = b;
+    b = tmp;
+}
+// Equivalent C: void swap(int *a, int *b) { int tmp = *a; *a = *b; *b = tmp; }
+\`\`\`
+
+\`const int &x\` means "a reference to x that cannot modify x through this alias."
+
+**Classes vs structs**: a \`struct\` in C++ is identical to a \`class\` except that members are \`public\` by default (in a \`class\`, they are \`private\` by default). At 42, you use \`class\`.
+
+**Scope resolution operator \`::\`**: tells the compiler which class (or namespace) a function belongs to.
+
+\`\`\`cpp
+// In the .hpp: declare the method
+class Fixed {
+public:
+    int getRawBits() const;
+};
+
+// In the .cpp: define it — Fixed:: means "this belongs to class Fixed"
+int Fixed::getRawBits() const {
+    return this->_rawBits;
+}
+\`\`\`
+
+The \`const\` after the parentheses means "this method does not modify the object."
+
+**Member initialiser lists**: constructors initialise members before the body runs, using a colon syntax:
+
+\`\`\`cpp
+Fixed::Fixed() : _rawBits(0) {
+    // _rawBits is already 0 when we reach this line
+}
+\`\`\`
+
+This is not an assignment — it is direct initialisation, and it is required for \`const\` and reference members.
+
+These are the building blocks L1 and onward will use extensively. If any of them looks unfamiliar when you encounter it in the next resource, come back here.`,
+        sortOrder: 3,
+      },
+      {
         heading: "Sources",
         content: `- Stroustrup, B. *The C++ Programming Language*, 4th ed.
 - ISO/IEC 14882:2020 (C++20 standard)
 - Meyers, S. *Effective C++*, 3rd ed.
 - cppreference.com — https://en.cppreference.com/`,
-        sortOrder: 3,
+        sortOrder: 4,
       },
     ],
   },

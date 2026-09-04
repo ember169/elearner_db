@@ -1213,6 +1213,99 @@ kubectl get secret db-creds -o jsonpath='{.data.password}' | base64 -d
         sortOrder: 1,
       },
       {
+        heading: "Kubernetes hardening essentials",
+        content: `Before jumping to advanced container isolation (L4), you need to know how to lock down a Kubernetes cluster itself. These are the controls CIS Kubernetes Benchmark and NSA/CISA Kubernetes Hardening Guide require.
+
+**Admission controllers** gate what can be deployed:
+
+\`\`\`yaml
+# PodSecurity admission (built-in since K8s 1.25)
+# Enforce restricted profile at namespace level
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: production
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/warn: restricted
+\`\`\`
+
+With this label, any pod violating the restricted profile (running as root, requesting privileged, etc.) is rejected.
+
+**RBAC hardening** — principle of least privilege:
+
+\`\`\`yaml
+# Role granting read-only access to pods in one namespace
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: dev
+  name: pod-reader
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+---
+# Bind it to a specific service account
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  namespace: dev
+  name: read-pods-binding
+subjects:
+  - kind: ServiceAccount
+    name: ci-bot
+    namespace: dev
+roleRef:
+  kind: Role
+  name: pod-reader
+  apiGroup: rbac.authorization.k8s.io
+\`\`\`
+
+\`\`\`bash
+# Audit: who has cluster-admin?
+kubectl get clusterrolebindings -o json | \\
+  jq '.items[] | select(.roleRef.name=="cluster-admin") | .subjects[]'
+\`\`\`
+
+**Secrets encryption at rest**: by default, K8s stores secrets base64-encoded (not encrypted) in etcd. Enable encryption:
+
+\`\`\`yaml
+# /etc/kubernetes/encryption-config.yaml
+apiVersion: apiserver.config.k8s.io/v1
+kind: EncryptionConfiguration
+resources:
+  - resources: ["secrets"]
+    providers:
+      - aescbc:
+          keys:
+            - name: key1
+              secret: <base64-encoded-32-byte-key>
+      - identity: {}
+\`\`\`
+
+**Audit logging** records who did what:
+
+\`\`\`yaml
+# Audit policy: log all write operations on secrets
+apiVersion: audit.k8s.io/v1
+kind: Policy
+rules:
+  - level: RequestResponse
+    resources:
+      - group: ""
+        resources: ["secrets"]
+    verbs: ["create", "update", "patch", "delete"]
+  - level: Metadata
+    resources:
+      - group: ""
+        resources: ["pods", "services"]
+\`\`\`
+
+These controls close the gap between "I can deploy to K8s" (L3) and "I can detect and contain runtime threats" (L4).`,
+        sortOrder: 2,
+      },
+      {
         heading: "Container networking and service mesh",
         content: `Docker creates bridge networks by default. Understanding the networking model is important for lateral movement detection:
 
@@ -1245,7 +1338,7 @@ spec:
     - Ingress
     - Egress
 \`\`\``,
-        sortOrder: 2,
+        sortOrder: 3,
       },
       {
         heading: "Image supply chain security",
@@ -1271,7 +1364,7 @@ FROM nginx@sha256:abc123...
 \`\`\`
 
 Tags can be overwritten (tag-mutability); digests are content-addressable and immutable.`,
-        sortOrder: 3,
+        sortOrder: 4,
       },
       {
         heading: "Infrastructure as Code security",
@@ -1293,16 +1386,17 @@ Common IaC misconfigurations:
 - Security groups allowing 0.0.0.0/0 on sensitive ports
 - Unencrypted storage volumes
 - Default credentials in configuration`,
-        sortOrder: 4,
+        sortOrder: 5,
       },
       {
         heading: "Sources",
         content: `- NIST SP 800-190 (Application Container Security Guide)
 - Kubernetes Pod Security Standards: kubernetes.io/docs/concepts/security/pod-security-standards
 - CIS Kubernetes Benchmark
+- NSA/CISA Kubernetes Hardening Guide
 - Sigstore/Cosign documentation: sigstore.dev
 - OWASP Kubernetes Security Cheat Sheet`,
-        sortOrder: 5,
+        sortOrder: 6,
       },
     ],
   },
