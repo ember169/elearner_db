@@ -76,7 +76,7 @@ export function CompetencyHub({
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="mx-auto min-w-0 max-w-4xl space-y-6">
       <Link
         href="/learn"
         className="flex items-center gap-1.5 font-cb-sans text-[14px] text-cb-muted transition-colors hover:text-cb-text"
@@ -108,7 +108,7 @@ export function CompetencyHub({
         </p>
       </header>
 
-      <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
         {/* Understand — the six tiers. */}
         <section className="space-y-2">
           <h2 className="font-cb-sans text-[17px] font-bold text-cb-text">
