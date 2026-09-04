@@ -29,6 +29,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark h-full antialiased">
+      <head>
+        <link rel="preload" href="/fonts/archivo-var.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+        <link rel="preload" href="/fonts/dm-serif-display-400.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+        <link rel="preload" href="/fonts/jetbrains-mono-var.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+      </head>
       <body className="min-h-dvh bg-background text-foreground pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
         <TooltipProvider>
           <div className="grid-bg fixed inset-0 pointer-events-none" />
