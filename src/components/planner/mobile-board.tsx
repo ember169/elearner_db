@@ -74,7 +74,7 @@ export function MobileBoardView({
       {/* Family segmented control: raised track, 5px padding, radius 12; the
           active segment is an accent fill at radius 9 — not a white pill with a
           shadow, which is the light-theme idiom. */}
-      <div className="flex gap-1 rounded-[12px] bg-cb-raised p-[5px]">
+      <div className="flex gap-1 rounded-cb-card bg-cb-raised p-[5px]">
         {(
           [
             { id: "in_progress" as const, label: "In progress", count: inProgressItems.length },
@@ -89,8 +89,8 @@ export function MobileBoardView({
               onClick={() => setTab(t.id)}
               className={
                 active
-                  ? "flex-1 rounded-[9px] bg-cb-or py-2 font-cb-sans text-[13px] font-bold text-cb-on-or transition-colors"
-                  : "flex-1 rounded-[9px] py-2 font-cb-sans text-[13px] font-bold text-cb-muted transition-colors"
+                  ? "flex-1 rounded-cb-chip bg-cb-or py-2 font-cb-sans text-[13px] font-bold text-cb-on-or transition-colors"
+                  : "flex-1 rounded-cb-chip py-2 font-cb-sans text-[13px] font-bold text-cb-muted transition-colors"
               }
             >
               {t.label}
@@ -279,7 +279,7 @@ function MobileCard({
 
   return (
     <div
-      className={`mb-1 flex items-center gap-2 ${compact ? "px-2 py-1.5" : "px-3 py-2.5"} rounded-[12px] border border-cb-line bg-cb-card`}
+      className={`mb-1 flex items-center gap-2 ${compact ? "px-2 py-1.5" : "px-3 py-2.5"} rounded-cb-card border border-cb-line bg-cb-card`}
       style={{ opacity: isDone ? 0.6 : 1 }}
     >
       <Icon className="h-3 w-3 shrink-0" style={{ color }} />

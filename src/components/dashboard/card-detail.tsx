@@ -141,7 +141,7 @@ export function CardDetail({ itemId, onClose }: { itemId: number; onClose: () =>
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center">
       <div className="absolute inset-0 bg-[var(--cb-scrim)]" onClick={onClose} />
-      <div className="relative z-10 max-h-[85dvh] w-full overflow-y-auto rounded-t-[22px] border border-cb-line bg-cb-card p-5 sm:max-w-2xl sm:rounded-[16px]">
+      <div className="relative z-10 max-h-[85dvh] w-full overflow-y-auto rounded-t-cb-hero border border-cb-line bg-cb-card p-5 sm:max-w-2xl sm:rounded-cb-card-lg">
         {!ctx && !error && (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="h-5 w-5 animate-spin text-cb-muted" />
@@ -285,7 +285,7 @@ export function CardDetail({ itemId, onClose }: { itemId: number; onClose: () =>
                 href={ctx.item.link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex w-full items-center justify-center gap-1.5 rounded-[12px] border border-cb-line py-3 font-cb-sans text-[14px] font-bold text-cb-second transition-colors hover:border-cb-or hover:text-cb-or"
+                className="flex w-full items-center justify-center gap-1.5 rounded-cb-card border border-cb-line py-3 font-cb-sans text-[14px] font-bold text-cb-second transition-colors hover:border-cb-or hover:text-cb-or"
               >
                 <ExternalLink className="h-3.5 w-3.5" />
                 Open externally

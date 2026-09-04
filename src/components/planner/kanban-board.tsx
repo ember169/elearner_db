@@ -439,7 +439,7 @@ function BoardCard({
 
   return (
     <div
-      className="kanban-card group relative overflow-hidden rounded-[12px] border border-cb-line bg-cb-card px-3 py-2.5"
+      className="kanban-card group relative overflow-hidden rounded-cb-card border border-cb-line bg-cb-card px-3 py-2.5"
       style={{
         cursor: overlay ? "grabbing" : "grab",
         // A card being dragged is the one case that earns a shadow: it is

@@ -8,7 +8,7 @@ const badgeVariants = cva(
   // Family chip: JetBrains Mono 10-11, radius 8-9, raised fill, 5-7 x 8-11
   // padding. Not a pill and not a sans label — meta reads as mono across the
   // family, and only *labels* are uppercased, never values like "30 min".
-  "group/badge inline-flex w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-[9px] border border-transparent px-2.5 py-1 font-cb-mono text-[11px] font-medium whitespace-nowrap transition-all [&>svg]:pointer-events-none [&>svg]:size-3!",
+  "group/badge inline-flex w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-cb-chip border border-transparent px-2.5 py-1 font-cb-mono text-[11px] font-medium whitespace-nowrap transition-all [&>svg]:pointer-events-none [&>svg]:size-3!",
   {
     variants: {
       variant: {

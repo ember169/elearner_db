@@ -89,7 +89,7 @@ export function HomeClient({
         <div
           role="tablist"
           aria-label="Home view"
-          className="flex w-fit gap-1 rounded-[12px] bg-cb-raised p-[5px]"
+          className="flex w-fit gap-1 rounded-cb-card bg-cb-raised p-[5px]"
         >
           {(
             [
@@ -104,7 +104,7 @@ export function HomeClient({
               aria-selected={view === key}
               onClick={() => select(key)}
               className={cn(
-                "rounded-[9px] px-3.5 py-1.5 font-cb-sans text-[13px] font-bold transition-colors",
+                "rounded-cb-chip px-3.5 py-1.5 font-cb-sans text-[13px] font-bold transition-colors",
                 view === key ? "bg-cb-or text-cb-on-or" : "text-cb-muted",
               )}
             >

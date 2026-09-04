@@ -54,7 +54,7 @@ export function LearnClient({
       </div>
 
       {/* Lens toggle: family segmented control. */}
-      <div className="flex w-fit gap-1 rounded-[12px] bg-cb-raised p-[5px]">
+      <div className="flex w-fit gap-1 rounded-cb-card bg-cb-raised p-[5px]">
         {(
           [
             ["competency", "by competency"],
@@ -66,7 +66,7 @@ export function LearnClient({
             type="button"
             onClick={() => setLens(key)}
             className={cn(
-              "rounded-[9px] px-3.5 py-1.5 font-cb-sans text-[13px] font-bold transition-colors",
+              "rounded-cb-chip px-3.5 py-1.5 font-cb-sans text-[13px] font-bold transition-colors",
               lens === key ? "bg-cb-or text-cb-on-or" : "text-cb-muted",
             )}
           >

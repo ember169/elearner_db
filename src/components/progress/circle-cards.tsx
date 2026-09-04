@@ -260,7 +260,7 @@ function ProjectCard({
   return (
     <div
       className={cn(
-        "rounded-[10px] border border-transparent bg-cb-raised px-3 py-2.5 transition-colors hover:border-cb-line",
+        "rounded-cb-card border border-transparent bg-cb-raised px-3 py-2.5 transition-colors hover:border-cb-line",
         isAlt && "opacity-50",
       )}
     >

@@ -61,9 +61,9 @@
 }
 
 :root {
-  /* Family radius scale keyed off card = 14px:
-     sm 8.4 (chip) · md 11.2 (button, field) · lg 14 (card) · xl 19.6 (hero) */
-  --radius: 0.875rem;
+  /* Family radius scale keyed off card = 18px:
+     sm 10.8 · md 14.4 · lg 18 (card) · xl 25.2 (hero) */
+  --radius: 1.125rem;
 }
 
 /* Dark — the family's warm charcoal. The only theme; app is dark-only.
@@ -386,16 +386,14 @@ a:focus-visible,
   --font-cb-sans: "Archivo", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   --font-cb-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
 
-  /* Radii — family scale: 8 chip-sm · 9 chip · 11–12 button · 14 card ·
-     16 card-lg · 18 hero · 20 tile · 22 device · pill */
+  /* Radii — family scale: 8 chip-sm · pill chip · pill button · 18 card ·
+     20 card-lg · 24 hero */
   --radius-cb-chip-sm: 8px;
-  --radius-cb-chip: 9px;
-  --radius-cb-button: 12px;
-  --radius-cb-card: 14px;
-  --radius-cb-card-lg: 16px;
-  --radius-cb-hero: 18px;
-  --radius-cb-tile: 20px;
-  --radius-cb-device: 22px;
+  --radius-cb-chip: 999px;
+  --radius-cb-button: 999px;
+  --radius-cb-card: 18px;
+  --radius-cb-card-lg: 20px;
+  --radius-cb-hero: 24px;
 }
 
 /* Family type roles. Display titles are never uppercase; mono labels carry the

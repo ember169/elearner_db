@@ -356,7 +356,7 @@ export function TodayDashboard({
                     type="button"
                     onClick={() => void markDone(item.id)}
                     disabled={busyId === item.id}
-                    className="flex h-9 shrink-0 items-center gap-1 rounded-[12px] bg-cb-card px-3 font-cb-sans text-[13px] font-bold text-cb-text transition-colors hover:bg-cb-raised-hover disabled:opacity-50"
+                    className="flex h-9 shrink-0 items-center gap-1 rounded-cb-card bg-cb-card px-3 font-cb-sans text-[13px] font-bold text-cb-text transition-colors hover:bg-cb-raised-hover disabled:opacity-50"
                   >
                     {busyId === item.id && <Loader2 className="h-3 w-3 animate-spin" />}
                     Done
