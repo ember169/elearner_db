@@ -13,6 +13,7 @@ import {
   maldevModules,
   goals,
   goalMilestones,
+  projectChoices,
 } from "@/lib/db/schema";
 import { eq, or, and, isNotNull } from "drizzle-orm";
 import {
@@ -119,6 +120,7 @@ export type GuidanceResult = {
     inProgressProjects: string[];
     availableProjects: FtProject[];
     upcomingProjects: FtProject[];
+    choices: Record<string, string>;
   };
   skillProfile: Record<string, number>;
   recommendations: Recommendation[];
@@ -389,8 +391,10 @@ export function analyzeFtProgress(
     ...(boardDoneSlugs ? [...boardDoneSlugs].map((s) => matchProjectSlug(s)) : []),
   ];
   const circleBreakdown = getCircleProgress(normalizedCompleted);
-  const availableProjects = getAvailableProjects(normalizedCompleted);
-  const upcomingProjects = getUpcomingProjects(normalizedCompleted);
+  const choiceRows = db.select().from(projectChoices).all();
+  const choices = new Map(choiceRows.map((r) => [r.groupName, r.chosenSlug]));
+  const availableProjects = getAvailableProjects(normalizedCompleted, choices);
+  const upcomingProjects = getUpcomingProjects(normalizedCompleted, choices);
 
   let currentCircle = 0;
   for (let c = 6; c >= 0; c--) {
@@ -417,6 +421,7 @@ export function analyzeFtProgress(
     inProgressProjects: inProgressSlugs.map(matchProjectSlug),
     availableProjects,
     upcomingProjects,
+    choices: Object.fromEntries(choices),
   };
 }
 

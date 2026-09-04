@@ -547,27 +547,34 @@ function satisfiedGroups(completed: Set<string>): Set<string> {
   return groups;
 }
 
-export function getAvailableProjects(completedSlugs: string[]): FtProject[] {
+export function getAvailableProjects(
+  completedSlugs: string[],
+  choices?: Map<string, string>,
+): FtProject[] {
   const completed = new Set(completedSlugs.map((s) => s.toLowerCase()));
   const doneGroups = satisfiedGroups(completed);
   return FT_COMMON_CORE.filter((p) => {
     if (completed.has(p.slug)) return false;
-    // A sibling of an already-chosen pool project is no longer a real option.
     if (p.group && doneGroups.has(p.group)) return false;
+    if (p.group && choices?.has(p.group) && choices.get(p.group) !== p.slug) return false;
     return p.prerequisites.every((prereq) => completed.has(prereq));
   });
 }
 
-export function getUpcomingProjects(completedSlugs: string[]): FtProject[] {
+export function getUpcomingProjects(
+  completedSlugs: string[],
+  choices?: Map<string, string>,
+): FtProject[] {
   const completed = new Set(completedSlugs.map((s) => s.toLowerCase()));
   const doneGroups = satisfiedGroups(completed);
   const available = new Set(
-    getAvailableProjects(completedSlugs).map((p) => p.slug),
+    getAvailableProjects(completedSlugs, choices).map((p) => p.slug),
   );
   return FT_COMMON_CORE.filter((p) => {
     if (completed.has(p.slug)) return false;
     if (available.has(p.slug)) return false;
     if (p.group && doneGroups.has(p.group)) return false;
+    if (p.group && choices?.has(p.group) && choices.get(p.group) !== p.slug) return false;
     return true;
   });
 }

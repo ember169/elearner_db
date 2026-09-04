@@ -601,6 +601,15 @@ export const manualProjectCompletions = sqliteTable("manual_project_completions"
     .default(sql`(datetime('now'))`),
 });
 
+export const projectChoices = sqliteTable("project_choices", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  groupName: text("group_name").notNull().unique(),
+  chosenSlug: text("chosen_slug").notNull(),
+  chosenAt: text("chosen_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
 export const mentorMessages = sqliteTable("mentor_messages", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   role: text("role").notNull(),

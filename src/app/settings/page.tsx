@@ -1,7 +1,8 @@
 import { db } from "@/lib/db";
-import { settings, syncLog } from "@/lib/db/schema";
+import { settings, syncLog, manualProjectCompletions } from "@/lib/db/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { SettingsClient } from "@/components/settings/settings-client";
+import { runGuidanceEngine } from "@/lib/guidance/engine";
 
 export const dynamic = "force-dynamic";
 
@@ -31,11 +32,16 @@ export default function SettingsPage() {
     platformSyncs[p] = row?.startedAt ?? null;
   }
 
+  const manualSlugs = db.select().from(manualProjectCompletions).all().map((r) => r.slug);
+  const guidance = runGuidanceEngine(new Set(manualSlugs));
+  const currentCircle = guidance.ftProgress.currentCircle;
+
   return (
     <SettingsClient
       config={config}
       recentSyncs={recentSyncs}
       platformSyncs={platformSyncs}
+      currentCircle={currentCircle}
     />
   );
 }

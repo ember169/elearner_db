@@ -71,10 +71,12 @@ export function SettingsClient({
   config,
   recentSyncs,
   platformSyncs = {},
+  currentCircle = 0,
 }: {
   config: Config;
   recentSyncs: SyncLogEntry[];
   platformSyncs?: Record<string, string | null>;
+  currentCircle?: number;
 }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
@@ -174,6 +176,7 @@ export function SettingsClient({
     setAssessLogs([]);
   }
 
+  const [deadlineMode, setDeadlineMode] = useState<"backward" | "milestone">("backward");
   const [deadlineDate, setDeadlineDate] = useState("");
   const [deadlineBudget, setDeadlineBudget] = useState("15");
   const [deadlineSaving, setDeadlineSaving] = useState(false);
@@ -201,10 +204,18 @@ export function SettingsClient({
     if (!deadlineDate) return;
     setDeadlineSaving(true);
     try {
+      const payload: Record<string, unknown> = {
+        targetDate: deadlineDate,
+        weeklyBudget42: parseInt(deadlineBudget) || 15,
+      };
+      if (deadlineMode === "milestone") {
+        payload.mode = "milestone";
+        payload.currentCircle = currentCircle;
+      }
       const res = await fetch("/api/deadlines", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ targetDate: deadlineDate, weeklyBudget42: parseInt(deadlineBudget) || 15 }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (data.error) { alert(data.error); return; }
@@ -510,13 +521,32 @@ export function SettingsClient({
             )}
           </div>
           <p className="text-cb-foot text-muted-foreground">
-            Set your target date for completing the 42 common core. The system will backward-plan circle and project deadlines,
-            compute required weekly hours, and warn you when the pace is unsustainable.
+            {deadlineMode === "milestone"
+              ? `Set the deadline for your current circle (C${currentCircle}). Subsequent circles are auto-calculated from your weekly budget.`
+              : "Set your target date for completing the 42 common core. The system will backward-plan circle deadlines."}
           </p>
+
+          <div className="flex gap-1 mb-1">
+            {(["backward", "milestone"] as const).map((m) => (
+              <button
+                key={m}
+                onClick={() => setDeadlineMode(m)}
+                className={`px-3 py-1.5 text-cb-body rounded-sm border transition-colors ${
+                  deadlineMode === m
+                    ? "border-primary bg-primary/10 text-primary font-medium"
+                    : "border-border text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {m === "backward" ? "CC target date" : `Milestone (C${currentCircle})`}
+              </button>
+            ))}
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-cb-body">Common core target date</Label>
+              <Label className="text-cb-body">
+                {deadlineMode === "milestone" ? `Circle ${currentCircle} deadline` : "Common core target date"}
+              </Label>
               <Input
                 type="date"
                 value={deadlineDate}

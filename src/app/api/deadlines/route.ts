@@ -4,6 +4,7 @@ import {
   upsertCommonCoreDeadline,
   deleteDeadline,
   computeBackwardPlan,
+  computeForwardPlan,
 } from "@/lib/planning/backward-planner";
 import { buildMentorContext } from "@/lib/mentor/engine";
 import { readMentorConfig } from "@/lib/mentor/store";
@@ -27,9 +28,11 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const body = await req.json();
-  const { targetDate, weeklyBudget42 } = body as {
+  const { targetDate, weeklyBudget42, mode, currentCircle } = body as {
     targetDate: string;
     weeklyBudget42?: number;
+    mode?: "backward" | "milestone";
+    currentCircle?: number;
   };
 
   if (!targetDate || !/^\d{4}-\d{2}-\d{2}$/.test(targetDate)) {
@@ -42,13 +45,16 @@ export async function POST(req: Request) {
   const config = readMentorConfig();
   const ctx = buildMentorContext(config.objective);
   const completedSlugs = ctx.guidance.ftProgress.completedProjects;
+  const budget = weeklyBudget42 ?? 15;
 
-  const { deadline, plan } = upsertCommonCoreDeadline(
-    targetDate,
-    completedSlugs,
-    weeklyBudget42 ?? 15
-  );
+  if (mode === "milestone") {
+    const circle = currentCircle ?? ctx.guidance.ftProgress.currentCircle;
+    const plan = computeForwardPlan(circle, targetDate, completedSlugs, budget);
+    const { deadline } = upsertCommonCoreDeadline(plan.targetDate, completedSlugs, budget);
+    return NextResponse.json({ deadline, plan, mode: "milestone" });
+  }
 
+  const { deadline, plan } = upsertCommonCoreDeadline(targetDate, completedSlugs, budget);
   return NextResponse.json({ deadline, plan });
 }
 

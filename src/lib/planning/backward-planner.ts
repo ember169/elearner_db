@@ -227,6 +227,81 @@ export function computeBackwardPlan(
   };
 }
 
+export function computeForwardPlan(
+  currentCircle: number,
+  milestoneDeadline: string,
+  completedSlugs: string[],
+  weeklyBudget42: number = 15,
+  today?: string
+): BackwardPlan {
+  const now = today ?? isoDate(new Date());
+  const completed = new Set(completedSlugs.map((s) => s.toLowerCase()));
+  const warnings: string[] = [];
+
+  const circlePlans: CirclePlan[] = [];
+  let totalHoursRemaining = 0;
+
+  for (let c = currentCircle; c <= 6; c++) {
+    const { projects, totalHours } = minHoursForCircle(c, completed);
+    if (totalHours === 0) continue;
+    totalHoursRemaining += totalHours;
+    circlePlans.push({ circle: c, projects, totalHours, startBy: "", dueBy: "" });
+  }
+
+  if (circlePlans.length === 0) {
+    return {
+      targetDate: milestoneDeadline,
+      circlePlans: [],
+      weeklyHoursNeeded: 0,
+      totalHoursRemaining: 0,
+      weeksAvailable: weeksBetween(now, milestoneDeadline),
+      warnings: [],
+      feasible: true,
+    };
+  }
+
+  let cursor = now;
+  for (const plan of circlePlans) {
+    plan.startBy = cursor;
+    if (plan.circle === currentCircle) {
+      plan.dueBy = milestoneDeadline;
+    } else {
+      const weeksForCircle = plan.totalHours / weeklyBudget42;
+      const daysForCircle = Math.ceil(weeksForCircle * 7);
+      plan.dueBy = addDays(cursor, daysForCircle);
+    }
+    cursor = plan.dueBy;
+  }
+
+  const targetDate = circlePlans[circlePlans.length - 1].dueBy;
+
+  const currentPlan = circlePlans[0];
+  const weeksForCurrent = weeksBetween(now, milestoneDeadline) - BUFFER_WEEKS;
+  if (weeksForCurrent > 0) {
+    const paceNeeded = currentPlan.totalHours / weeksForCurrent;
+    if (paceNeeded > MAX_WEEKLY_42_HOURS) {
+      warnings.push(`Circle ${currentCircle} needs ${paceNeeded.toFixed(1)}h/week — above the ${MAX_WEEKLY_42_HOURS}h ceiling.`);
+    } else if (paceNeeded > weeklyBudget42) {
+      warnings.push(`Circle ${currentCircle} needs ${paceNeeded.toFixed(1)}h/week (budget: ${weeklyBudget42}h).`);
+    }
+  } else {
+    warnings.push(`Deadline for circle ${currentCircle} is too close or in the past.`);
+  }
+
+  const totalWeeks = weeksBetween(now, targetDate);
+  const weeklyHoursNeeded = totalWeeks > 0 ? totalHoursRemaining / totalWeeks : Infinity;
+
+  return {
+    targetDate,
+    circlePlans,
+    weeklyHoursNeeded: Math.round(weeklyHoursNeeded * 10) / 10,
+    totalHoursRemaining,
+    weeksAvailable: Math.round(totalWeeks * 10) / 10,
+    warnings,
+    feasible: weeklyHoursNeeded <= MAX_WEEKLY_42_HOURS,
+  };
+}
+
 // Compute how many hours/week the rule engine should allocate to 42 this week,
 // given deadline pressure. Returns a number between minHours and maxHours.
 export function deadline42Pressure(

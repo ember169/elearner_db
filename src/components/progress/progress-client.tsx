@@ -19,6 +19,7 @@ interface ProgressClientProps {
   completedProjects: string[];
   inProgressProjects: string[];
   availableProjects: FtProject[];
+  projectChoices: Record<string, string>;
   manualCompletions: string[];
   lastSync: string | null;
 }
@@ -34,6 +35,7 @@ export function ProgressClient({
   completedProjects,
   inProgressProjects,
   availableProjects,
+  projectChoices,
   manualCompletions,
   lastSync,
 }: ProgressClientProps) {
@@ -119,6 +121,7 @@ export function ProgressClient({
         completedProjects={completedProjects}
         inProgressProjects={inProgressProjects}
         availableProjects={availableProjects}
+        projectChoices={projectChoices}
         manualCompletions={manualCompletions}
       />
 

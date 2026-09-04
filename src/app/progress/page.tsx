@@ -88,6 +88,7 @@ export default function ProgressPage() {
       completedProjects={ftProgress.completedProjects}
       inProgressProjects={ftProgress.inProgressProjects}
       availableProjects={ftProgress.availableProjects}
+      projectChoices={ftProgress.choices}
       manualCompletions={manualSlugs}
       lastSync={lastSync?.startedAt ?? null}
     />

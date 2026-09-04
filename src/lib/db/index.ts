@@ -32,6 +32,7 @@ function initDb(): DB {
   }
   ensureExerciseSchema(sqlite);
   ensureManualCompletions(sqlite);
+  ensureProjectChoices(sqlite);
   return database;
 }
 
@@ -79,6 +80,17 @@ function ensureManualCompletions(sqlite: Database.Database) {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       slug TEXT NOT NULL UNIQUE,
       completed_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+}
+
+function ensureProjectChoices(sqlite: Database.Database) {
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS project_choices (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      group_name TEXT NOT NULL UNIQUE,
+      chosen_slug TEXT NOT NULL,
+      chosen_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
   `);
 }
