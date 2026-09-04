@@ -9,16 +9,7 @@ import { LearnClient } from "@/components/learn/learn-client";
 
 export const dynamic = "force-dynamic";
 
-export default async function LearnPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ resource?: string }>;
-}) {
-  const { resource } = await searchParams;
-  const resourceId = resource ? parseInt(resource, 10) : undefined;
-
-  const resources = listResources();
-
+export default async function LearnPage() {
   const guidance = runGuidanceEngine();
   const signals = computeCompetencySignals(guidance.snapshot, guidance.ftProgress);
   const validations = db.select().from(competencyValidations).all();
@@ -26,6 +17,7 @@ export default async function LearnPage({
   for (const v of validations) validatedLevel[v.competencyId] = v.validatedLevel;
 
   // Group resources by competency once, from the JSON competencyIds column.
+  const resources = listResources();
   const resByComp = new Map<string, typeof resources>();
   for (const r of resources) {
     let ids: string[] = [];
@@ -48,7 +40,9 @@ export default async function LearnPage({
 
   const progress = COMPETENCIES.map((c) => {
     const level = validatedLevel[c.id] ?? signals[c.id]?.autoLevel ?? 0;
-    const articleCount = listArticles(c.id).length;
+    const articles = listArticles(c.id);
+    const articleCount = articles.length;
+    const readCount = articles.filter((a) => a.readAt != null).length;
     const res = resByComp.get(c.id) ?? [];
     return {
       id: c.id,
@@ -57,7 +51,7 @@ export default async function LearnPage({
       level,
       isValidated: validatedLevel[c.id] != null,
       articleCount: articleCount || 6,
-      readDone: Math.min(level + 1, articleCount || 6),
+      readDone: readCount,
       resTotal: res.length,
       resDone: res.filter((r) => r.status === "completed").length,
     };
@@ -68,9 +62,6 @@ export default async function LearnPage({
       competencies={competencies}
       progress={progress}
       areas={[...COMPETENCY_AREAS]}
-      resources={resources}
-      browseCompetencies={competencies}
-      openResourceId={resourceId}
     />
   );
 }

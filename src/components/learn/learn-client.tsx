@@ -1,11 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ResourceBrowser } from "./resource-browser";
-import type { LearnResource } from "./resource-browser";
 
 type CompetencyInfo = { id: string; label: string; area: string; description: string };
 
@@ -21,25 +18,15 @@ type CompetencyProgress = {
   resDone: number;
 };
 
-type Lens = "competency" | "browse";
-
 export function LearnClient({
   competencies,
   progress,
   areas,
-  resources,
-  browseCompetencies,
-  openResourceId,
 }: {
   competencies: CompetencyInfo[];
   progress: CompetencyProgress[];
   areas: string[];
-  resources: LearnResource[];
-  browseCompetencies: CompetencyInfo[];
-  openResourceId?: number;
 }) {
-  const [lens, setLens] = useState<Lens>(openResourceId ? "browse" : "competency");
-
   const byArea = areas
     .map((area) => ({ area, items: progress.filter((p) => p.area === area) }))
     .filter((g) => g.items.length > 0);
@@ -53,49 +40,18 @@ export function LearnClient({
         </p>
       </div>
 
-      {/* Lens toggle: family segmented control. */}
-      <div className="flex w-fit gap-1 rounded-cb-card bg-cb-raised p-[5px]">
-        {(
-          [
-            ["competency", "by competency"],
-            ["browse", "browse"],
-          ] as const
-        ).map(([key, label]) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setLens(key)}
-            className={cn(
-              "rounded-cb-chip px-3.5 py-1.5 font-cb-sans text-cb-foot font-bold transition-colors",
-              lens === key ? "bg-cb-or text-cb-on-or" : "text-cb-muted",
-            )}
-          >
-            {label}
-          </button>
+      <div className="space-y-5">
+        {byArea.map((group) => (
+          <section key={group.area} className="space-y-2">
+            <h2 className="cb-label-mono text-cb-caption text-cb-muted">{group.area}</h2>
+            <div className="grid gap-2 md:grid-cols-2">
+              {group.items.map((c) => (
+                <CompetencyRow key={c.id} c={c} />
+              ))}
+            </div>
+          </section>
         ))}
       </div>
-
-      {lens === "browse" ? (
-        <ResourceBrowser
-          resources={resources}
-          competencies={browseCompetencies}
-          areas={areas}
-          openResourceId={openResourceId}
-        />
-      ) : (
-        <div className="space-y-5">
-          {byArea.map((group) => (
-            <section key={group.area} className="space-y-2">
-              <h2 className="cb-label-mono text-cb-caption text-cb-muted">{group.area}</h2>
-              <div className="grid gap-2 md:grid-cols-2">
-                {group.items.map((c) => (
-                  <CompetencyRow key={c.id} c={c} />
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

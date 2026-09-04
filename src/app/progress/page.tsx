@@ -9,7 +9,7 @@ import {
 import { desc } from "drizzle-orm";
 import { runGuidanceEngine, flattenGoals } from "@/lib/guidance/engine";
 import { COMPETENCIES } from "@/lib/mentor/competency-map";
-import { FT_COMMON_CORE } from "@/lib/guidance/ft-project-tree";
+
 import { ProgressClient } from "@/components/progress/progress-client";
 import type { CircleSlice } from "@/components/progress/core-donut";
 
@@ -51,8 +51,8 @@ export default function ProgressPage() {
       return { circle: c, done, total, state };
     });
 
-  const coreDone = ftProgress.completedProjects.length;
-  const coreTotal = FT_COMMON_CORE.length;
+  const coreDone = Object.values(ftProgress.circleBreakdown).reduce((s, c) => s + c.done, 0);
+  const coreTotal = Object.values(ftProgress.circleBreakdown).reduce((s, c) => s + c.total, 0);
 
   // Goals entry
   const leafGoals = flattenGoals(guidance.goals).filter(

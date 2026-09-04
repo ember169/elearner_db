@@ -40,6 +40,9 @@ export default async function CompetencyHubPage({
     platform: r.platform,
     difficulty: r.difficulty,
     status: r.status,
+    url: r.url,
+    description: r.description,
+    estimatedHours: r.estimatedHours,
   }));
 
   return (

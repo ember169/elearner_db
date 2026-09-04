@@ -1,10 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Link from "next/link";
-import { ArrowLeft, BadgeCheck, Check, Circle, CircleCheck } from "lucide-react";
+import { ArrowLeft, BadgeCheck, Check, Circle, CircleCheck, ExternalLink, Loader2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PLATFORM_LABELS } from "@/lib/platform-colors";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 type ArticleRef = { id: number; title: string; depthTier: number; isRead: boolean };
 type ResourceRef = {
@@ -13,6 +20,9 @@ type ResourceRef = {
   platform: string;
   difficulty: string | null;
   status: string;
+  url: string | null;
+  description: string | null;
+  estimatedHours: number | null;
 };
 
 const TIER_PURPOSE: Record<number, string> = {
@@ -56,9 +66,34 @@ export function CompetencyHub({
     (a, b) =>
       (DIFF_ORDER[a.difficulty ?? ""] ?? 4) - (DIFF_ORDER[b.difficulty ?? ""] ?? 4),
   );
-  const resDone = resources.filter((r) => r.status === "completed").length;
+  const [resourceStatuses, setResourceStatuses] = useState<Record<number, string>>(() => {
+    const m: Record<number, string> = {};
+    for (const r of resources) m[r.id] = r.status;
+    return m;
+  });
+  const [selectedResource, setSelectedResource] = useState<ResourceRef | null>(null);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+
+  const resDone = resources.filter((r) => (resourceStatuses[r.id] ?? r.status) === "completed").length;
+
+  const changeResourceStatus = useCallback(async (id: number, status: string) => {
+    setUpdatingStatus(true);
+    const prev = resourceStatuses[id];
+    setResourceStatuses((s) => ({ ...s, [id]: status }));
+    try {
+      await fetch(`/api/learn/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+    } catch {
+      setResourceStatuses((s) => ({ ...s, [id]: prev }));
+    } finally {
+      setUpdatingStatus(false);
+    }
+  }, [resourceStatuses]);
   const readDone = articles.filter(
-    (a) => readState[a.id] || a.depthTier <= level,
+    (a) => readState[a.id],
   ).length;
 
   async function toggleRead(articleId: number, currentlyRead: boolean) {
@@ -134,7 +169,7 @@ export function CompetencyHub({
                 );
               }
               const isRead = readState[found.id] || false;
-              const reached = isRead || tier <= level;
+              const reached = isRead;
               return (
                 <div
                   key={tier}
@@ -195,40 +230,117 @@ export function CompetencyHub({
             </div>
           ) : (
             <div className="space-y-1.5">
-              {orderedResources.map((r) => (
-                <Link
-                  key={r.id}
-                  href={`/learn?resource=${r.id}`}
-                  className="group flex items-center gap-2.5 rounded-cb-card border border-cb-line bg-cb-card px-3 py-2.5 transition-colors hover:bg-cb-raised"
-                >
-                  {r.status === "completed" ? (
-                    <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-cb-success">
-                      <Check className="h-2.5 w-2.5 text-cb-bg" strokeWidth={3} />
+              {orderedResources.map((r) => {
+                const st = resourceStatuses[r.id] ?? r.status;
+                return (
+                  <button
+                    key={r.id}
+                    type="button"
+                    onClick={() => setSelectedResource(r)}
+                    className="group flex w-full items-center gap-2.5 rounded-cb-card border border-cb-line bg-cb-card px-3 py-2.5 text-left transition-colors hover:bg-cb-raised"
+                  >
+                    {st === "completed" ? (
+                      <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-cb-success">
+                        <Check className="h-2.5 w-2.5 text-cb-bg" strokeWidth={3} />
+                      </span>
+                    ) : (
+                      <span
+                        className={`h-3.5 w-3.5 shrink-0 rounded-full border ${
+                          st === "in_progress" ? "border-cb-or" : "border-cb-line"
+                        }`}
+                      />
+                    )}
+                    <span className="min-w-0 flex-1 truncate font-cb-sans text-cb-foot text-cb-second group-hover:text-cb-text">
+                      {r.title}
                     </span>
-                  ) : (
-                    <span
-                      className={`h-3.5 w-3.5 shrink-0 rounded-full border ${
-                        r.status === "in_progress" ? "border-cb-or" : "border-cb-line"
-                      }`}
-                    />
-                  )}
-                  <span className="min-w-0 flex-1 truncate font-cb-sans text-cb-foot text-cb-second group-hover:text-cb-text">
-                    {r.title}
-                  </span>
-                  {r.difficulty && (
-                    <span className="cb-label-mono hidden shrink-0 text-cb-caption text-cb-muted sm:inline">
-                      {r.difficulty}
+                    {r.difficulty && (
+                      <span className="cb-label-mono hidden shrink-0 text-cb-caption text-cb-muted sm:inline">
+                        {r.difficulty}
+                      </span>
+                    )}
+                    <span className="cb-label-mono shrink-0 rounded-cb-chip-sm bg-cb-raised px-2 py-0.5 text-cb-caption text-cb-second">
+                      {PLATFORM_LABELS[r.platform] ?? r.platform}
                     </span>
-                  )}
-                  <span className="cb-label-mono shrink-0 rounded-cb-chip-sm bg-cb-raised px-2 py-0.5 text-cb-caption text-cb-second">
-                    {PLATFORM_LABELS[r.platform] ?? r.platform}
-                  </span>
-                </Link>
-              ))}
+                  </button>
+                );
+              })}
             </div>
           )}
         </section>
       </div>
+
+      {/* Resource detail dialog */}
+      <Dialog open={selectedResource != null} onOpenChange={(open) => { if (!open) setSelectedResource(null); }}>
+        <DialogContent className="max-w-md">
+          {selectedResource && (() => {
+            const st = resourceStatuses[selectedResource.id] ?? selectedResource.status;
+            return (
+              <>
+                <DialogHeader>
+                  <div className="flex items-center gap-2">
+                    <span className="cb-label-mono rounded-cb-chip-sm bg-cb-raised px-2 py-0.5 text-cb-caption text-cb-second">
+                      {PLATFORM_LABELS[selectedResource.platform] ?? selectedResource.platform}
+                    </span>
+                    {selectedResource.difficulty && (
+                      <span className="cb-label-mono text-cb-caption text-cb-muted">
+                        {selectedResource.difficulty}
+                      </span>
+                    )}
+                  </div>
+                  <DialogTitle className="text-cb-body font-semibold leading-snug">
+                    {selectedResource.title}
+                  </DialogTitle>
+                </DialogHeader>
+
+                {selectedResource.description && (
+                  <p className="font-cb-sans text-cb-foot leading-relaxed text-cb-muted">
+                    {selectedResource.description}
+                  </p>
+                )}
+
+                {selectedResource.estimatedHours != null && (
+                  <div className="flex justify-between font-cb-sans text-cb-foot">
+                    <span className="text-cb-muted">Estimated</span>
+                    <span>{selectedResource.estimatedHours}h</span>
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  <p className="font-cb-sans text-cb-foot text-cb-muted">Status</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(["not_started", "in_progress", "completed"] as const).map((s) => (
+                      <Button
+                        key={s}
+                        size="xs"
+                        variant={st === s ? "default" : "outline"}
+                        disabled={updatingStatus}
+                        onClick={() => void changeResourceStatus(selectedResource.id, s)}
+                      >
+                        {updatingStatus && st !== s && (
+                          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                        )}
+                        {s.replace(/_/g, " ")}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                {selectedResource.url && (
+                  <a
+                    href={selectedResource.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-1.5 rounded-cb-button border border-cb-line bg-cb-raised px-4 py-2 font-cb-sans text-cb-foot font-bold text-cb-text transition-colors hover:bg-cb-raised-hover"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    Open on {PLATFORM_LABELS[selectedResource.platform] ?? selectedResource.platform}
+                  </a>
+                )}
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

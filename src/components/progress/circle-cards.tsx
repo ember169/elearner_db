@@ -79,7 +79,7 @@ export function CircleCards({
     const done = projects.filter((p) => allCompleted.has(p.slug)).length;
     const total = countEffective(projects);
     const state = circleState(c, currentCircle, done, total);
-    if (state !== "locked" || c === currentCircle + 1) initialOpen.add(c);
+    if (state === "current" || c === currentCircle + 1) initialOpen.add(c);
   }
 
   const [open, setOpen] = useState(initialOpen);
@@ -117,8 +117,16 @@ export function CircleCards({
     }
   }
 
-  const coreDone = FT_COMMON_CORE.filter((p) => allCompleted.has(p.slug)).length;
-  const coreTotal = FT_COMMON_CORE.length;
+  const allCircleProjects = Array.from(byCircle.values());
+  const coreTotal = allCircleProjects.reduce((s, ps) => s + countEffective(ps), 0);
+  const coreDone = allCircleProjects.reduce((s, ps) => {
+    const { groups, standalone } = splitProjects(ps);
+    let done = standalone.filter((p) => allCompleted.has(p.slug)).length;
+    for (const g of groups) {
+      if (g.projects.some((p) => allCompleted.has(p.slug))) done++;
+    }
+    return s + done;
+  }, 0);
 
   return (
     <div className="space-y-3">

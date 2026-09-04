@@ -394,9 +394,19 @@ export function analyzeFtProgress(
 
   let currentCircle = 0;
   for (let c = 6; c >= 0; c--) {
-    if (circleBreakdown[c] && circleBreakdown[c].done > 0) {
+    const cb = circleBreakdown[c];
+    if (cb && cb.done > 0 && cb.done < cb.total) {
       currentCircle = c;
       break;
+    }
+  }
+  if (currentCircle === 0 && circleBreakdown[0]?.done === circleBreakdown[0]?.total && circleBreakdown[0]?.total > 0) {
+    for (let c = 6; c >= 0; c--) {
+      const cb = circleBreakdown[c];
+      if (cb && cb.done > 0 && cb.done === cb.total) {
+        currentCircle = c;
+        break;
+      }
     }
   }
 
