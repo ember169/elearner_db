@@ -132,9 +132,9 @@ function GoalCard({
                       key={child.id}
                       className={`text-cb-body px-1.5 py-0.5 rounded-sm ${
                         done
-                          ? "bg-green-500/10 text-green-500"
+                          ? "bg-cb-success-tint text-cb-success"
                           : behind
-                          ? "bg-red-500/10 text-red-400"
+                          ? "bg-cb-danger-tint text-cb-danger"
                           : "bg-muted text-muted-foreground"
                       }`}
                     >
@@ -207,7 +207,7 @@ function MobileGoalsList({
           <p className="text-cb-body text-muted-foreground">
             {activeCount} active
             {behindGoals.length > 0 && (
-              <span className="text-red-400"> · {behindGoals.length} behind</span>
+              <span className="text-cb-danger"> · {behindGoals.length} behind</span>
             )}
           </p>
         </div>
@@ -229,9 +229,9 @@ function MobileGoalsList({
       </div>
 
       {behindGoals.length > 0 && (
-        <div className="mx-4 mb-2 px-3 py-2 rounded-sm bg-red-500/10 border border-red-500/20">
+        <div className="mx-4 mb-2 px-3 py-2 rounded-sm bg-cb-danger-tint border border-cb-danger/20">
           {behindGoals.map((g) => (
-            <div key={g.id} className="flex items-center gap-1.5 text-cb-body text-red-400 py-0.5">
+            <div key={g.id} className="flex items-center gap-1.5 text-cb-body text-cb-danger py-0.5">
               <AlertTriangle className="h-3 w-3 flex-shrink-0" />
               <span className="truncate">{g.title} behind pace</span>
             </div>
@@ -341,18 +341,18 @@ function MobileEpicView({
               <button
                 key={child.id}
                 className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-sm border border-border text-left ${
-                  done ? "opacity-40" : behind ? "border-red-500/20" : ""
+                  done ? "opacity-40" : behind ? "border-cb-danger/20" : ""
                 }`}
                 onClick={() => onTap(child.id)}
               >
                 {done ? (
-                  <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
+                  <CheckCircle2 className="h-4 w-4 text-cb-success flex-shrink-0" />
                 ) : null}
                 <span className={`text-cb-body flex-1 ${done ? "line-through" : "font-medium"}`}>
                   {child.title.replace("Complete ", "")}
                 </span>
                 {behind && (
-                  <Badge variant="outline" className="text-cb-foot px-1 py-0 text-red-400 border-red-400">
+                  <Badge variant="outline" className="text-cb-foot px-1 py-0 text-cb-danger border-cb-danger">
                     BEHIND
                   </Badge>
                 )}
@@ -412,7 +412,7 @@ function MobileIssueView({
             ISSUE
           </Badge>
           {isBehind && (
-            <Badge variant="outline" className="text-cb-foot px-1 py-0 text-red-400 border-red-400">
+            <Badge variant="outline" className="text-cb-foot px-1 py-0 text-cb-danger border-cb-danger">
               BEHIND
             </Badge>
           )}
@@ -453,7 +453,7 @@ function MobileIssueView({
                 onClick={() => !done && onTap(task.id)}
               >
                 {done ? (
-                  <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
+                  <CheckCircle2 className="h-4 w-4 text-cb-success flex-shrink-0" />
                 ) : (
                   <span className="h-4 w-4 border border-muted-foreground/40 rounded-sm flex-shrink-0" />
                 )}
@@ -463,7 +463,7 @@ function MobileIssueView({
                 {task.deadline && !done && (
                   <span
                     className={`text-cb-foot ${
-                      taskDeadlineWarning ? "text-amber-400" : "text-muted-foreground"
+                      taskDeadlineWarning ? "text-cb-warn" : "text-muted-foreground"
                     }`}
                   >
                     {taskDeadlineWarning && "⚠ "}
@@ -540,7 +540,7 @@ function MobileTaskView({
         <div className="flex items-center gap-2">
           <span
             className={`h-[18px] w-[18px] border-2 rounded-sm flex items-center justify-center flex-shrink-0 ${
-              isCompleted ? "bg-green-500 border-green-500" : "border-muted-foreground/40"
+              isCompleted ? "bg-cb-success border-cb-success" : "border-muted-foreground/40"
             }`}
           >
             {isCompleted && <Check className="h-3 w-3 text-background" />}
@@ -605,7 +605,7 @@ function MobileTaskView({
           <Button variant="outline" className="flex-1" onClick={onEdit}>
             Edit
           </Button>
-          <Button variant="outline" className="flex-1 text-red-400 border-red-400/30" onClick={onDelete}>
+          <Button variant="outline" className="flex-1 text-cb-danger border-cb-danger/30" onClick={onDelete}>
             Delete
           </Button>
         </div>
@@ -758,7 +758,7 @@ function MobileStandaloneView({
           <Button variant="outline" className="flex-1" onClick={onEdit}>
             Edit
           </Button>
-          <Button variant="outline" className="flex-1 text-red-400 border-red-400/30" onClick={onDelete}>
+          <Button variant="outline" className="flex-1 text-cb-danger border-cb-danger/30" onClick={onDelete}>
             Delete
           </Button>
         </div>

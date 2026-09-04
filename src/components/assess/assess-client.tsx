@@ -301,11 +301,11 @@ export function AssessClient({
 
         {/* Grading done notification */}
         {gradingDone && (
-          <Card className={gradingDone.status === "completed" ? "border-green-500/30 bg-green-500/5" : "border-destructive/30 bg-destructive/5"}>
+          <Card className={gradingDone.status === "completed" ? "border-cb-success/30 bg-cb-success/5" : "border-destructive/30 bg-destructive/5"}>
             <CardContent className="pt-3 pb-3 px-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 {gradingDone.status === "completed" ? (
-                  <Check className="h-4 w-4 text-green-600" />
+                  <Check className="h-4 w-4 text-cb-success" />
                 ) : (
                   <X className="h-4 w-4 text-destructive" />
                 )}
@@ -470,7 +470,7 @@ export function AssessClient({
                   onClick={() => setDifficultyFlag(difficultyFlag === "too_easy" ? null : "too_easy")}
                   className={`flex items-center gap-1 px-2 py-1 rounded-sm text-cb-foot border transition-colors ${
                     difficultyFlag === "too_easy"
-                      ? "border-green-600 bg-green-600/10 text-green-400"
+                      ? "border-cb-success bg-cb-success-tint text-cb-success"
                       : "border-border text-muted-foreground hover:text-foreground"
                   }`}
                 >
@@ -481,7 +481,7 @@ export function AssessClient({
                   onClick={() => setDifficultyFlag(difficultyFlag === "too_hard" ? null : "too_hard")}
                   className={`flex items-center gap-1 px-2 py-1 rounded-sm text-cb-foot border transition-colors ${
                     difficultyFlag === "too_hard"
-                      ? "border-red-600 bg-red-600/10 text-red-400"
+                      ? "border-cb-danger bg-cb-danger-tint text-cb-danger"
                       : "border-border text-muted-foreground hover:text-foreground"
                   }`}
                 >
@@ -630,7 +630,7 @@ export function AssessClient({
                         <span className="text-cb-foot font-medium text-muted-foreground">Grading:</span>
                         {grading.criteriaScores?.map((cs: { id: string; awarded: number; rationale: string }) => (
                           <div key={cs.id} className="flex items-start gap-2 text-cb-foot">
-                            <span className={cs.awarded > 0 ? "text-green-400" : "text-red-400"}>
+                            <span className={cs.awarded > 0 ? "text-cb-success" : "text-cb-danger"}>
                               {cs.awarded > 0 ? "✓" : "✗"}
                             </span>
                             <span className="font-mono">{cs.id}</span>
@@ -648,7 +648,7 @@ export function AssessClient({
               })() : q.studentAnswer && (
                 <>
                   <Separator />
-                  <p className="text-cb-foot text-red-400">Grading failed for this question. Check your Assessment AI configuration in Settings.</p>
+                  <p className="text-cb-foot text-cb-danger">Grading failed for this question. Check your Assessment AI configuration in Settings.</p>
                 </>
               )}
 
@@ -782,7 +782,7 @@ function CompetencyCard({
 function LevelBar({ level, color }: { level: number; color: "primary" | "validated" }) {
   const colors = {
     primary: "bg-primary",
-    validated: "bg-blue-500",
+    validated: "bg-cb-info",
   };
   return (
     <div className="flex gap-0.5 flex-1">

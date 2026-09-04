@@ -324,7 +324,7 @@ export function SettingsClient({
           </div>
           <div className="flex items-center gap-2">
             {saveResult && (
-              <span className={`flex items-center gap-1 text-cb-foot ${saveResult.ok ? "text-green-500" : "text-red-400"}`}>
+              <span className={`flex items-center gap-1 text-cb-foot ${saveResult.ok ? "text-cb-success" : "text-cb-danger"}`}>
                 {saveResult.ok ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
                 {saveResult.message}
               </span>
@@ -481,12 +481,12 @@ export function SettingsClient({
             <ScrollArea className="h-[240px]">
               <div className="space-y-0.5 font-mono text-cb-foot">
                 {[...assessLogs].reverse().map((log, i) => (
-                  <div key={i} className={`px-2 py-1 rounded-sm ${log.level === "error" ? "bg-destructive/10 text-red-400" : "text-muted-foreground"}`}>
+                  <div key={i} className={`px-2 py-1 rounded-sm ${log.level === "error" ? "bg-destructive/10 text-cb-danger" : "text-muted-foreground"}`}>
                     <span className="tabular-nums opacity-60">
                       {new Date(log.timestamp).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "medium", timeZone: "Europe/Paris" })}
                     </span>
                     {" "}
-                    <span className={log.level === "error" ? "text-red-400 font-medium" : "text-muted-foreground"}>
+                    <span className={log.level === "error" ? "text-cb-danger font-medium" : "text-muted-foreground"}>
                       [{log.level.toUpperCase()}]
                     </span>
                     {" "}
@@ -687,7 +687,7 @@ export function SettingsClient({
               {syncing ? "Syncing all platforms..." : "Sync now"}
             </Button>
             {syncResult && (
-              <span className={`flex items-center gap-1 text-cb-foot ${syncResult.ok ? "text-green-500" : "text-red-400"}`}>
+              <span className={`flex items-center gap-1 text-cb-foot ${syncResult.ok ? "text-cb-success" : "text-cb-danger"}`}>
                 {syncResult.ok ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
                 {syncResult.message}
               </span>

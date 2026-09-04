@@ -85,7 +85,7 @@ function TreeItem({
         {depth === 2 && !hasChildren && (
           <span className="flex-shrink-0">
             {isCompleted ? (
-              <CheckCircle2 className="h-3 w-3 text-green-500" />
+              <CheckCircle2 className="h-3 w-3 text-cb-success" />
             ) : (
               <span className="inline-block h-3 w-3 border border-muted-foreground/40 rounded-sm" />
             )}
@@ -103,7 +103,7 @@ function TreeItem({
         </span>
 
         {isBehind && depth > 0 && !hasChildren && (
-          <AlertTriangle className="h-3 w-3 text-red-400 flex-shrink-0" />
+          <AlertTriangle className="h-3 w-3 text-cb-danger flex-shrink-0" />
         )}
 
         {(() => {
@@ -113,7 +113,7 @@ function TreeItem({
             ).length;
             if (behindCount > 0) {
               return (
-                <span className="flex-shrink-0 min-w-[16px] h-[16px] rounded-full bg-red-500 text-white text-cb-body font-bold flex items-center justify-center">
+                <span className="flex-shrink-0 min-w-[16px] h-[16px] rounded-full bg-cb-danger text-white text-cb-body font-bold flex items-center justify-center">
                   {behindCount}
                 </span>
               );
@@ -135,7 +135,7 @@ function TreeItem({
         )}
 
         {goal.goalType === "cadence" && goal.pacing && goal.pacing.onTrack && !isCompleted && (
-          <CheckCircle2 className="h-3 w-3 text-green-500 flex-shrink-0" />
+          <CheckCircle2 className="h-3 w-3 text-cb-success flex-shrink-0" />
         )}
 
         {hasChildren && depth > 0 && (
@@ -228,17 +228,17 @@ export function GoalsTree({
         <p className="text-cb-body text-muted-foreground mt-0.5">
           {active} active
           {behind > 0 && (
-            <span className="text-red-400"> &middot; {behind} behind</span>
+            <span className="text-cb-danger"> &middot; {behind} behind</span>
           )}
         </p>
       </div>
 
       {behindGoals.length > 0 && (
-        <div className="mx-2 mb-2 px-2 py-1.5 rounded-sm bg-red-500/10 border border-red-500/20">
+        <div className="mx-2 mb-2 px-2 py-1.5 rounded-sm bg-cb-danger-tint border border-cb-danger/20">
           {behindGoals.map((g) => (
             <button
               key={g.id}
-              className="flex items-center gap-1 text-cb-body text-red-400 w-full hover:text-red-300 py-0.5"
+              className="flex items-center gap-1 text-cb-body text-cb-danger w-full hover:text-cb-danger py-0.5"
               onClick={() => onSelect(g.id)}
             >
               <AlertTriangle className="h-3 w-3 flex-shrink-0" />

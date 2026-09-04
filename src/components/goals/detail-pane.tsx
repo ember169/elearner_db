@@ -148,7 +148,7 @@ function ChildRowContent({
   return (
     <div
       className={`flex items-center gap-2 px-2.5 py-2 rounded-sm border text-cb-foot cursor-pointer hover:bg-accent/30 transition-colors ${
-        isCompleted ? "opacity-40 border-border" : isBehind ? "border-red-500/20" : "border-border"
+        isCompleted ? "opacity-40 border-border" : isBehind ? "border-cb-danger/20" : "border-border"
       }`}
       onClick={() => onSelect(child.id)}
     >
@@ -160,7 +160,7 @@ function ChildRowContent({
         <GripVertical className="h-3 w-3" />
       </span>
       {isCompleted ? (
-        <CheckCircle2 className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
+        <CheckCircle2 className="h-3.5 w-3.5 text-cb-success flex-shrink-0" />
       ) : (
         <span className="h-3.5 w-3.5 border border-muted-foreground/40 rounded-sm flex-shrink-0" />
       )}
@@ -168,7 +168,7 @@ function ChildRowContent({
         className="text-cb-foot font-bold uppercase px-1.5 py-0"
         style={{
           backgroundColor: isCompleted ? "transparent" : platformColor,
-          color: isCompleted ? platformColor : "#fff",
+          color: isCompleted ? platformColor : "var(--cb-text)",
           border: isCompleted ? `1px solid ${platformColor}40` : "none",
         }}
       >
@@ -179,7 +179,7 @@ function ChildRowContent({
         <span className="text-cb-body font-mono text-muted-foreground">{child.ftSlug}</span>
       )}
       {isBehind && (
-        <Badge variant="outline" className="text-cb-foot text-red-400 border-red-400/30 px-1 py-0">
+        <Badge variant="outline" className="text-cb-foot text-cb-danger border-cb-danger/30 px-1 py-0">
           BEHIND
         </Badge>
       )}
@@ -199,7 +199,7 @@ function ChildRowContent({
         <span
           className={`text-cb-foot ${
             parentDeadline && child.deadline > parentDeadline
-              ? "text-amber-400"
+              ? "text-cb-warn"
               : "text-muted-foreground"
           }`}
         >
@@ -468,7 +468,7 @@ function CustomFieldsSection({ goalId, raw, onRefresh }: { goalId: number; raw: 
                   <span>{field.value}</span>
                 )}
               </div>
-              <button onClick={() => removeField(key)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-400 transition-all">
+              <button onClick={() => removeField(key)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-cb-danger transition-all">
                 <X className="h-3 w-3" />
               </button>
             </div>
@@ -637,7 +637,7 @@ export function DetailPane({
           {isTask && (
             <button
               className={`flex-shrink-0 h-[18px] w-[18px] border-2 rounded-sm flex items-center justify-center transition-colors ${
-                isCompleted ? "bg-green-500 border-green-500" : "border-muted-foreground/40 hover:border-foreground"
+                isCompleted ? "bg-cb-success border-cb-success" : "border-muted-foreground/40 hover:border-foreground"
               }`}
               onClick={async () => {
                 try { await patchGoal(goal.id, { status: isCompleted ? "active" : "completed" }, refresh); } catch {}
@@ -651,13 +651,13 @@ export function DetailPane({
 
         <div className="flex items-center gap-2">
           {isCompleted ? (
-            <Badge className="text-cb-body font-bold uppercase tracking-wider bg-green-500/15 text-green-400 border border-green-500/30 px-2 py-0.5">Completed</Badge>
+            <Badge className="text-cb-body font-bold uppercase tracking-wider bg-cb-success-tint text-cb-success border border-cb-success/30 px-2 py-0.5">Completed</Badge>
           ) : isBehind ? (
-            <Badge className="text-cb-body font-bold uppercase tracking-wider bg-red-500/15 text-red-400 border border-red-500/30 px-2 py-0.5">
+            <Badge className="text-cb-body font-bold uppercase tracking-wider bg-cb-danger-tint text-cb-danger border border-cb-danger/30 px-2 py-0.5">
               {isCadence ? "Behind" : "Behind pace"}
             </Badge>
           ) : goal.pacing ? (
-            <Badge className="text-cb-body font-bold uppercase tracking-wider bg-green-500/15 text-green-400 border border-green-500/30 px-2 py-0.5">
+            <Badge className="text-cb-body font-bold uppercase tracking-wider bg-cb-success-tint text-cb-success border border-cb-success/30 px-2 py-0.5">
               {isCadence ? "On pace" : "On track"}
             </Badge>
           ) : null}
@@ -679,7 +679,7 @@ export function DetailPane({
           <div className="mb-4 border-t border-border pt-2">
             <MetadataRow label="Status">
               <span className="flex items-center gap-1.5">
-                <span className={`h-2 w-2 rounded-full ${isCompleted ? "bg-green-500" : "bg-yellow-500"}`} />
+                <span className={`h-2 w-2 rounded-full ${isCompleted ? "bg-cb-success" : "bg-cb-warn"}`} />
                 {isCompleted ? "Completed" : "In progress"}
               </span>
             </MetadataRow>
@@ -707,7 +707,7 @@ export function DetailPane({
             {metricLabel && (
               <MetadataRow label="Auto-complete">
                 <span className="flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-green-500" />
+                  <span className="h-2 w-2 rounded-full bg-cb-success" />
                   On {metricLabel.toLowerCase().includes("project") ? "project validation" : metricLabel.toLowerCase()}
                 </span>
               </MetadataRow>
@@ -725,12 +725,12 @@ export function DetailPane({
               </div>
               <p className="text-cb-foot text-muted-foreground mt-0.5">Tasks</p>
             </div>
-            <div className={`rounded-sm border p-3.5 text-center ${isBehind ? "border-red-500/30 bg-red-500/5" : "border-border"}`}>
+            <div className={`rounded-sm border p-3.5 text-center ${isBehind ? "border-cb-danger/30 bg-cb-danger-tint" : "border-border"}`}>
               <div className="flex items-baseline justify-center gap-0.5">
-                <span className={`text-cb-title ${isBehind ? "text-red-400" : ""}`}>
+                <span className={`text-cb-title ${isBehind ? "text-cb-danger" : ""}`}>
                   {goal.pacing?.daysRemaining ?? "—"}
                 </span>
-                <span className={`text-cb-body ${isBehind ? "text-red-400" : "text-muted-foreground"}`}>d</span>
+                <span className={`text-cb-body ${isBehind ? "text-cb-danger" : "text-muted-foreground"}`}>d</span>
               </div>
               <p className="text-cb-foot text-muted-foreground mt-0.5">Left</p>
             </div>
@@ -898,7 +898,7 @@ export function DetailPane({
             <Button
               variant="outline"
               size="sm"
-              className="text-cb-foot text-green-400 border-green-500/30 hover:bg-green-500/10"
+              className="text-cb-foot text-cb-success border-cb-success/30 hover:bg-cb-success-tint"
               onClick={() => patchGoal(goal.id, { status: "completed" }, refresh).catch(() => {})}
             >
               <Check className="h-3 w-3 mr-1" />
@@ -914,7 +914,7 @@ export function DetailPane({
           <Button
             variant="outline"
             size="sm"
-            className="text-cb-foot text-red-400 border-red-500/30 hover:bg-red-500/10"
+            className="text-cb-foot text-cb-danger border-cb-danger/30 hover:bg-cb-danger-tint"
             onClick={() => onDelete(goal.id)}
           >
             <Trash2 className="h-3 w-3 mr-1" />

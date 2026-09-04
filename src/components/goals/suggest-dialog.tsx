@@ -148,7 +148,7 @@ export function SuggestDialog({
 
         {error && (
           <div className="py-4">
-            <p className="text-cb-foot text-red-400 mb-3">{error}</p>
+            <p className="text-cb-foot text-cb-danger mb-3">{error}</p>
             <Button variant="ghost" size="sm" onClick={() => generate("quick")}>
               Try quick suggest instead
             </Button>

@@ -161,7 +161,7 @@ export function Generate42Dialog({
                   className={`flex items-center gap-2 text-cb-body pl-4 py-0.5 ${c.isComplete ? "opacity-40" : ""}`}
                 >
                   {c.isComplete ? (
-                    <Check className="h-3 w-3 text-green-500" />
+                    <Check className="h-3 w-3 text-cb-success" />
                   ) : (
                     <Checkbox checked disabled className="h-3 w-3" />
                   )}
@@ -172,7 +172,7 @@ export function Generate42Dialog({
                     </span>
                   )}
                   <span className="text-muted-foreground">· {c.totalTasks} tasks</span>
-                  {c.isComplete && <span className="text-green-500 text-cb-foot">completed</span>}
+                  {c.isComplete && <span className="text-cb-success text-cb-foot">completed</span>}
                 </div>
               ))}
 
@@ -182,7 +182,7 @@ export function Generate42Dialog({
             </div>
 
             {!preview.targetDate && (
-              <p className="text-cb-body text-red-400">
+              <p className="text-cb-body text-cb-danger">
                 No backward planner deadline set. Go to Settings to set a target date first.
               </p>
             )}
@@ -206,8 +206,8 @@ export function Generate42Dialog({
             {syncDiff && (
               <>
                 <div className="grid grid-cols-3 gap-2">
-                  <div className="rounded-sm border border-green-500/20 p-2 text-center">
-                    <span className="text-cb-head text-green-400">{syncDiff.autoCompleted.length}</span>
+                  <div className="rounded-sm border border-cb-success/20 p-2 text-center">
+                    <span className="text-cb-head text-cb-success">{syncDiff.autoCompleted.length}</span>
                     <p className="text-cb-foot text-muted-foreground">Auto-completed</p>
                   </div>
                   <div className="rounded-sm border border-border p-2 text-center"
@@ -217,8 +217,8 @@ export function Generate42Dialog({
                     </span>
                     <p className="text-cb-foot text-muted-foreground">New tasks</p>
                   </div>
-                  <div className="rounded-sm border border-amber-500/20 p-2 text-center">
-                    <span className="text-cb-head text-amber-400">{syncDiff.deadlineShifts.length}</span>
+                  <div className="rounded-sm border border-cb-warn/20 p-2 text-center">
+                    <span className="text-cb-head text-cb-warn">{syncDiff.deadlineShifts.length}</span>
                     <p className="text-cb-foot text-muted-foreground">Deadline shifts</p>
                   </div>
                 </div>
@@ -230,7 +230,7 @@ export function Generate42Dialog({
                     </p>
                     {syncDiff.autoCompleted.map((t) => (
                       <div key={t.id} className="flex items-center gap-2 text-cb-body py-0.5">
-                        <Check className="h-3 w-3 text-green-500" />
+                        <Check className="h-3 w-3 text-cb-success" />
                         <span>{t.title}</span>
                         <span className="text-cb-body font-mono text-muted-foreground">{t.ftSlug}</span>
                       </div>
@@ -276,7 +276,7 @@ export function Generate42Dialog({
                         <span>Circle {s.circle}:</span>
                         <span className="text-muted-foreground">{s.oldDate.slice(0, 7)}</span>
                         <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-amber-400">{s.newDate.slice(0, 7)}</span>
+                        <span className="text-cb-warn">{s.newDate.slice(0, 7)}</span>
                       </div>
                     ))}
                   </div>
