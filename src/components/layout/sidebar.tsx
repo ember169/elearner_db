@@ -82,7 +82,7 @@ export function Sidebar() {
       {/* Phone tab bar — 52px row + safe-area spacer, top hairline. Three loop
           destinations: nothing overflows into a "more" sheet, which is the whole
           point of cutting the nav down. */}
-      <nav className="fixed inset-x-0 bottom-0 z-50 flex items-stretch justify-around border-t border-cb-line bg-cb-bg/85 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl backdrop-saturate-[1.8] md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-50 flex items-stretch justify-around border-t border-cb-line bg-cb-bg pb-[env(safe-area-inset-bottom)] md:hidden">
         {NAV.map((item) => {
           const active = isActive(pathname, item.href);
           return (

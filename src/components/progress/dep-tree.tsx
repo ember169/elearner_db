@@ -37,7 +37,7 @@ const STATUS_TEXT: Record<NodeStatus, string> = {
   done: "var(--cb-success)",
   "in-progress": "var(--cb-or)",
   available: "var(--cb-or)",
-  locked: "var(--cb-muted)",
+  locked: "var(--cb-text-muted)",
 };
 
 const NODE_W = 100;
@@ -340,7 +340,7 @@ export function DepTree({
               y={y + NODE_H / 2}
               textAnchor="end"
               dominantBaseline="central"
-              fill={circle <= currentCircle ? "var(--cb-or)" : "var(--cb-muted)"}
+              fill={circle <= currentCircle ? "var(--cb-or)" : "var(--cb-text-muted)"}
               fontFamily="var(--font-mono)"
               fontSize="10"
               fontWeight="500"
