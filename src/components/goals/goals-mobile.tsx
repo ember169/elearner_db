@@ -17,41 +17,11 @@ import {
 import { PLATFORM_COLORS, PLATFORM_LABELS } from "@/lib/platform-colors";
 import type { GoalWithPacing } from "@/lib/guidance/engine";
 import { assertOk } from "@/lib/utils";
-
-function fmtDate(iso: string): string {
-  const d = new Date(iso + "T00:00:00");
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-}
-
-function fmtMonth(iso: string): string {
-  const [y, m] = iso.split("-");
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  return `${months[parseInt(m) - 1]} '${y.slice(2)}`;
-}
+import { findGoalById, findParent, fmtDate, fmtMonth } from "./goal-utils";
 
 type NavState =
   | { view: "list" }
   | { view: "detail"; goalId: number };
-
-function findGoalById(id: number, tree: GoalWithPacing[]): GoalWithPacing | null {
-  for (const g of tree) {
-    if (g.id === id) return g;
-    const found = findGoalById(id, g.children);
-    if (found) return found;
-  }
-  return null;
-}
-
-function findParent(goalId: number, tree: GoalWithPacing[]): GoalWithPacing | null {
-  for (const g of tree) {
-    for (const c of g.children) {
-      if (c.id === goalId) return g;
-      const found = findParent(goalId, [c]);
-      if (found) return found;
-    }
-  }
-  return null;
-}
 
 function GoalCard({
   goal,
@@ -214,12 +184,14 @@ function MobileGoalsList({
         <div className="flex items-center gap-2">
           <button
             className="h-8 w-8 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:text-foreground"
+            aria-label="Suggest goals"
             onClick={onSuggest}
           >
             <Zap className="h-4 w-4" />
           </button>
           <button
             className="h-8 w-8 rounded-full flex items-center justify-center text-background"
+            aria-label="New goal"
             style={{ backgroundColor: "var(--primary)" }}
             onClick={onNewGoal}
           >

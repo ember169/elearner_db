@@ -329,7 +329,7 @@ export function AssessClient({
                     Retry
                   </Button>
                 )}
-                <Button size="xs" variant="ghost" onClick={() => setGradingDone(null)}>
+                <Button size="xs" variant="ghost" aria-label="Dismiss" onClick={() => setGradingDone(null)}>
                   <X className="h-3 w-3" />
                 </Button>
               </div>
@@ -348,7 +348,7 @@ export function AssessClient({
                     {competencies.find((c) => c.id === selectedCompetency)?.label} — History
                   </span>
                 </div>
-                <Button variant="ghost" size="xs" onClick={() => setSelectedCompetency(null)}>
+                <Button variant="ghost" size="xs" aria-label="Close" onClick={() => setSelectedCompetency(null)}>
                   <X className="h-3.5 w-3.5" />
                 </Button>
               </div>

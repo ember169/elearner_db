@@ -80,6 +80,7 @@ export function SideProjectBrief({
                   try { await onRefresh(); } finally { setRefreshing(false); }
                 }}
                 disabled={refreshing}
+                aria-label="Suggest a different project"
                 className="text-muted-foreground hover:text-foreground transition-colors"
                 title="Suggest a different project"
               >

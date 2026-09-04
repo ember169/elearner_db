@@ -19,18 +19,10 @@ import { Generate42Dialog } from "./generate-42-dialog";
 import { SuggestPane } from "./suggest-pane";
 import { SuggestDialog } from "./suggest-dialog";
 import { GoalsMobile } from "./goals-mobile";
+import { findGoalById } from "./goal-utils";
 
 type CompetencySlim = { id: string; label: string; area: string; level: number };
 type FocusSlim = { type: string; title: string };
-
-function findGoalById(id: number, tree: GoalWithPacing[]): GoalWithPacing | null {
-  for (const g of tree) {
-    if (g.id === id) return g;
-    const found = findGoalById(id, g.children);
-    if (found) return found;
-  }
-  return null;
-}
 
 type RightPane =
   | { mode: "detail" }

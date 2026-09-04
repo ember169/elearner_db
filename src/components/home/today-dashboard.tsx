@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { cn, assertOk } from "@/lib/utils";
 import { CardDetail } from "@/components/dashboard/card-detail";
+import { StatTile } from "@/components/ui/stat-tile";
 import { PLATFORM_LABELS } from "@/lib/platform-colors";
 import { CoreDonut, CircleBars } from "@/components/progress/core-donut";
 import type { CircleSlice } from "@/components/progress/core-donut";
@@ -90,32 +91,7 @@ function Widget({
   );
 }
 
-/* ── KPI tiles ─────────────────────────────────────────────────────────── */
-function StatTile({
-  value,
-  sub,
-  label,
-}: {
-  value: string;
-  sub?: string;
-  label: string;
-}) {
-  return (
-    <div className="rounded-cb-card border border-cb-line bg-cb-raised px-3 py-3">
-      <div className="flex items-baseline gap-1">
-        <span className="font-cb-serif text-cb-title leading-none text-cb-text">
-          {value}
-        </span>
-        {sub && (
-          <span className="font-cb-mono text-cb-foot tabular-nums text-cb-muted">
-            {sub}
-          </span>
-        )}
-      </div>
-      <p className="mt-1.5 cb-label-mono text-cb-caption text-cb-muted">{label}</p>
-    </div>
-  );
-}
+/* ── KPI tiles — shared StatTile from ui/ ─────────────────────────────── */
 
 /* ── Competency pulse: single-hue sequential heatmap ───────────────────── */
 function CompetencyPulse({ competencies }: { competencies: CompetencyEntry[] }) {

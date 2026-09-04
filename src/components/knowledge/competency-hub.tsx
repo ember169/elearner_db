@@ -143,6 +143,7 @@ export function CompetencyHub({
                   <button
                     type="button"
                     onClick={() => void toggleRead(found.id, isRead)}
+                    aria-label={isRead ? "Mark as unread" : "Mark as read"}
                     title={isRead ? "Mark as unread" : "Mark as read"}
                     className="shrink-0 text-cb-muted transition-colors hover:text-cb-or"
                   >

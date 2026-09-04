@@ -50,62 +50,7 @@ import { PLATFORM_COLORS, PLATFORM_LABELS } from "@/lib/platform-colors";
 import { METRIC_SOURCES } from "@/lib/goals/shared";
 import type { GoalWithPacing } from "@/lib/guidance/engine";
 import { assertOk } from "@/lib/utils";
-
-function findGoalById(id: number, tree: GoalWithPacing[]): GoalWithPacing | null {
-  for (const g of tree) {
-    if (g.id === id) return g;
-    const found = findGoalById(id, g.children);
-    if (found) return found;
-  }
-  return null;
-}
-
-function getDepthLabel(goal: GoalWithPacing, allGoals: GoalWithPacing[]): string {
-  if (goal.children.length > 0 && !goal.parentGoalId) return "EPIC";
-  if (goal.parentGoalId) {
-    const parent = findGoalById(goal.parentGoalId, allGoals);
-    if (parent && parent.parentGoalId) return "TASK";
-    return "ISSUE";
-  }
-  if (goal.goalType === "cadence") return "CADENCE";
-  return "GOAL";
-}
-
-function findParentChain(goalId: number, tree: GoalWithPacing[]): GoalWithPacing[] {
-  const chain: GoalWithPacing[] = [];
-  function walk(g: GoalWithPacing, path: GoalWithPacing[]): boolean {
-    if (g.id === goalId) {
-      chain.push(...path);
-      return true;
-    }
-    for (const child of g.children) {
-      if (walk(child, [...path, g])) return true;
-    }
-    return false;
-  }
-  for (const root of tree) {
-    if (walk(root, [])) break;
-  }
-  return chain;
-}
-
-function flattenAll(tree: GoalWithPacing[]): GoalWithPacing[] {
-  const r: GoalWithPacing[] = [];
-  function w(g: GoalWithPacing) { r.push(g); g.children.forEach(w); }
-  tree.forEach(w);
-  return r;
-}
-
-function fmtDate(iso: string): string {
-  const d = new Date(iso + "T00:00:00");
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-}
-
-function fmtMonth(iso: string): string {
-  const [y, m] = iso.split("-");
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  return `${months[parseInt(m) - 1]} '${y.slice(2)}`;
-}
+import { findGoalById, findParentChain, flattenAll, getDepthLabel, fmtDate, fmtMonth } from "./goal-utils";
 
 function MetadataRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -186,6 +131,7 @@ function ChildRowContent({
       {isCompleted && (
         <button
           className="text-muted-foreground hover:text-foreground"
+          aria-label="Reopen"
           onClick={async (e) => {
             e.stopPropagation();
             try { await patchGoal(child.id, { status: "active" }, onRefresh); } catch {}
@@ -468,7 +414,7 @@ function CustomFieldsSection({ goalId, raw, onRefresh }: { goalId: number; raw: 
                   <span>{field.value}</span>
                 )}
               </div>
-              <button onClick={() => removeField(key)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-cb-danger transition-all">
+              <button onClick={() => removeField(key)} aria-label="Remove field" className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-cb-danger transition-all">
                 <X className="h-3 w-3" />
               </button>
             </div>
@@ -483,7 +429,7 @@ function CustomFieldsSection({ goalId, raw, onRefresh }: { goalId: number; raw: 
               {(["text", "url", "number"] as const).map((t) => {
                 const Icon = t === "url" ? LinkIcon : t === "number" ? Hash : Type;
                 return (
-                  <button key={t} onClick={() => setNewType(t)} className="p-1 rounded-sm transition-colors" style={{ background: newType === t ? "var(--accent)" : "transparent", color: newType === t ? "var(--foreground)" : "var(--muted-foreground)" }}>
+                  <button key={t} onClick={() => setNewType(t)} aria-label={`${t} field`} className="p-1 rounded-sm transition-colors" style={{ background: newType === t ? "var(--accent)" : "transparent", color: newType === t ? "var(--foreground)" : "var(--muted-foreground)" }}>
                     <Icon className="h-3 w-3" />
                   </button>
                 );
@@ -533,7 +479,7 @@ function InlineTaskAdd({ parentId, category, onRefresh }: { parentId: number; ca
     <div className="flex gap-1.5 items-center mt-1">
       <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Task title..." className="h-7 text-cb-foot flex-1" onKeyDown={(e) => { if (e.key === "Enter") addTask(); if (e.key === "Escape") { setOpen(false); setTitle(""); } }} autoFocus />
       <Button size="xs" onClick={addTask} className="h-6 text-cb-foot">Add</Button>
-      <button onClick={() => { setOpen(false); setTitle(""); }} className="text-muted-foreground"><X className="h-3 w-3" /></button>
+      <button onClick={() => { setOpen(false); setTitle(""); }} aria-label="Cancel" className="text-muted-foreground"><X className="h-3 w-3" /></button>
     </div>
   );
 }
@@ -636,6 +582,7 @@ export function DetailPane({
         <div className="flex items-center gap-2 mb-1">
           {isTask && (
             <button
+              aria-label={isCompleted ? "Mark incomplete" : "Mark complete"}
               className={`flex-shrink-0 h-[18px] w-[18px] border-2 rounded-sm flex items-center justify-center transition-colors ${
                 isCompleted ? "bg-cb-success border-cb-success" : "border-muted-foreground/40 hover:border-foreground"
               }`}

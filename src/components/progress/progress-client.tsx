@@ -6,6 +6,7 @@ import type { FtProject } from "@/lib/guidance/ft-project-tree";
 import { CoreDonut, CircleBars, type CircleSlice } from "./core-donut";
 import { CircleCards } from "./circle-cards";
 import { DepTree } from "./dep-tree";
+import { StatTile } from "@/components/ui/stat-tile";
 
 interface ProgressClientProps {
   goalsEntry: { active: number; behind: number };
@@ -132,28 +133,3 @@ export function ProgressClient({
   );
 }
 
-function StatTile({
-  value,
-  sub,
-  label,
-}: {
-  value: string;
-  sub?: string;
-  label: string;
-}) {
-  return (
-    <div className="rounded-cb-card bg-cb-raised px-3 py-3">
-      <div className="flex items-baseline gap-1">
-        <span className="font-cb-serif text-cb-title leading-none text-cb-text">
-          {value}
-        </span>
-        {sub && (
-          <span className="font-cb-mono text-cb-foot tabular-nums text-cb-muted">
-            {sub}
-          </span>
-        )}
-      </div>
-      <p className="mt-1.5 cb-label-mono text-cb-caption text-cb-muted">{label}</p>
-    </div>
-  );
-}
