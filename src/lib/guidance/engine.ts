@@ -687,7 +687,7 @@ export function generateRecommendations(
             reason: `${mod.name} (${mod.tier}) — deeper alternative to THM rooms.`,
             estimatedHours: tierHours[mod.tier],
             ref: mod.id,
-            link: `https://academy.hackthebox.com/module/details/${mod.id}`,
+            link: `https://academy.hackthebox.com/course/preview/${mod.id}`,
             goalId: goal.id,
           });
           recommendedHtbModuleIds.add(mod.id);
@@ -720,7 +720,7 @@ export function generateRecommendations(
           reason: `${goal.pacing.requiredPace} for "${goal.title}".`,
           estimatedHours: ({ Fundamental: 6, Easy: 8, Medium: 12, Hard: 16 })[mod.tier],
           ref: mod.id,
-          link: `https://academy.hackthebox.com/module/details/${mod.id}`,
+          link: `https://academy.hackthebox.com/course/preview/${mod.id}`,
           goalId: goal.id,
         });
         recommendedHtbModuleIds.add(mod.id);
@@ -772,7 +772,7 @@ export function generateRecommendations(
             reason: `Supports "${goal.title}" goal — ${htbPick.area} module.`,
             estimatedHours: ({ Fundamental: 6, Easy: 8, Medium: 12, Hard: 16 })[htbPick.tier],
             ref: htbPick.id,
-            link: `https://academy.hackthebox.com/module/details/${htbPick.id}`,
+            link: `https://academy.hackthebox.com/course/preview/${htbPick.id}`,
             goalId: goal.id,
           });
           recommendedHtbModuleIds.add(htbPick.id);
@@ -802,7 +802,7 @@ export function generateRecommendations(
               skills: [skill],
               ref: mod.id,
               goalId: projectGoalId,
-              link: `https://academy.hackthebox.com/module/details/${mod.id}`,
+              link: `https://academy.hackthebox.com/course/preview/${mod.id}`,
             });
           } else {
             const room = pickThmRoomForSkill(snapshot, skill, thmFloors);
@@ -1204,10 +1204,10 @@ const PROJECT_CHALLENGE_ALIGNMENT: Record<string, AlignedChallenge[]> = {
     { platform: "rootme", title: "RM: ELF x86 - Format string bug basic 2", reason: "Arbitrary write via %n — extends your printf internals to memory corruption", hours: 2, ref: "App - Système", link: "https://www.root-me.org/en/Challenges/App%20-%20Syst%C3%A8me/", rmTitle: "elf x86 - format string bug basic 2" },
   ],
   born2beroot: [
-    { platform: "htb", title: "HTB: Linux Privilege Escalation", reason: "Break the security policies you configured in born2beroot", hours: 8, ref: "linux-privesc", link: "https://academy.hackthebox.com/module/details/linux-privesc" },
+    { platform: "htb", title: "HTB: Linux Privilege Escalation", reason: "Break the security policies you configured in born2beroot", hours: 8, ref: "linux-privilege-escalation", link: "https://academy.hackthebox.com/course/preview/linux-privilege-escalation" },
   ],
   pipex: [
-    { platform: "htb", title: "HTB: Command Injections", reason: "Pipex executes commands via pipes — command injection is the offensive version", hours: 12, ref: "command-injections", link: "https://academy.hackthebox.com/module/details/command-injections" },
+    { platform: "htb", title: "HTB: Command Injections", reason: "Pipex executes commands via pipes — command injection is the offensive version", hours: 12, ref: "command-injections", link: "https://academy.hackthebox.com/course/preview/command-injections" },
   ],
   push_swap: [
     { platform: "rootme", title: "RM: ELF x64 - Basic KeygenMe", reason: "Reverse an algorithm to write a keygen — same analytical skill as designing a sort", hours: 2, ref: "Cracking", link: "https://www.root-me.org/en/Challenges/Cracking/", rmTitle: "elf x64 - basic keygenme" },
@@ -1217,10 +1217,10 @@ const PROJECT_CHALLENGE_ALIGNMENT: Record<string, AlignedChallenge[]> = {
   ],
   minishell: [
     { platform: "rootme", title: "RM: PHP - Command injection", reason: "You built a shell — command injection exploits exactly what you implemented", hours: 2, ref: "Web - Serveur", link: "https://www.root-me.org/en/Challenges/Web%20-%20Serveur/", rmTitle: "php - command injection" },
-    { platform: "htb", title: "HTB: Command Injections", reason: "You built a shell — this module teaches attacking the mechanism you coded", hours: 12, ref: "command-injections", link: "https://academy.hackthebox.com/module/details/command-injections" },
+    { platform: "htb", title: "HTB: Command Injections", reason: "You built a shell — this module teaches attacking the mechanism you coded", hours: 12, ref: "command-injections", link: "https://academy.hackthebox.com/course/preview/command-injections" },
   ],
   netpractice: [
-    { platform: "htb", title: "HTB: Network Enumeration with Nmap", reason: "Extend your subnetting knowledge into active network reconnaissance", hours: 8, ref: "nmap-enumeration", link: "https://academy.hackthebox.com/module/details/nmap-enumeration" },
+    { platform: "htb", title: "HTB: Network Enumeration with Nmap", reason: "Extend your subnetting knowledge into active network reconnaissance", hours: 8, ref: "network-enumeration-with-nmap", link: "https://academy.hackthebox.com/course/preview/network-enumeration-with-nmap" },
   ],
   cpp04: [
     { platform: "rootme", title: "RM: ELF C++ - 0 protection", reason: "Reverse a C++ binary — applies your OOP knowledge to binary analysis", hours: 1, ref: "Cracking", link: "https://www.root-me.org/en/Challenges/Cracking/", rmTitle: "elf c++ - 0 protection" },
@@ -1229,10 +1229,10 @@ const PROJECT_CHALLENGE_ALIGNMENT: Record<string, AlignedChallenge[]> = {
   webserv: [
     { platform: "rootme", title: "RM: HTTP - User-agent", reason: "HTTP header spoofing — you implemented header parsing in webserv", hours: 1, ref: "Web - Serveur", link: "https://www.root-me.org/en/Challenges/Web%20-%20Serveur/", rmTitle: "http - user-agent" },
     { platform: "rootme", title: "RM: Local File Inclusion", reason: "Path traversal — you implemented file serving and path resolution", hours: 2, ref: "Web - Serveur", link: "https://www.root-me.org/en/Challenges/Web%20-%20Serveur/", rmTitle: "local file inclusion" },
-    { platform: "htb", title: "HTB: Using Web Proxies", reason: "HTTP interception — you understand request/response from building the server", hours: 8, ref: "using-web-proxies", link: "https://academy.hackthebox.com/module/details/using-web-proxies" },
+    { platform: "htb", title: "HTB: Using Web Proxies", reason: "HTTP interception — you understand request/response from building the server", hours: 8, ref: "using-web-proxies", link: "https://academy.hackthebox.com/course/preview/using-web-proxies" },
   ],
   inception: [
-    { platform: "htb", title: "HTB: Linux Privilege Escalation", reason: "Container escape scenarios — extends your Docker infrastructure knowledge", hours: 8, ref: "linux-privesc", link: "https://academy.hackthebox.com/module/details/linux-privesc" },
+    { platform: "htb", title: "HTB: Linux Privilege Escalation", reason: "Container escape scenarios — extends your Docker infrastructure knowledge", hours: 8, ref: "linux-privilege-escalation", link: "https://academy.hackthebox.com/course/preview/linux-privilege-escalation" },
   ],
   get_next_line: [
     { platform: "rootme", title: "RM: ELF x86 - Stack buffer overflow basic 2", reason: "Buffer overflow to overwrite a function pointer — applies your fd/buffer management skills", hours: 1, ref: "App - Système", link: "https://www.root-me.org/en/Challenges/App%20-%20Syst%C3%A8me/", rmTitle: "elf x86 - stack buffer overflow basic 2" },
@@ -1245,12 +1245,12 @@ const PROJECT_CHALLENGE_ALIGNMENT: Record<string, AlignedChallenge[]> = {
   ],
   ft_irc: [
     { platform: "rootme", title: "RM: FTP - authentication", reason: "Extract protocol credentials from captures — you implemented a similar text protocol", hours: 1, ref: "Réseau", link: "https://www.root-me.org/en/Challenges/R%C3%A9seau/", rmTitle: "ftp - authentication" },
-    { platform: "htb", title: "HTB: Network Enumeration with Nmap", reason: "Network reconnaissance — you understand server-side networking from building ft_irc", hours: 8, ref: "nmap-enumeration", link: "https://academy.hackthebox.com/module/details/nmap-enumeration" },
+    { platform: "htb", title: "HTB: Network Enumeration with Nmap", reason: "Network reconnaissance — you understand server-side networking from building ft_irc", hours: 8, ref: "network-enumeration-with-nmap", link: "https://academy.hackthebox.com/course/preview/network-enumeration-with-nmap" },
   ],
   ft_transcendence: [
     { platform: "rootme", title: "RM: SQL injection - Authentication", reason: "SQLi on login — your project has database-backed authentication", hours: 2, ref: "Web - Serveur", link: "https://www.root-me.org/en/Challenges/Web%20-%20Serveur/", rmTitle: "sql injection - authentication" },
-    { platform: "htb", title: "HTB: SQL Injection Fundamentals", reason: "Learn to attack the database queries you write in ft_transcendence", hours: 8, ref: "sql-injection-fundamentals", link: "https://academy.hackthebox.com/module/details/sql-injection-fundamentals" },
-    { platform: "htb", title: "HTB: Cross-Site Scripting (XSS)", reason: "Your project has user-facing frontend — understanding XSS prevents shipping it", hours: 8, ref: "xss", link: "https://academy.hackthebox.com/module/details/xss" },
+    { platform: "htb", title: "HTB: SQL Injection Fundamentals", reason: "Learn to attack the database queries you write in ft_transcendence", hours: 8, ref: "sql-injection-fundamentals", link: "https://academy.hackthebox.com/course/preview/sql-injection-fundamentals" },
+    { platform: "htb", title: "HTB: Cross-Site Scripting (XSS)", reason: "Your project has user-facing frontend — understanding XSS prevents shipping it", hours: 8, ref: "cross-site-scripting-xss", link: "https://academy.hackthebox.com/course/preview/cross-site-scripting-xss" },
   ],
 };
 

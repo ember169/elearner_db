@@ -16,6 +16,17 @@ export type QuizExercise = {
 
 const LETTERS = ["A", "B", "C", "D", "E"];
 
+function seededPermutation(n: number, seed: number): number[] {
+  const arr = Array.from({ length: n }, (_, i) => i);
+  let s = Math.abs(seed);
+  for (let i = n - 1; i > 0; i--) {
+    s = (s * 1103515245 + 12345) & 0x7fffffff;
+    const j = s % (i + 1);
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 export function ArticleQuiz({
   articleId,
   exercises,
@@ -23,7 +34,16 @@ export function ArticleQuiz({
   articleId: number;
   exercises: QuizExercise[];
 }) {
-  // exerciseId -> selected option index (present only once answered)
+  // perm[exerciseId] = mapping where perm[displayPos] = originalIndex
+  const perms = useMemo(() => {
+    const m: Record<number, number[]> = {};
+    for (const ex of exercises) {
+      m[ex.id] = seededPermutation(ex.options.length, ex.id);
+    }
+    return m;
+  }, [exercises]);
+
+  // exerciseId -> selected ORIGINAL option index (present only once answered)
   const [answers, setAnswers] = useState<Record<number, number>>(() => {
     const initial: Record<number, number> = {};
     for (const ex of exercises) {
@@ -33,17 +53,17 @@ export function ArticleQuiz({
   });
 
   const answer = useCallback(
-    (ex: QuizExercise, index: number) => {
+    (ex: QuizExercise, displayIndex: number) => {
       if (answers[ex.id] !== undefined) return; // locked once answered
-      setAnswers((prev) => ({ ...prev, [ex.id]: index }));
-      // Persist in the background; instant feedback doesn't wait on it.
+      const originalIndex = perms[ex.id][displayIndex];
+      setAnswers((prev) => ({ ...prev, [ex.id]: originalIndex }));
       void fetch(`/api/knowledge/${articleId}/exercise`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ exerciseId: ex.id, selectedIndex: index }),
+        body: JSON.stringify({ exerciseId: ex.id, selectedIndex: originalIndex }),
       }).catch(() => {});
     },
-    [answers, articleId]
+    [answers, articleId, perms]
   );
 
   const reset = useCallback((exId: number) => {
@@ -98,9 +118,10 @@ export function ArticleQuiz({
 
       <ol className="flex flex-col gap-3">
         {exercises.map((ex, qi) => {
-          const selected = answers[ex.id];
-          const isAnswered = selected !== undefined;
-          const gotIt = isAnswered && selected === ex.correctIndex;
+          const perm = perms[ex.id];
+          const selectedOriginal = answers[ex.id];
+          const isAnswered = selectedOriginal !== undefined;
+          const gotIt = isAnswered && selectedOriginal === ex.correctIndex;
 
           return (
             <li
@@ -118,9 +139,10 @@ export function ArticleQuiz({
               </p>
 
               <div className="flex flex-col gap-1.5" role="group">
-                {ex.options.map((opt, oi) => {
-                  const isCorrectOpt = oi === ex.correctIndex;
-                  const isPicked = selected === oi;
+                {perm.map((originalIdx, displayIdx) => {
+                  const opt = ex.options[originalIdx];
+                  const isCorrectOpt = originalIdx === ex.correctIndex;
+                  const isPicked = selectedOriginal === originalIdx;
 
                   let tone =
                     "border-cb-line bg-cb-raised text-cb-second hover:bg-cb-raised-hover hover:text-cb-text";
@@ -138,10 +160,10 @@ export function ArticleQuiz({
 
                   return (
                     <button
-                      key={oi}
+                      key={originalIdx}
                       type="button"
                       disabled={isAnswered}
-                      onClick={() => answer(ex, oi)}
+                      onClick={() => answer(ex, displayIdx)}
                       className={cn(
                         "flex items-start gap-2.5 rounded-cb-chip-sm border px-3 py-2 text-left text-cb-foot leading-snug transition-colors",
                         tone,
@@ -163,7 +185,7 @@ export function ArticleQuiz({
                         ) : isAnswered && isPicked ? (
                           <X className="h-3 w-3" />
                         ) : (
-                          LETTERS[oi]
+                          LETTERS[displayIdx]
                         )}
                       </span>
                       <span>{opt}</span>

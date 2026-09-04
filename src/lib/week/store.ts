@@ -8,6 +8,7 @@ import {
   type Recommendation,
 } from "@/lib/guidance/engine";
 import { getMainDeadline } from "@/lib/planning/backward-planner";
+import { getHtbModule } from "@/lib/mentor/htb-academy-catalog";
 import { WEEKLY_HOURS_BUDGET } from "@/lib/planning/rule-engine";
 
 export type PlanItem = typeof planItems.$inferSelect;
@@ -285,6 +286,7 @@ function resolveLink(type: string, ref?: string): string | undefined {
     case "thm": return `https://tryhackme.com/room/${ref}`;
     case "htb":
       if (/^\d+$/.test(ref)) return `https://academy.hackthebox.com/module/details/${ref}`;
+      if (getHtbModule(ref)) return `https://academy.hackthebox.com/course/preview/${ref}`;
       return `https://app.hackthebox.com/machines/${ref}`;
     case "rootme": return `https://www.root-me.org/en/Challenges/${encodeURIComponent(ref)}/`;
     default: return undefined;

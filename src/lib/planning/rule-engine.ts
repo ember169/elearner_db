@@ -56,7 +56,7 @@ function resolveLink(type: string, ref?: string): string | undefined {
   if (!ref) return undefined;
   switch (type) {
     case "thm": return `https://tryhackme.com/room/${ref}`;
-    case "htb": return `https://academy.hackthebox.com/module/details/${ref}`;
+    case "htb": return `https://academy.hackthebox.com/course/preview/${ref}`;
     case "rootme": return `https://www.root-me.org/en/Challenges/${encodeURIComponent(ref)}/`;
     default: return undefined;
   }

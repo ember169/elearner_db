@@ -7,7 +7,7 @@ import {
   type Recommendation,
 } from "@/lib/guidance/engine";
 import { FT_COMMON_CORE } from "@/lib/guidance/ft-project-tree";
-import { HTB_ACADEMY_MODULES } from "@/lib/mentor/htb-academy-catalog";
+import { HTB_ACADEMY_MODULES, getHtbModule } from "@/lib/mentor/htb-academy-catalog";
 import { isRmTitleSolved } from "@/lib/mentor/rootme-challenge-catalog";
 import { getMainDeadline } from "@/lib/planning/backward-planner";
 
@@ -53,6 +53,7 @@ function resolveLink(type: string, ref?: string): string | undefined {
       return `https://tryhackme.com/room/${ref}`;
     case "htb":
       if (/^\d+$/.test(ref)) return `https://academy.hackthebox.com/module/details/${ref}`;
+      if (getHtbModule(ref)) return `https://academy.hackthebox.com/course/preview/${ref}`;
       return `https://app.hackthebox.com/machines/${ref}`;
     case "rootme":
       return `https://www.root-me.org/en/Challenges/${encodeURIComponent(ref)}/`;

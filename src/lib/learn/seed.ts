@@ -71,7 +71,7 @@ function seedHtbAcademy() {
       platform: "htb",
       externalId: `academy-${mod.id}`,
       title: mod.name,
-      url: `https://academy.hackthebox.com/module/details/${mod.id}`,
+      url: `https://academy.hackthebox.com/course/preview/${mod.id}`,
       difficulty: HTB_TIER_TO_DIFFICULTY[mod.tier] ?? "intermediate",
       contentType: "module",
       tagsJson: JSON.stringify(mod.path ? [mod.path] : []),
