@@ -128,55 +128,93 @@ function layoutTree(
 
 type SubRow = FtProject[];
 
-function buildSubRows(projects: FtProject[], circle: number): SubRow[] {
-  // Find projects whose prerequisites are ALL from previous circles (entry points)
-  // vs projects that depend on other projects within this circle
+function buildSubRows(projects: FtProject[], _circle: number): SubRow[] {
   const slugsInCircle = new Set(projects.map((p) => p.slug));
-  const entryProjects: FtProject[] = [];
-  const dependentProjects: FtProject[] = [];
+
+  // Detect linear chains: sequences where each project has exactly one
+  // intra-circle prerequisite and is the prerequisite of at most one other.
+  const intraParent = new Map<string, string>();
+  const intraChildren = new Map<string, string[]>();
+  for (const p of projects) {
+    const intraDeps = p.prerequisites.filter((pr) => slugsInCircle.has(pr));
+    if (intraDeps.length === 1) intraParent.set(p.slug, intraDeps[0]);
+    for (const dep of intraDeps) {
+      const children = intraChildren.get(dep) ?? [];
+      children.push(p.slug);
+      intraChildren.set(dep, children);
+    }
+  }
+
+  // Walk chains from their roots (no intra-circle parent, but has children)
+  const inChain = new Set<string>();
+  const chains: FtProject[][] = [];
+  const slugToProject = new Map(projects.map((p) => [p.slug, p]));
 
   for (const p of projects) {
+    if (inChain.has(p.slug)) continue;
+    if (intraParent.has(p.slug)) continue;
+    const children = intraChildren.get(p.slug);
+    if (!children || children.length !== 1) continue;
+
+    // Walk the chain
+    const chain: FtProject[] = [p];
+    inChain.add(p.slug);
+    let cursor = p.slug;
+    while (true) {
+      const next = intraChildren.get(cursor);
+      if (!next || next.length !== 1) break;
+      const nextSlug = next[0];
+      const parent = intraParent.get(nextSlug);
+      if (parent !== cursor) break;
+      const proj = slugToProject.get(nextSlug);
+      if (!proj) break;
+      chain.push(proj);
+      inChain.add(nextSlug);
+      cursor = nextSlug;
+    }
+    if (chain.length >= 2) chains.push(chain);
+  }
+
+  // Remaining projects not in any chain
+  const nonChain = projects.filter((p) => !inChain.has(p.slug));
+
+  // Group: entry projects (no intra-circle deps) vs dependent
+  const entryProjects: FtProject[] = [];
+  const dependentProjects: FtProject[] = [];
+  for (const p of nonChain) {
     const hasIntraCircleDep = p.prerequisites.some((pr) => slugsInCircle.has(pr));
-    if (hasIntraCircleDep) {
-      dependentProjects.push(p);
-    } else {
-      entryProjects.push(p);
-    }
+    if (hasIntraCircleDep) dependentProjects.push(p);
+    else entryProjects.push(p);
   }
 
-  if (dependentProjects.length === 0) {
-    return [entryProjects];
+  const rows: SubRow[] = [];
+  // Each chain becomes its own row
+  for (const chain of chains) {
+    // Prepend any entry projects that are the chain root's non-chain prerequisites
+    rows.push(chain);
   }
-
-  // Build layers: keep pulling projects whose intra-circle deps are all placed
-  const rows: SubRow[] = [entryProjects];
-  const placed = new Set(entryProjects.map((p) => p.slug));
-  let remaining = [...dependentProjects];
-
-  while (remaining.length > 0) {
-    const nextRow: FtProject[] = [];
-    const stillRemaining: FtProject[] = [];
-
-    for (const p of remaining) {
-      const intraDeps = p.prerequisites.filter((pr) => slugsInCircle.has(pr));
-      if (intraDeps.every((d) => placed.has(d))) {
-        nextRow.push(p);
-      } else {
-        stillRemaining.push(p);
+  // Entry projects (non-chain) as a row
+  if (entryProjects.length > 0) rows.unshift(entryProjects);
+  // Dependent non-chain projects layered
+  if (dependentProjects.length > 0) {
+    const placed = new Set([...entryProjects.map((p) => p.slug), ...inChain]);
+    let remaining = [...dependentProjects];
+    while (remaining.length > 0) {
+      const nextRow: FtProject[] = [];
+      const stillRemaining: FtProject[] = [];
+      for (const p of remaining) {
+        const intraDeps = p.prerequisites.filter((pr) => slugsInCircle.has(pr));
+        if (intraDeps.every((d) => placed.has(d))) nextRow.push(p);
+        else stillRemaining.push(p);
       }
+      if (nextRow.length === 0) { rows.push(stillRemaining); break; }
+      rows.push(nextRow);
+      for (const p of nextRow) placed.add(p.slug);
+      remaining = stillRemaining;
     }
-
-    if (nextRow.length === 0) {
-      // Avoid infinite loop — dump remaining into last row
-      rows.push(stillRemaining);
-      break;
-    }
-
-    rows.push(nextRow);
-    for (const p of nextRow) placed.add(p.slug);
-    remaining = stillRemaining;
   }
 
+  if (rows.length === 0) return [projects];
   return rows;
 }
 

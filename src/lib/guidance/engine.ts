@@ -404,12 +404,24 @@ export function analyzeFtProgress(
       break;
     }
   }
+  // All started circles are complete — advance to the first circle with remaining work
   if (currentCircle === 0 && circleBreakdown[0]?.done === circleBreakdown[0]?.total && circleBreakdown[0]?.total > 0) {
-    for (let c = 6; c >= 0; c--) {
+    let found = false;
+    for (let c = 0; c <= 6; c++) {
       const cb = circleBreakdown[c];
-      if (cb && cb.done > 0 && cb.done === cb.total) {
+      if (cb && cb.total > 0 && cb.done < cb.total) {
         currentCircle = c;
+        found = true;
         break;
+      }
+    }
+    if (!found) {
+      for (let c = 6; c >= 0; c--) {
+        const cb = circleBreakdown[c];
+        if (cb && cb.done > 0 && cb.done === cb.total) {
+          currentCircle = c;
+          break;
+        }
       }
     }
   }
