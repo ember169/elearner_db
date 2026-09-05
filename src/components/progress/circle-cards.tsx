@@ -329,14 +329,14 @@ function ProjectCard({
       <div className="min-w-0 flex-1">
         <span
           className={cn(
-            "font-cb-sans text-cb-foot font-bold",
+            "text-cb-card",
             status === "done" ? "text-cb-second" : status === "locked" ? "text-cb-muted" : "text-cb-text",
           )}
         >
           {project.name}
         </span>
         {status !== "done" && project.description && (
-          <p className="line-clamp-1 font-cb-sans text-cb-caption leading-snug text-cb-muted">
+          <p className="line-clamp-1 font-cb-mono text-cb-caption leading-snug text-cb-muted">
             {project.description}
           </p>
         )}
