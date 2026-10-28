@@ -1,17 +1,12 @@
 services:
   app:
     build: .
-    # host:container — the app always listens on 3000 inside the container
-    # (Dockerfile sets PORT=3000); change only the host side (left) if 3001 is taken.
-    # Bound to the Tailscale interface IP only: reachable from any of your
-    # Tailscale devices anywhere, but not from the LAN and not from the public
-    # internet. The app has no auth and Settings holds platform credentials, so
-    # the tailnet is the trust boundary.
-    # NOTE: this IP is this machine's stable Tailscale address (tailscale0). If
-    # Tailscale is down when the container starts (e.g. right after a reboot),
-    # the bind fails and the restart policy retries until Tailscale is up.
-    ports:
-      - "100.66.34.21:3001:3000"
+    # network_mode: host gives the container direct access to the host's
+    # network stack, including Tailscale.  This is required so the server
+    # can reach runner agents on other Tailscale nodes.
+    # The "ports" directive is ignored under host networking — the app
+    # binds to PORT on the host directly.
+    network_mode: host
     volumes:
       - db-data:/app/data
       # Mount the directory, not the bare .db file: SQLite WAL mode keeps
@@ -24,14 +19,16 @@ services:
       - /home/mskn/maldev:/maldev:ro,z
     environment:
       - DATABASE_PATH=/app/data/learner.db
+      # Listen on the Tailscale interface only, port 3001.
+      - HOSTNAME=100.66.34.21
+      - PORT=3001
       # Shared secret for runner agents. Generate your own:
       #   head -c 32 /dev/urandom | base64 | tr -d '/+=' | head -c 32
       # Use the same value when starting each runner (--token flag).
       - RUNNER_TOKEN=${RUNNER_TOKEN:?Set RUNNER_TOKEN in .env or export it}
     restart: unless-stopped
-    # node is guaranteed present; wget/curl are not in the slim image.
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3001/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 30s
       timeout: 5s
       retries: 3
