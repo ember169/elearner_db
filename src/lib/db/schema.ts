@@ -621,3 +621,44 @@ export const mentorMessages = sqliteTable("mentor_messages", {
     .notNull()
     .default(sql`(datetime('now'))`),
 });
+
+// --- Lab System ---
+
+export const runners = sqliteTable("runners", {
+  id: text("id").primaryKey(),
+  hostname: text("hostname").notNull(),
+  tailscaleIp: text("tailscale_ip").notNull(),
+  port: integer("port").notNull().default(7500),
+  arch: text("arch").notNull(),
+  os: text("os").notNull(),
+  dockerAvailable: integer("docker_available", { mode: "boolean" }).default(false),
+  hypervAvailable: integer("hyperv_available", { mode: "boolean" }).default(false),
+  maxRamMb: integer("max_ram_mb"),
+  maxDiskGb: integer("max_disk_gb"),
+  subnetRange: text("subnet_range"),
+  lastHeartbeat: text("last_heartbeat")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  status: text("status").notNull().default("online"),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+export const labSessions = sqliteTable("lab_sessions", {
+  id: text("id").primaryKey(),
+  runnerId: text("runner_id")
+    .notNull()
+    .references(() => runners.id),
+  labManifest: text("lab_manifest").notNull(),
+  status: text("status").notNull().default("starting"),
+  subnet: text("subnet"),
+  containersJson: text("containers_json"),
+  errorMessage: text("error_message"),
+  ttlMinutes: integer("ttl_minutes").default(120),
+  startedAt: text("started_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  expiresAt: text("expires_at"),
+  stoppedAt: text("stopped_at"),
+});

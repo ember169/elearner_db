@@ -33,6 +33,7 @@ function initDb(): DB {
   ensureExerciseSchema(sqlite);
   ensureManualCompletions(sqlite);
   ensureProjectChoices(sqlite);
+  ensureLabTables(sqlite);
   return database;
 }
 
@@ -91,6 +92,40 @@ function ensureProjectChoices(sqlite: Database.Database) {
       group_name TEXT NOT NULL UNIQUE,
       chosen_slug TEXT NOT NULL,
       chosen_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+}
+
+function ensureLabTables(sqlite: Database.Database) {
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS runners (
+      id TEXT PRIMARY KEY,
+      hostname TEXT NOT NULL,
+      tailscale_ip TEXT NOT NULL,
+      port INTEGER NOT NULL DEFAULT 7500,
+      arch TEXT NOT NULL,
+      os TEXT NOT NULL,
+      docker_available INTEGER DEFAULT 0,
+      hyperv_available INTEGER DEFAULT 0,
+      max_ram_mb INTEGER,
+      max_disk_gb INTEGER,
+      subnet_range TEXT,
+      last_heartbeat TEXT NOT NULL DEFAULT (datetime('now')),
+      status TEXT NOT NULL DEFAULT 'online',
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS lab_sessions (
+      id TEXT PRIMARY KEY,
+      runner_id TEXT NOT NULL REFERENCES runners(id),
+      lab_manifest TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'starting',
+      subnet TEXT,
+      containers_json TEXT,
+      error_message TEXT,
+      ttl_minutes INTEGER DEFAULT 120,
+      started_at TEXT NOT NULL DEFAULT (datetime('now')),
+      expires_at TEXT,
+      stopped_at TEXT
     );
   `);
 }

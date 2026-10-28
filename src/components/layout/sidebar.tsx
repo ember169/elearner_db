@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BookOpen,
+  FlaskConical,
   LayoutDashboard,
   Map,
   Settings,
@@ -24,6 +25,7 @@ type NavItem = { href: string; label: string; icon: typeof Map };
 const NAV: NavItem[] = [
   { href: "/", label: "home", icon: LayoutDashboard },
   { href: "/learn", label: "learn", icon: BookOpen },
+  { href: "/labs", label: "labs", icon: FlaskConical },
   { href: "/progress", label: "progress", icon: Map },
 ];
 
