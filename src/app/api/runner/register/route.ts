@@ -2,10 +2,12 @@ import { NextResponse } from "next/server";
 import { upsertRunner } from "@/lib/labs/store";
 import type { RunnerRegistration } from "@/lib/labs/types";
 
-const RUNNER_TOKEN =
-  process.env.RUNNER_TOKEN || "test-runner-token-change-me";
+const RUNNER_TOKEN = process.env.RUNNER_TOKEN;
 
 export async function POST(request: Request) {
+  if (!RUNNER_TOKEN) {
+    return NextResponse.json({ error: "RUNNER_TOKEN not configured" }, { status: 500 });
+  }
   const auth = request.headers.get("authorization");
   if (!auth || auth !== `Bearer ${RUNNER_TOKEN}`) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });

@@ -11,6 +11,7 @@
  * Usage:
  *   node index.js --server https://<server-tailscale-ip>:3001 \
  *                 --token <runner-token> \
+ *                 --ip <this-machine-tailscale-ip> \
  *                 [--port 7500] \
  *                 [--subnet 10.129.0.0/16]
  *
@@ -32,12 +33,16 @@ function getArg(name) {
 }
 
 const SERVER_URL = getArg("server") || process.env.CARTABLEO_SERVER;
-const TOKEN = getArg("token") || process.env.RUNNER_TOKEN || "test-runner-token-change-me";
+const TOKEN = getArg("token") || process.env.RUNNER_TOKEN;
 const PORT = parseInt(getArg("port") || process.env.RUNNER_PORT || "7500", 10);
 const SUBNET_RANGE = getArg("subnet") || process.env.RUNNER_SUBNET || "10.129.0.0/16";
+const MANUAL_IP = getArg("ip") || process.env.RUNNER_IP;
 
-if (!SERVER_URL) {
-  console.error("Usage: node index.js --server <url> --token <token> [--port 7500] [--subnet 10.129.0.0/16]");
+if (!SERVER_URL || !TOKEN) {
+  console.error("Usage: node index.js --server <url> --token <token> [--ip <tailscale-ip>] [--port 7500] [--subnet 10.129.0.0/16]");
+  console.error("  --server  Cartableo server URL (required)");
+  console.error("  --token   Runner auth token (required, must match server's RUNNER_TOKEN)");
+  console.error("  --ip      This machine's Tailscale IP (auto-detected if tailscale CLI is available)");
   process.exit(1);
 }
 
@@ -342,6 +347,7 @@ async function register() {
 }
 
 function getLocalTailscaleIp() {
+  if (MANUAL_IP) return MANUAL_IP;
   try {
     const out = execSync("tailscale ip -4", { timeout: 5000 }).toString().trim();
     if (out) return out;
