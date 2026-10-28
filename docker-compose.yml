@@ -24,6 +24,10 @@ services:
       - /home/mskn/maldev:/maldev:ro,z
     environment:
       - DATABASE_PATH=/app/data/learner.db
+      # Shared secret for runner agents. Generate your own:
+      #   head -c 32 /dev/urandom | base64 | tr -d '/+=' | head -c 32
+      # Use the same value when starting each runner (--token flag).
+      - RUNNER_TOKEN=${RUNNER_TOKEN:?Set RUNNER_TOKEN in .env or export it}
     restart: unless-stopped
     # node is guaranteed present; wget/curl are not in the slim image.
     healthcheck:
