@@ -63,7 +63,7 @@ function detectOs() {
 
 function hasDocker() {
   try {
-    execSync("docker version --format '{{.Server.Version}}'", { stdio: "ignore", timeout: 15_000 });
+    execSync("docker version", { stdio: "ignore", timeout: 15_000 });
     return true;
   } catch {
     return false;
