@@ -28,7 +28,10 @@ services:
       - RUNNER_TOKEN=${RUNNER_TOKEN:?Set RUNNER_TOKEN in .env or export it}
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://localhost:3001/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      # Probe HOSTNAME:PORT, not localhost: under host networking the app binds
+      # the Tailscale interface only, so localhost never answers.
+      # The $$ are doubled so Compose leaves the JS template literal alone.
+      test: ["CMD", "node", "-e", "fetch(`http://$${process.env.HOSTNAME}:$${process.env.PORT}/`).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 30s
       timeout: 5s
       retries: 3
